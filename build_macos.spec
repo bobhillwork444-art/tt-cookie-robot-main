@@ -1,15 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+from PyInstaller.utils.hooks import collect_submodules
+
 block_cipher = None
+
+# Get current directory
+current_dir = os.path.abspath('.')
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[current_dir],
     binaries=[],
     datas=[
         ('config.json', '.'),
         ('translations', 'translations'),
         ('assets/flags', 'assets/flags'),
+        ('gui', 'gui'),
+        ('core', 'core'),
     ],
     hiddenimports=[
         'PyQt5',
@@ -23,16 +31,7 @@ a = Analysis(
         'tldextract',
         'lxml',
         'lxml.etree',
-        # Local modules
-        'gui',
-        'gui.main_window',
-        'core',
-        'core.automation',
-        'core.google_auth',
-        'core.octo_api',
-        'core.scheduler',
-        'core.translator',
-    ],
+    ] + collect_submodules('gui') + collect_submodules('core'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

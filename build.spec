@@ -5,13 +5,19 @@ Build command: pyinstaller build.spec
 """
 
 import sys
+import os
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
+# Get current directory
+current_dir = os.path.abspath('.')
+
 # Collect all necessary data and submodules
 datas = [
     ('config.json', '.'),
+    ('gui', 'gui'),
+    ('core', 'core'),
 ]
 
 hiddenimports = [
@@ -24,20 +30,11 @@ hiddenimports = [
     'playwright.async_api',
     'requests',
     'schedule',
-    # Local modules
-    'gui',
-    'gui.main_window',
-    'core',
-    'core.automation',
-    'core.google_auth',
-    'core.octo_api',
-    'core.scheduler',
-    'core.translator',
-]
+] + collect_submodules('gui') + collect_submodules('core')
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[current_dir],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
