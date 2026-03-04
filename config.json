@@ -1,0 +1,85 @@
+{
+  "api_url": "http://localhost:58888",
+  "cookie_mode": {
+    "profiles": [
+      "d9464273ef9d4cc883ec101ec8a40bae"
+    ],
+    "sites": [
+      "https://www.polarr.com/"
+    ],
+    "settings": {
+      "min_time_on_site": 30,
+      "max_time_on_site": 120,
+      "scroll_enabled": true,
+      "click_links_enabled": true,
+      "human_behavior_enabled": true
+    },
+    "profile_info": {
+      "d9464273ef9d4cc883ec101ec8a40bae": {
+        "country": "Slovenia",
+        "first_run": "2026-03-04T12:37:31.104129"
+      }
+    }
+  },
+  "google_mode": {
+    "profiles": [
+      "24298afd1b404eb48ae35f1befe5c050",
+      "84b19dec90c84df78b6ac0949c3c7e08"
+    ],
+    "sites": [],
+    "settings": {
+      "min_time_on_site": 10,
+      "max_time_on_site": 30,
+      "auth_on_sites": true,
+      "google_search_percent": 70,
+      "sites_per_session_min": 1,
+      "sites_per_session_max": 15,
+      "read_gmail": true,
+      "gmail_read_percent": 10,
+      "gmail_read_time_min": 10,
+      "gmail_read_time_max": 20,
+      "gmail_promo_spam_percent": 10,
+      "gmail_click_links": true,
+      "youtube_activity_percent": 100,
+      "youtube_videos_min": 1,
+      "youtube_videos_max": 5,
+      "youtube_watch_min": 15,
+      "youtube_watch_max": 60,
+      "youtube_like_percent": 20,
+      "youtube_watchlater_percent": 15
+    },
+    "onetap_sites": [],
+    "youtube_enabled": false,
+    "browse_sites": [],
+    "services": {
+      "drive": true,
+      "sheets": false,
+      "docs": false,
+      "calendar": true,
+      "photos": false,
+      "maps": false
+    },
+    "profile_info": {
+      "24298afd1b404eb48ae35f1befe5c050": {
+        "country": "The Netherlands",
+        "first_run": "2026-03-04T10:03:09.854251",
+        "ads_registered": false,
+        "payment_linked": false,
+        "campaign_launched": false
+      },
+      "84b19dec90c84df78b6ac0949c3c7e08": {
+        "country": "United Kingdom",
+        "first_run": "2026-03-04T10:03:10.327703",
+        "campaign_launched": false
+      }
+    }
+  },
+  "language": "Русский",
+  "theme": "Light",
+  "max_parallel_profiles": 3,
+  "base_delay_min": 1,
+  "base_delay_max": 3,
+  "autosave_logs": false,
+  "sound_on_finish": false,
+  "start_minimized": true
+}

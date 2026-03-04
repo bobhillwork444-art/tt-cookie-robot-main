@@ -1,0 +1,88 @@
+name: Build Installers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyqt5 playwright requests pyinstaller
+
+      - name: Build EXE
+        run: pyinstaller build_windows.spec --clean
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build Installer
+        run: iscc installer.iss
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Installer
+          path: installer_output/*.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyqt5 playwright requests pyinstaller
+          brew install create-dmg
+
+      - name: Create ICNS from PNG
+        run: |
+          mkdir -p icon.iconset
+          sips -z 16 16 assets/icon.png --out icon.iconset/icon_16x16.png
+          sips -z 32 32 assets/icon.png --out icon.iconset/icon_16x16@2x.png
+          sips -z 32 32 assets/icon.png --out icon.iconset/icon_32x32.png
+          sips -z 64 64 assets/icon.png --out icon.iconset/icon_32x32@2x.png
+          sips -z 128 128 assets/icon.png --out icon.iconset/icon_128x128.png
+          sips -z 256 256 assets/icon.png --out icon.iconset/icon_128x128@2x.png
+          sips -z 256 256 assets/icon.png --out icon.iconset/icon_256x256.png
+          sips -z 512 512 assets/icon.png --out icon.iconset/icon_256x256@2x.png
+          sips -z 512 512 assets/icon.png --out icon.iconset/icon_512x512.png
+          sips -z 1024 1024 assets/icon.png --out icon.iconset/icon_512x512@2x.png
+          iconutil -c icns icon.iconset -o assets/icon.icns
+
+      - name: Build APP
+        run: pyinstaller build_macos.spec --clean
+
+      - name: Build DMG
+        run: |
+          create-dmg \
+            --volname "TT Cookie Robot" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 450 185 \
+            "TTCookieRobot_v1.0.0.dmg" \
+            "dist/TT Cookie Robot.app" || true
+
+      - name: Upload macOS Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-Installer
+          path: "*.dmg"
