@@ -24,6 +24,15 @@ hiddenimports = [
     'playwright.async_api',
     'requests',
     'schedule',
+    # Local modules
+    'gui',
+    'gui.main_window',
+    'core',
+    'core.automation',
+    'core.google_auth',
+    'core.octo_api',
+    'core.scheduler',
+    'core.translator',
 ]
 
 a = Analysis(
