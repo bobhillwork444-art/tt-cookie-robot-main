@@ -7,6 +7,7 @@ import sys
 import os
 import logging
 from datetime import datetime
+from gui import MainWindow
 
 # Setup basic logging (console only by default)
 # File logging is controlled by GUI setting "autosave_logs"
