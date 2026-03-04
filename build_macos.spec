@@ -1,10 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+from PyInstaller.utils.hooks import collect_submodules
+
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
 block_cipher = None
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[PROJECT_ROOT],
     binaries=[],
     datas=[
         ('config.json', '.'),
@@ -23,7 +28,7 @@ a = Analysis(
         'tldextract',
         'lxml',
         'lxml.etree',
-    ],
+    ] + collect_submodules('gui'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

@@ -1,4 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
+
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
 """
 PyInstaller spec file for Cookie Robot
 Build command: pyinstaller build.spec
@@ -28,7 +33,7 @@ hiddenimports = [
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[PROJECT_ROOT],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
