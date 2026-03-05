@@ -142,6 +142,231 @@ YOUTUBE_SEARCH_WORDS = [
     'waterfall', 'volcano', 'earthquake', 'tornado', 'hurricane', 'tsunami',
 ]
 
+# === GEO DOMAIN CONSTANTS FOR AUTOMATION ===
+# EU member states TLDs (27 countries)
+EU_TLDS = {
+    'at', 'be', 'bg', 'hr', 'cy', 'cz', 'dk', 'ee', 'fi', 'fr',
+    'de', 'gr', 'hu', 'ie', 'it', 'lv', 'lt', 'lu', 'mt', 'nl',
+    'pl', 'pt', 'ro', 'sk', 'si', 'es', 'se'
+}
+
+# Generic TLDs (not country-specific)
+GENERIC_TLDS = {
+    'com', 'org', 'net', 'io', 'xyz', 'info', 'biz', 'co', 'app',
+    'dev', 'ai', 'tech', 'online', 'site', 'website', 'blog', 'shop',
+    'store', 'cloud', 'digital', 'media', 'news', 'tv', 'fm', 'me'
+}
+
+# Country code to TLD mapping (expanded)
+COUNTRY_TO_TLD = {
+    'US': ['us', 'com'],  # US includes .com as local
+    'GB': ['uk', 'co.uk'],
+    'CA': ['ca'],
+    'AU': ['au', 'com.au'],
+    'NZ': ['nz', 'co.nz'],
+    # EU countries
+    'DE': ['de'], 'FR': ['fr'], 'IT': ['it'], 'ES': ['es'],
+    'NL': ['nl'], 'PL': ['pl'], 'PT': ['pt'], 'AT': ['at'],
+    'BE': ['be'], 'SE': ['se'], 'FI': ['fi'], 'DK': ['dk'],
+    'CZ': ['cz'], 'GR': ['gr'], 'RO': ['ro'], 'HU': ['hu'],
+    'SK': ['sk'], 'BG': ['bg'], 'HR': ['hr'], 'SI': ['si'],
+    'LT': ['lt'], 'LV': ['lv'], 'EE': ['ee'], 'IE': ['ie'],
+    'CY': ['cy'], 'MT': ['mt'], 'LU': ['lu'],
+    # Non-EU Europe
+    'CH': ['ch'], 'NO': ['no'], 'IS': ['is'],
+    'RU': ['ru'], 'UA': ['ua'], 'BY': ['by'], 'MD': ['md'],
+    'RS': ['rs'], 'ME': ['me'], 'MK': ['mk'], 'AL': ['al'], 'BA': ['ba'],
+    # Middle East & Asia
+    'TR': ['tr'], 'IL': ['il'], 'AE': ['ae'], 'SA': ['sa'], 'QA': ['qa'],
+    'JP': ['jp'], 'KR': ['kr'], 'CN': ['cn'], 'IN': ['in'],
+    'TH': ['th'], 'VN': ['vn'], 'ID': ['id'], 'MY': ['my'], 'PH': ['ph'],
+    'SG': ['sg'], 'HK': ['hk'], 'TW': ['tw'],
+    # Americas
+    'BR': ['br', 'com.br'], 'MX': ['mx'], 'AR': ['ar'],
+    'CL': ['cl'], 'CO': ['co'], 'PE': ['pe'], 'VE': ['ve'],
+    # Africa
+    'ZA': ['za', 'co.za'], 'EG': ['eg'], 'NG': ['ng'], 'KE': ['ke'],
+    'MA': ['ma'], 'DZ': ['dz'], 'TN': ['tn'],
+}
+
+# Country name to code mapping for normalization (full list)
+COUNTRY_NAME_TO_CODE = {
+    "UNITED STATES": "US", "USA": "US", "UNITED STATES OF AMERICA": "US",
+    "UNITED KINGDOM": "GB", "UK": "GB", "GREAT BRITAIN": "GB", "ENGLAND": "GB",
+    "GERMANY": "DE", "DEUTSCHLAND": "DE",
+    "FRANCE": "FR",
+    "ITALY": "IT", "ITALIA": "IT",
+    "SPAIN": "ES", "ESPANA": "ES",
+    "NETHERLANDS": "NL", "THE NETHERLANDS": "NL", "HOLLAND": "NL",
+    "POLAND": "PL", "POLSKA": "PL",
+    "RUSSIA": "RU", "RUSSIAN FEDERATION": "RU",
+    "UKRAINE": "UA",
+    "CANADA": "CA",
+    "AUSTRALIA": "AU",
+    "JAPAN": "JP",
+    "SOUTH KOREA": "KR", "KOREA": "KR",
+    "CHINA": "CN",
+    "BRAZIL": "BR", "BRASIL": "BR",
+    "MEXICO": "MX",
+    "ARGENTINA": "AR",
+    "INDIA": "IN",
+    "SINGAPORE": "SG",
+    "SWEDEN": "SE",
+    "NORWAY": "NO",
+    "FINLAND": "FI",
+    "DENMARK": "DK",
+    "SWITZERLAND": "CH",
+    "AUSTRIA": "AT",
+    "BELGIUM": "BE",
+    "PORTUGAL": "PT",
+    "CZECH REPUBLIC": "CZ", "CZECHIA": "CZ",
+    "GREECE": "GR",
+    "TURKEY": "TR",
+    "ISRAEL": "IL",
+    "UNITED ARAB EMIRATES": "AE", "UAE": "AE",
+    "SOUTH AFRICA": "ZA",
+    "THAILAND": "TH",
+    "VIETNAM": "VN",
+    "INDONESIA": "ID",
+    "MALAYSIA": "MY",
+    "PHILIPPINES": "PH",
+    "HONG KONG": "HK",
+    "TAIWAN": "TW",
+    "NEW ZEALAND": "NZ",
+    "IRELAND": "IE",
+    "ROMANIA": "RO",
+    "HUNGARY": "HU",
+    "SLOVAKIA": "SK",
+    "BULGARIA": "BG",
+    "CROATIA": "HR",
+    "SERBIA": "RS",
+    "LITHUANIA": "LT",
+    "LATVIA": "LV",
+    "ESTONIA": "EE",
+    "CHILE": "CL",
+    "COLOMBIA": "CO",
+    "PERU": "PE",
+    "SLOVENIA": "SI",
+    "CYPRUS": "CY",
+    "MALTA": "MT",
+    "LUXEMBOURG": "LU",
+    "ICELAND": "IS",
+    "MONACO": "MC",
+    "ANDORRA": "AD",
+    "LIECHTENSTEIN": "LI",
+    "SAN MARINO": "SM",
+    "MONTENEGRO": "ME",
+    "NORTH MACEDONIA": "MK", "MACEDONIA": "MK",
+    "ALBANIA": "AL",
+    "BOSNIA AND HERZEGOVINA": "BA", "BOSNIA": "BA",
+    "KOSOVO": "XK",
+    "MOLDOVA": "MD",
+    "BELARUS": "BY",
+    "GEORGIA": "GE",
+    "ARMENIA": "AM",
+    "AZERBAIJAN": "AZ",
+    "KAZAKHSTAN": "KZ",
+    "UZBEKISTAN": "UZ",
+    "PAKISTAN": "PK",
+    "BANGLADESH": "BD",
+    "SRI LANKA": "LK",
+    "NEPAL": "NP",
+    "CAMBODIA": "KH",
+    "MYANMAR": "MM", "BURMA": "MM",
+    "LAOS": "LA",
+    "MONGOLIA": "MN",
+    "NORTH KOREA": "KP",
+    "SAUDI ARABIA": "SA",
+    "QATAR": "QA",
+    "KUWAIT": "KW",
+    "BAHRAIN": "BH",
+    "OMAN": "OM",
+    "JORDAN": "JO",
+    "LEBANON": "LB",
+    "IRAQ": "IQ",
+    "IRAN": "IR",
+    "EGYPT": "EG",
+    "MOROCCO": "MA",
+    "ALGERIA": "DZ",
+    "TUNISIA": "TN",
+    "LIBYA": "LY",
+    "NIGERIA": "NG",
+    "KENYA": "KE",
+    "GHANA": "GH",
+    "ETHIOPIA": "ET",
+    "TANZANIA": "TZ",
+    "UGANDA": "UG",
+    "VENEZUELA": "VE",
+    "ECUADOR": "EC",
+    "BOLIVIA": "BO",
+    "PARAGUAY": "PY",
+    "URUGUAY": "UY",
+    "COSTA RICA": "CR",
+    "PANAMA": "PA",
+    "GUATEMALA": "GT",
+    "CUBA": "CU",
+    "DOMINICAN REPUBLIC": "DO",
+    "PUERTO RICO": "PR",
+    "JAMAICA": "JM",
+}
+
+def normalize_country_code(country: str) -> str:
+    """Normalize country name to 2-letter code."""
+    if not country:
+        return ""
+    country_upper = country.upper().strip()
+    # Already a 2-letter code
+    if len(country_upper) == 2:
+        return country_upper
+    # Look up in mapping
+    return COUNTRY_NAME_TO_CODE.get(country_upper, country_upper)
+
+def get_site_tld_auto(url: str) -> str:
+    """Extract TLD from URL. Returns both compound TLD (co.uk) and simple TLD (uk) for matching."""
+    try:
+        domain = url.lower().replace('https://', '').replace('http://', '')
+        domain = domain.split('/')[0].split(':')[0]
+        parts = domain.split('.')
+        if len(parts) >= 2:
+            # Only treat as compound TLD if it's a known second-level domain pattern
+            # co.uk, com.au, org.uk, etc. - but NOT gov.uk (gov is just a subdomain)
+            if len(parts) >= 3 and parts[-2] in ('co', 'com', 'org', 'net', 'ac'):
+                return f"{parts[-2]}.{parts[-1]}"
+            return parts[-1]
+        return ''
+    except:
+        return ''
+
+def is_site_local_geo(url: str, country_code: str) -> bool:
+    """Check if site matches the profile's country geo."""
+    if not country_code:
+        return False
+    # Normalize country code (handle full names like "Slovenia" -> "SI")
+    normalized_code = normalize_country_code(country_code)
+    tld = get_site_tld_auto(url)
+    local_tlds = COUNTRY_TO_TLD.get(normalized_code.upper(), [normalized_code.lower()])
+    return tld in local_tlds
+
+def is_site_generic(url: str) -> bool:
+    """Check if site has a generic (non-country) TLD."""
+    tld = get_site_tld_auto(url)
+    return tld in GENERIC_TLDS
+
+def split_sites_by_geo(sites: List[str], country_code: str) -> tuple:
+    """Split sites into local geo and generic lists."""
+    local_sites = []
+    generic_sites = []
+    
+    for site in sites:
+        if is_site_local_geo(site, country_code):
+            local_sites.append(site)
+        elif is_site_generic(site):
+            generic_sites.append(site)
+        else:
+            # Non-matching country TLD goes to generic pool
+            generic_sites.append(site)
+    
+    return local_sites, generic_sites
 
 
 class HumanBehavior:
@@ -150,12 +375,15 @@ class HumanBehavior:
         await asyncio.sleep(random.uniform(min_sec, max_sec))
     
     @staticmethod
-    async def smooth_scroll(page: Page, direction: str = "down"):
+    async def smooth_scroll(page: Page, direction: str = "down", 
+                            iterations_min: int = 3, iterations_max: int = 6,
+                            pixels_min: int = 50, pixels_max: int = 150,
+                            pause_min: float = 0.1, pause_max: float = 0.3):
         try:
-            for _ in range(random.randint(3, 6)):
-                scroll = random.randint(50, 150) * (1 if direction == "down" else -1)
+            for _ in range(random.randint(iterations_min, iterations_max)):
+                scroll = random.randint(pixels_min, pixels_max) * (1 if direction == "down" else -1)
                 await page.evaluate(f"window.scrollBy(0, {scroll})")
-                await asyncio.sleep(random.uniform(0.1, 0.3))
+                await asyncio.sleep(random.uniform(pause_min, pause_max))
         except:
             pass
     
@@ -300,6 +528,9 @@ class BrowserAutomation:
     
     async def disconnect(self):
         try:
+            # Close all extra tabs before disconnecting (keep only one to preserve session)
+            await self._close_all_extra_tabs()
+            
             if self.cdp:
                 await self.cdp.detach()
             if self.browser:
@@ -311,6 +542,37 @@ class BrowserAutomation:
         
         if self._blocked_count > 0:
             self.log(f"Blocked {self._blocked_count} media requests")
+    
+    async def _close_all_extra_tabs(self):
+        """Close all tabs except one to clean up before session end."""
+        try:
+            if not self.context:
+                return
+            
+            pages = self.context.pages
+            if len(pages) <= 1:
+                return
+            
+            self.log(f"🧹 Closing {len(pages) - 1} extra tab(s)...")
+            
+            # Keep the first page, close all others
+            for page in pages[1:]:
+                try:
+                    await page.close()
+                    await asyncio.sleep(0.2)
+                except:
+                    pass
+            
+            # Navigate the remaining page to a clean state (about:blank or google.com)
+            if self.page and not self.page.is_closed():
+                try:
+                    await self.page.goto("about:blank", timeout=5000)
+                except:
+                    pass
+            
+            self.log("✅ Tabs cleaned up")
+        except Exception as e:
+            self.log(f"⚠️ Tab cleanup warning: {e}")
     
     async def close_popups(self):
         if not self.page:
@@ -520,27 +782,182 @@ class BrowserAutomation:
         except:
             pass
     
-    async def run_session(self, sites: List[str], min_time: int = 30, max_time: int = 120,
-                          scroll_enabled: bool = True, click_links: bool = True,
-                          human_behavior: bool = True):
+    async def run_session(self, sites: List[str], settings: dict = None):
+        """Cookie mode session with configurable navigation and site limits."""
         self.is_running = True
         self.should_stop = False
-        random.shuffle(sites)
         
-        self.log(f"Session: {len(sites)} sites")
+        # Parse settings (support both old and new style)
+        if settings is None:
+            settings = {}
+        
+        min_time = settings.get("min_time_on_site", 30)
+        max_time = settings.get("max_time_on_site", 120)
+        scroll_enabled = settings.get("scroll_enabled", True)
+        scroll_percent = settings.get("scroll_percent", 70)
+        scroll_iter_min = settings.get("scroll_iterations_min", 3)
+        scroll_iter_max = settings.get("scroll_iterations_max", 6)
+        scroll_px_min = settings.get("scroll_pixels_min", 50)
+        scroll_px_max = settings.get("scroll_pixels_max", 150)
+        scroll_pause_min = settings.get("scroll_pause_min", 0.1)
+        scroll_pause_max = settings.get("scroll_pause_max", 0.3)
+        scroll_down_percent = settings.get("scroll_down_percent", 66)
+        click_links = settings.get("click_links_enabled", True)
+        click_percent = settings.get("click_percent", 20)
+        max_clicks = settings.get("max_clicks_per_site", 2)
+        human_behavior = settings.get("human_behavior_enabled", True)
+        google_search_percent = settings.get("google_search_percent", 70)
+        sites_per_session_min = settings.get("sites_per_session_min", 1)
+        sites_per_session_max = settings.get("sites_per_session_max", 100)
+        
+        # Geo-based visiting settings
+        geo_enabled = settings.get("geo_visiting_enabled", False)
+        geo_percent = settings.get("geo_visiting_percent", 70)
+        profile_country = settings.get("profile_country", "")
+        
+        # Normalize country code for geo matching
+        if profile_country:
+            profile_country = normalize_country_code(profile_country)
+        
+        # Apply geo-based site selection if enabled
+        if geo_enabled and profile_country:
+            local_sites, generic_sites = split_sites_by_geo(sites, profile_country)
+            
+            if local_sites:
+                # Calculate how many sites of each type
+                total_to_visit = random.randint(sites_per_session_min, min(sites_per_session_max, len(sites)))
+                local_count = max(1, round(total_to_visit * geo_percent / 100))
+                generic_count = total_to_visit - local_count
+                
+                # Ensure we don't exceed available sites
+                local_count = min(local_count, len(local_sites))
+                generic_count = min(generic_count, len(generic_sites))
+                
+                # If not enough generic sites, use more local
+                if generic_count < (total_to_visit - local_count) and len(local_sites) > local_count:
+                    local_count = min(total_to_visit - generic_count, len(local_sites))
+                
+                # Shuffle and select
+                random.shuffle(local_sites)
+                random.shuffle(generic_sites)
+                
+                selected_local = local_sites[:local_count]
+                selected_generic = generic_sites[:generic_count]
+                
+                # Combine and shuffle for natural order
+                sites = selected_local + selected_generic
+                random.shuffle(sites)
+                
+                self.log(f"🌍 Geo mode ({profile_country}): {len(selected_local)} local + {len(selected_generic)} generic = {len(sites)} sites")
+            else:
+                # No local sites - fallback to generic only
+                self.log(f"⚠️ No sites for geo {profile_country}, using generic sites")
+                random.shuffle(generic_sites)
+                sites_to_visit = random.randint(sites_per_session_min, min(sites_per_session_max, len(generic_sites)))
+                sites = generic_sites[:sites_to_visit]
+        else:
+            # No geo filtering - standard behavior
+            random.shuffle(sites)
+            sites_to_visit = random.randint(sites_per_session_min, min(sites_per_session_max, len(sites)))
+            sites = sites[:sites_to_visit]
+            self.log(f"Session: {len(sites)} sites (limit: {sites_per_session_min}-{sites_per_session_max})")
+        
+        # Track geo stats for logging
+        local_visited = 0
+        generic_visited = 0
         
         for i, site in enumerate(sites, 1):
             if self.should_stop:
                 break
             
+            # Track geo stats
+            if geo_enabled and profile_country:
+                if is_site_local_geo(site, profile_country):
+                    local_visited += 1
+                else:
+                    generic_visited += 1
+            
             self.log(f"[{i}/{len(sites)}] {site}")
-            await self.visit_site(site, min_time, max_time, scroll_enabled, click_links, human_behavior)
+            
+            # Decide navigation method based on google_search_percent
+            use_google_search = random.randint(1, 100) <= google_search_percent
+            
+            if use_google_search:
+                self.log(f"   🔍 Navigating via Google Search...")
+                nav_success = await self._navigate_via_google_search(site)
+                if not nav_success:
+                    self.log(f"   ⚠️ Google Search failed, trying direct...")
+                    await self._navigate_direct_in_new_tab(site)
+            else:
+                await self._navigate_direct_in_new_tab(site)
+            
+            # Browse the site
+            await self._browse_site(
+                site, min_time, max_time, scroll_enabled, click_links, human_behavior,
+                scroll_percent, click_percent, max_clicks,
+                scroll_iter_min, scroll_iter_max, scroll_px_min, scroll_px_max,
+                scroll_pause_min, scroll_pause_max, scroll_down_percent
+            )
             
             if i < len(sites):
                 await asyncio.sleep(random.randint(3, 8))
         
         self.is_running = False
-        self.log("Session completed")
+        
+        # Log geo summary
+        if geo_enabled and profile_country:
+            self.log(f"✅ Session completed: {local_visited} {profile_country} sites, {generic_visited} generic sites")
+        else:
+            self.log("✅ Session completed")
+    
+    async def _browse_site(self, site: str, min_time: int, max_time: int, 
+                           scroll_enabled: bool, click_links: bool, human_behavior: bool,
+                           scroll_percent: int = 70, click_percent: int = 20, max_clicks: int = 2,
+                           scroll_iter_min: int = 3, scroll_iter_max: int = 6,
+                           scroll_px_min: int = 50, scroll_px_max: int = 150,
+                           scroll_pause_min: float = 0.1, scroll_pause_max: float = 0.3,
+                           scroll_down_percent: int = 66):
+        """Browse a site with configured behavior."""
+        try:
+            await self.handle_popups()
+            await self.mute_page()
+            
+            time_on_site = random.randint(min_time, max_time)
+            self.log(f"   Browsing for {time_on_site}s...")
+            
+            start = time.time()
+            links_clicked = 0
+            
+            while (time.time() - start) < time_on_site:
+                if self.should_stop:
+                    return
+                
+                if human_behavior:
+                    await HumanBehavior.random_mouse(self.page)
+                
+                # Scroll with configurable probability and parameters
+                if scroll_enabled and random.randint(1, 100) <= scroll_percent:
+                    direction = "down" if random.randint(1, 100) <= scroll_down_percent else "up"
+                    await HumanBehavior.smooth_scroll(
+                        self.page, direction,
+                        scroll_iter_min, scroll_iter_max,
+                        scroll_px_min, scroll_px_max,
+                        scroll_pause_min, scroll_pause_max
+                    )
+                
+                await HumanBehavior.random_delay(2, 5)
+                
+                # Click with configurable probability and max limit
+                if click_links and random.randint(1, 100) <= click_percent and links_clicked < max_clicks:
+                    await self._click_link()
+                    links_clicked += 1
+                    await self.handle_popups()
+                
+                if random.random() < 0.1:
+                    await self.handle_popups()
+                    await self.mute_page()
+        except Exception as e:
+            self.log(f"   ⚠️ Browse error: {e}")
     
     # =========================================================================
     # GOOGLE AUTH MANAGER - Uses new modular architecture
@@ -586,6 +1003,29 @@ class BrowserAutomation:
         min_time = settings.get("min_time_on_site", 60)
         max_time = settings.get("max_time_on_site", 180)
         
+        # Browsing behavior settings
+        scroll_enabled = settings.get("scroll_enabled", True)
+        scroll_percent = settings.get("scroll_percent", 70)
+        click_links_enabled = settings.get("click_links_enabled", True)
+        click_percent = settings.get("click_percent", 20)
+        max_clicks_per_site = settings.get("max_clicks_per_site", 2)
+        
+        # Store for use in browse methods
+        self._scroll_enabled = scroll_enabled
+        self._scroll_percent = scroll_percent
+        self._click_links_enabled = click_links_enabled
+        self._click_percent = click_percent
+        self._max_clicks_per_site = max_clicks_per_site
+        
+        # Scroll parameters
+        self._scroll_iter_min = settings.get("scroll_iterations_min", 3)
+        self._scroll_iter_max = settings.get("scroll_iterations_max", 6)
+        self._scroll_px_min = settings.get("scroll_pixels_min", 50)
+        self._scroll_px_max = settings.get("scroll_pixels_max", 150)
+        self._scroll_pause_min = settings.get("scroll_pause_min", 0.1)
+        self._scroll_pause_max = settings.get("scroll_pause_max", 0.3)
+        self._scroll_down_percent = settings.get("scroll_down_percent", 66)
+        
         # NEW: Gmail settings
         self._gmail_promo_spam_percent = settings.get("gmail_promo_spam_percent", 10)
         self._gmail_click_links = settings.get("gmail_click_links", True)
@@ -604,6 +1044,9 @@ class BrowserAutomation:
         # NEW: YouTube activity percentage (0-100)
         youtube_activity_percent = settings.get("youtube_activity_percent", 100)
         
+        # NEW: YouTube enabled checkbox (include YouTube in session)
+        youtube_enabled_setting = settings.get("youtube_enabled", True)
+        
         # NEW: YouTube settings (store in instance for perform_youtube_activity)
         self._youtube_videos_min = settings.get("youtube_videos_min", 1)
         self._youtube_videos_max = settings.get("youtube_videos_max", 3)
@@ -611,6 +1054,13 @@ class BrowserAutomation:
         self._youtube_watch_max = settings.get("youtube_watch_max", 60)
         self._youtube_like_percent = settings.get("youtube_like_percent", 25)
         self._youtube_watchlater_percent = settings.get("youtube_watchlater_percent", 20)
+        
+        # NEW: YouTube search queries from settings (comma-separated string)
+        youtube_queries_str = settings.get("youtube_queries", "")
+        if youtube_queries_str:
+            self._youtube_queries = [q.strip() for q in youtube_queries_str.split(",") if q.strip()]
+        else:
+            self._youtube_queries = YOUTUBE_SEARCH_WORDS  # Fallback to default
         
         # NEW: Get separate site lists from settings (for different handling)
         browse_sites = settings.get("browse_sites", [])  # No auth needed
@@ -646,22 +1096,32 @@ class BrowserAutomation:
         all_sites.extend(enabled_services)  # Add enabled Google services
         
         # === YOUTUBE ACTIVITY SETUP ===
-        # Check if YouTube is in the site list (remove it from regular processing)
+        # YouTube can be enabled via:
+        # 1. Checkbox "Include YouTube in session" (youtube_enabled_setting)
+        # 2. Manually adding youtube.com to site list
+        # Remove youtube.com from regular site processing (will be handled separately)
         self._youtube_activity_done = False
         youtube_enabled = False
         sites_filtered = []
+        youtube_in_sites = False
         
         for site in all_sites:
             site_lower = site.lower()
             if 'youtube.com' in site_lower or 'youtu.be' in site_lower:
-                # Check if YouTube activity should be enabled based on percentage
-                if random.randint(1, 100) <= youtube_activity_percent:
-                    youtube_enabled = True
-                    self.log(f"📺 YouTube activity enabled ({youtube_activity_percent}% chance)")
-                else:
-                    self.log(f"📺 YouTube skipped this session ({youtube_activity_percent}% chance)")
+                youtube_in_sites = True
+                # Don't add to filtered sites - YouTube handled separately
             else:
                 sites_filtered.append(site)
+        
+        # Enable YouTube if checkbox is ON or youtube.com was in the site list
+        if youtube_enabled_setting or youtube_in_sites:
+            # Check if YouTube activity should be enabled based on percentage
+            if random.randint(1, 100) <= youtube_activity_percent:
+                youtube_enabled = True
+                source = "checkbox" if youtube_enabled_setting else "site list"
+                self.log(f"📺 YouTube activity enabled via {source} ({youtube_activity_percent}% chance)")
+            else:
+                self.log(f"📺 YouTube skipped this session ({youtube_activity_percent}% chance)")
         
         # Determine when to run YouTube activity
         # If YouTube is the ONLY site - run before Gmail
@@ -694,7 +1154,52 @@ class BrowserAutomation:
         
         # Shuffle sites for randomness
         sites_queue = sites_filtered.copy()
-        random.shuffle(sites_queue)
+        
+        # === GEO-BASED SITE SELECTION ===
+        geo_enabled = settings.get("geo_visiting_enabled", False)
+        geo_percent = settings.get("geo_visiting_percent", 70)
+        profile_country = settings.get("profile_country", "")
+        
+        # Normalize country code
+        if profile_country:
+            profile_country = normalize_country_code(profile_country)
+        
+        # Apply geo-based site selection if enabled
+        if geo_enabled and profile_country and sites_queue:
+            local_sites, generic_sites = split_sites_by_geo(sites_queue, profile_country)
+            
+            if local_sites:
+                # Calculate counts based on geo_percent
+                total_to_visit = min(
+                    random.randint(sites_per_session_min, sites_per_session_max),
+                    len(sites_queue)
+                )
+                local_count = max(1, round(total_to_visit * geo_percent / 100))
+                generic_count = total_to_visit - local_count
+                
+                # Ensure we don't exceed available sites
+                local_count = min(local_count, len(local_sites))
+                generic_count = min(generic_count, len(generic_sites))
+                
+                # If not enough generic, use more local
+                if generic_count < (total_to_visit - local_count) and len(local_sites) > local_count:
+                    local_count = min(total_to_visit - generic_count, len(local_sites))
+                
+                # Shuffle and select
+                random.shuffle(local_sites)
+                random.shuffle(generic_sites)
+                
+                sites_queue = local_sites[:local_count] + generic_sites[:generic_count]
+                random.shuffle(sites_queue)
+                
+                self.log(f"🌍 Geo mode ({profile_country}): {local_count} local + {generic_count} generic = {len(sites_queue)} sites")
+            else:
+                # No local sites - fallback to generic
+                self.log(f"⚠️ No sites for geo {profile_country}, using generic sites")
+                random.shuffle(generic_sites)
+                sites_queue = generic_sites
+        else:
+            random.shuffle(sites_queue)
         
         # NEW: Limit sites per session
         if sites_per_session_max < len(sites_queue):
@@ -724,10 +1229,21 @@ class BrowserAutomation:
         plan_parts.append("Gmail checks")
         self.log(f"📋 Plan: {' + '.join(plan_parts)}")
         
+        # Track geo stats for final log
+        local_visited = 0
+        generic_visited = 0
+        
         while sites_queue and not self.should_stop:
             # === PROCESS SITE ===
             site = sites_queue.pop(0)
             sites_processed += 1
+            
+            # Track geo stats
+            if geo_enabled and profile_country:
+                if is_site_local_geo(site, profile_country):
+                    local_visited += 1
+                else:
+                    generic_visited += 1
             
             self.log(f"\n[{sites_processed}/{total_sites_count}] {site}")
             
@@ -780,7 +1296,15 @@ class BrowserAutomation:
             
             # Step 2: Browse the site
             await HumanBehavior.random_delay(1, 2)
-            await self._browse_site_after_auth(site, min_time, max_time)
+            await self._browse_site_after_auth(
+                site, min_time, max_time,
+                self._scroll_enabled, self._scroll_percent,
+                self._click_links_enabled, self._click_percent, self._max_clicks_per_site,
+                self._scroll_iter_min, self._scroll_iter_max,
+                self._scroll_px_min, self._scroll_px_max,
+                self._scroll_pause_min, self._scroll_pause_max,
+                self._scroll_down_percent
+            )
             
             # Step 3: Close site tab and return to search tab (if using Google search)
             await self._close_site_tab_and_return_to_search()
@@ -847,9 +1371,20 @@ class BrowserAutomation:
             await self.perform_gmail_activity(gmail_read_percent, gmail_read_time_min, gmail_read_time_max)
         
         self.is_running = False
-        self.log("\n✅ Google Warm-up complete!")
+        
+        # Final log with geo stats if enabled
+        if geo_enabled and profile_country:
+            self.log(f"\n✅ Google Warm-up complete! ({local_visited} {profile_country} sites, {generic_visited} generic)")
+        else:
+            self.log("\n✅ Google Warm-up complete!")
     
-    async def _browse_site_after_auth(self, url: str, min_time: int, max_time: int):
+    async def _browse_site_after_auth(self, url: str, min_time: int, max_time: int,
+                                       scroll_enabled: bool = True, scroll_percent: int = 70,
+                                       click_links: bool = True, click_percent: int = 20, max_clicks: int = 2,
+                                       scroll_iter_min: int = 3, scroll_iter_max: int = 6,
+                                       scroll_px_min: int = 50, scroll_px_max: int = 150,
+                                       scroll_pause_min: float = 0.1, scroll_pause_max: float = 0.3,
+                                       scroll_down_percent: int = 66):
         """Browse a site after authentication - scroll, click, behave humanly."""
         try:
             # Make sure we're on the site
@@ -869,13 +1404,23 @@ class BrowserAutomation:
                 if self.should_stop:
                     return
                 
-                # Human behavior
+                # Human behavior - mouse movement
                 await HumanBehavior.random_mouse(self.page)
-                await HumanBehavior.smooth_scroll(self.page, random.choice(["down", "down", "up"]))
+                
+                # Scroll with configurable probability and parameters
+                if scroll_enabled and random.randint(1, 100) <= scroll_percent:
+                    direction = "down" if random.randint(1, 100) <= scroll_down_percent else "up"
+                    await HumanBehavior.smooth_scroll(
+                        self.page, direction,
+                        scroll_iter_min, scroll_iter_max,
+                        scroll_px_min, scroll_px_max,
+                        scroll_pause_min, scroll_pause_max
+                    )
+                
                 await HumanBehavior.random_delay(2, 5)
                 
-                # Occasionally click internal links
-                if random.random() < 0.15 and links_clicked < 2:
+                # Click with configurable probability and max limit
+                if click_links and random.randint(1, 100) <= click_percent and links_clicked < max_clicks:
                     await self._click_link()
                     links_clicked += 1
                     await self.handle_popups()
@@ -930,8 +1475,8 @@ class BrowserAutomation:
             
             await asyncio.sleep(random.uniform(2, 3))
             
-            # Step 2: Search for random keyword
-            search_word = random.choice(YOUTUBE_SEARCH_WORDS)
+            # Step 2: Search for random keyword from custom queries
+            search_word = random.choice(self._youtube_queries)
             search_success = await self._youtube_search(search_word)
             if not search_success:
                 self.log("   ⚠️ YouTube search failed")

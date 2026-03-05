@@ -9,7 +9,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
-    QSpinBox, QCheckBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
+    QSpinBox, QDoubleSpinBox, QCheckBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
     QStackedWidget, QFrame, QScrollArea, QSplitter, QApplication, QComboBox,
     QSizePolicy
 )
@@ -185,6 +185,113 @@ def normalize_country(country_raw: str) -> str:
     return COUNTRY_NAME_TO_CODE.get(country_upper, "")
 
 
+# === GEO DOMAIN CONSTANTS ===
+# EU member states TLDs (27 countries)
+EU_TLDS = {
+    'at', 'be', 'bg', 'hr', 'cy', 'cz', 'dk', 'ee', 'fi', 'fr',
+    'de', 'gr', 'hu', 'ie', 'it', 'lv', 'lt', 'lu', 'mt', 'nl',
+    'pl', 'pt', 'ro', 'sk', 'si', 'es', 'se'
+}
+
+# Generic TLDs (not country-specific)
+GENERIC_TLDS = {
+    'com', 'org', 'net', 'io', 'xyz', 'info', 'biz', 'co', 'app',
+    'dev', 'ai', 'tech', 'online', 'site', 'website', 'blog', 'shop',
+    'store', 'cloud', 'digital', 'media', 'news', 'tv', 'fm', 'me'
+}
+
+# Country code to TLD mapping (most use lowercase country code)
+COUNTRY_TO_TLD = {
+    'US': ['us', 'com'],  # US includes .com as local
+    'GB': ['uk', 'co.uk'],
+    'CA': ['ca'],
+    'AU': ['au', 'com.au'],
+    'DE': ['de'],
+    'FR': ['fr'],
+    'IT': ['it'],
+    'ES': ['es'],
+    'NL': ['nl'],
+    'PL': ['pl'],
+    'PT': ['pt'],
+    'AT': ['at'],
+    'BE': ['be'],
+    'SE': ['se'],
+    'NO': ['no'],
+    'FI': ['fi'],
+    'DK': ['dk'],
+    'CH': ['ch'],
+    'CZ': ['cz'],
+    'GR': ['gr'],
+    'RO': ['ro'],
+    'HU': ['hu'],
+    'SK': ['sk'],
+    'BG': ['bg'],
+    'HR': ['hr'],
+    'SI': ['si'],
+    'LT': ['lt'],
+    'LV': ['lv'],
+    'EE': ['ee'],
+    'IE': ['ie'],
+    'CY': ['cy'],
+    'MT': ['mt'],
+    'LU': ['lu'],
+    'RU': ['ru'],
+    'UA': ['ua'],
+    'TR': ['tr'],
+    'JP': ['jp'],
+    'KR': ['kr'],
+    'CN': ['cn'],
+    'IN': ['in'],
+    'BR': ['br'],
+    'MX': ['mx'],
+    'AR': ['ar'],
+}
+
+def get_site_tld(url: str) -> str:
+    """Extract TLD from URL (e.g., 'example.com' -> 'com', 'site.co.uk' -> 'co.uk')."""
+    try:
+        # Remove protocol
+        domain = url.lower().replace('https://', '').replace('http://', '')
+        # Remove path
+        domain = domain.split('/')[0]
+        # Remove port
+        domain = domain.split(':')[0]
+        # Get TLD
+        parts = domain.split('.')
+        if len(parts) >= 2:
+            # Check for compound TLDs like co.uk, com.au
+            if len(parts) >= 3 and parts[-2] in ('co', 'com', 'org', 'net', 'gov', 'ac'):
+                return f"{parts[-2]}.{parts[-1]}"
+            return parts[-1]
+        return ''
+    except:
+        return ''
+
+def get_site_geo_category(url: str) -> str:
+    """Categorize site by geo: 'us', 'uk', 'ca', 'eu', 'generic', or specific country code."""
+    tld = get_site_tld(url)
+    if not tld:
+        return 'generic'
+    
+    # US
+    if tld in ('us', 'com'):
+        return 'us'
+    # UK
+    if tld in ('uk', 'co.uk'):
+        return 'uk'
+    # CA
+    if tld == 'ca':
+        return 'ca'
+    # EU
+    if tld in EU_TLDS:
+        return 'eu'
+    # Generic
+    if tld in GENERIC_TLDS:
+        return 'generic'
+    # Specific country TLD
+    return tld
+
+
 class ProfileItemWidget(QWidget):
     """Custom widget for profile list item with flag and copy button"""
     copy_clicked = pyqtSignal(str)  # Emits UUID when copy clicked
@@ -194,10 +301,15 @@ class ProfileItemWidget(QWidget):
     ads_changed = pyqtSignal(str, bool)  # Google Ads registration state
     payment_changed = pyqtSignal(str, bool)  # Payment method state
     campaign_changed = pyqtSignal(str, bool)  # Ad campaign state
+    ready_changed = pyqtSignal(str, bool)  # Profile ready state
     
     def __init__(self, uuid: str, country: str = "", first_run: str = "", mode: str = "cookie", 
                  google_authorized: bool = False, ads_registered: bool = False,
-                 payment_linked: bool = False, campaign_launched: bool = False, parent=None):
+                 payment_linked: bool = False, campaign_launched: bool = False,
+                 profile_ready: bool = False,
+                 ads_timestamp: str = "", payment_timestamp: str = "", 
+                 campaign_timestamp: str = "", ready_timestamp: str = "",
+                 parent=None):
         super().__init__(parent)
         self.uuid = uuid
         self.mode = mode
@@ -205,6 +317,12 @@ class ProfileItemWidget(QWidget):
         self.ads_registered = ads_registered
         self.payment_linked = payment_linked
         self.campaign_launched = campaign_launched
+        self.profile_ready = profile_ready
+        # Timestamps for activation time tracking
+        self.ads_timestamp = ads_timestamp
+        self.payment_timestamp = payment_timestamp
+        self.campaign_timestamp = campaign_timestamp
+        self.ready_timestamp = ready_timestamp
         # Normalize country name to ISO code
         self.country_code = normalize_country(country)
         self.first_run = first_run  # ISO date string
@@ -263,13 +381,12 @@ class ProfileItemWidget(QWidget):
             self.google_btn.clicked.connect(self._on_google_click)
             layout.addWidget(self.google_btn)
         
-        # Google mode buttons: Ads, Payment, Campaign
+        # Google mode buttons: Ads, Payment, Campaign, Ready
         if mode == "google":
             # Google Ads registration button
             self.ads_btn = QPushButton("Ads")
             self.ads_btn.setMinimumWidth(40)
             self.ads_btn.setMaximumWidth(50)
-            self.ads_btn.setToolTip(tr("Google Ads registration status"))
             self._update_ads_btn_style()
             self.ads_btn.clicked.connect(self._on_ads_click)
             layout.addWidget(self.ads_btn)
@@ -278,19 +395,25 @@ class ProfileItemWidget(QWidget):
             self.payment_btn = QPushButton("💳")
             self.payment_btn.setMinimumWidth(36)
             self.payment_btn.setMaximumWidth(44)
-            self.payment_btn.setToolTip(tr("Payment method status"))
             self._update_payment_btn_style()
             self.payment_btn.clicked.connect(self._on_payment_click)
             layout.addWidget(self.payment_btn)
             
-            # Ad campaign button
-            self.campaign_btn = QPushButton("Ad")
+            # Ad campaign button (РК = Рекламная Кампания in Russian)
+            self.campaign_btn = QPushButton(tr("Ad"))
             self.campaign_btn.setMinimumWidth(36)
             self.campaign_btn.setMaximumWidth(44)
-            self.campaign_btn.setToolTip(tr("Ad campaign status"))
             self._update_campaign_btn_style()
             self.campaign_btn.clicked.connect(self._on_campaign_click)
             layout.addWidget(self.campaign_btn)
+            
+            # Profile ready button (profile warmed up and ready)
+            self.ready_btn = QPushButton("✓")
+            self.ready_btn.setMinimumWidth(36)
+            self.ready_btn.setMaximumWidth(44)
+            self._update_ready_btn_style()
+            self.ready_btn.clicked.connect(self._on_ready_click)
+            layout.addWidget(self.ready_btn)
         
         # Migration button (only for cookie mode) - arrow pointing right
         if mode == "cookie":
@@ -397,6 +520,29 @@ class ProfileItemWidget(QWidget):
                 )
     
     # === Google Mode Buttons ===
+    def _format_time_ago(self, timestamp_str: str) -> str:
+        """Format timestamp as 'Xд Yч назад' string."""
+        if not timestamp_str:
+            return ""
+        try:
+            ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+            now = datetime.now(ts.tzinfo) if ts.tzinfo else datetime.now()
+            diff = now - ts
+            
+            total_hours = int(diff.total_seconds() / 3600)
+            days = total_hours // 24
+            hours = total_hours % 24
+            
+            if days > 0:
+                return f" {days}д {hours}ч назад"
+            elif hours > 0:
+                return f" {hours}ч назад"
+            else:
+                minutes = int(diff.total_seconds() / 60)
+                return f" {minutes}м назад" if minutes > 0 else " только что"
+        except:
+            return ""
+    
     def _update_ads_btn_style(self):
         """Update Google Ads button style based on registration state."""
         if self.ads_registered:
@@ -411,7 +557,8 @@ class ProfileItemWidget(QWidget):
                 }
                 QPushButton:hover { background: rgba(251, 188, 4, 0.1); }
             """)
-            self.ads_btn.setToolTip(tr("Google Ads registered") + " ✓")
+            time_ago = self._format_time_ago(self.ads_timestamp)
+            self.ads_btn.setToolTip(tr("Google Ads registered") + f" ✓{time_ago}")
         else:
             self.ads_btn.setStyleSheet("""
                 QPushButton {
@@ -439,7 +586,8 @@ class ProfileItemWidget(QWidget):
                 }
                 QPushButton:hover { background: rgba(52, 168, 83, 0.1); }
             """)
-            self.payment_btn.setToolTip(tr("Payment method linked") + " ✓")
+            time_ago = self._format_time_ago(self.payment_timestamp)
+            self.payment_btn.setToolTip(tr("Payment method linked") + f" ✓{time_ago}")
         else:
             self.payment_btn.setStyleSheet("""
                 QPushButton {
@@ -467,7 +615,8 @@ class ProfileItemWidget(QWidget):
                 }
                 QPushButton:hover { background: rgba(234, 67, 53, 0.1); }
             """)
-            self.campaign_btn.setToolTip(tr("Ad campaign launched") + " ✓")
+            time_ago = self._format_time_ago(self.campaign_timestamp)
+            self.campaign_btn.setToolTip(tr("Ad campaign launched") + f" ✓{time_ago}")
         else:
             self.campaign_btn.setStyleSheet("""
                 QPushButton {
@@ -481,6 +630,36 @@ class ProfileItemWidget(QWidget):
                 QPushButton:hover { background: rgba(100, 100, 100, 0.1); }
             """)
             self.campaign_btn.setToolTip(tr("Ad campaign not launched"))
+    
+    def _update_ready_btn_style(self):
+        """Update ready button style based on profile ready state."""
+        if self.profile_ready:
+            self.ready_btn.setStyleSheet("""
+                QPushButton {
+                    font-weight: bold;
+                    font-size: 14px;
+                    color: #00c853;
+                    border: 2px solid #00c853;
+                    border-radius: 4px;
+                    background: transparent;
+                }
+                QPushButton:hover { background: rgba(0, 200, 83, 0.1); }
+            """)
+            time_ago = self._format_time_ago(self.ready_timestamp)
+            self.ready_btn.setToolTip(tr("Profile warmed up and ready") + f" ✓{time_ago}")
+        else:
+            self.ready_btn.setStyleSheet("""
+                QPushButton {
+                    font-weight: bold;
+                    font-size: 14px;
+                    color: #666;
+                    border: 2px solid #444;
+                    border-radius: 4px;
+                    background: transparent;
+                }
+                QPushButton:hover { background: rgba(100, 100, 100, 0.1); }
+            """)
+            self.ready_btn.setToolTip(tr("Profile not ready"))
     
     def _on_ads_click(self):
         """Handle Google Ads button click - activate or deactivate."""
@@ -593,6 +772,37 @@ class ProfileItemWidget(QWidget):
                     tr("Please launch an ad campaign in Google Ads first!") + f"\n\n{profile_info}"
                 )
     
+    def _on_ready_click(self):
+        """Handle ready button click - activate or deactivate."""
+        profile_info = self._get_profile_info_text()
+        
+        if self.profile_ready:
+            # Already active - ask to deactivate
+            reply = QMessageBox.question(
+                self,
+                tr("Deactivate Ready Status"),
+                tr("Deactivate 'ready' status for this profile?") + f"\n\n{profile_info}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.profile_ready = False
+                self._update_ready_btn_style()
+                self.ready_changed.emit(self.uuid, False)
+        else:
+            # Not active - ask to activate
+            reply = QMessageBox.question(
+                self,
+                tr("Profile Ready"),
+                tr("Is the profile warmed up and ready for work?") + f"\n\n{profile_info}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.profile_ready = True
+                self._update_ready_btn_style()
+                self.ready_changed.emit(self.uuid, True)
+    
     def _get_age_days(self) -> int:
         """Get profile age in days."""
         if not self.first_run:
@@ -702,11 +912,7 @@ class WorkerThread(QThread):
                         if self.mode == "cookie":
                             await self.automation.run_session(
                                 sites=self.sites.copy(),
-                                min_time=self.settings.get("min_time_on_site", 30),
-                                max_time=self.settings.get("max_time_on_site", 120),
-                                scroll_enabled=self.settings.get("scroll_enabled", True),
-                                click_links=self.settings.get("click_links_enabled", True),
-                                human_behavior=self.settings.get("human_behavior_enabled", True)
+                                settings=self.settings
                             )
                         elif self.mode == "google":
                             await self.automation.run_google_warmup(
@@ -926,6 +1132,16 @@ class MainWindow(QMainWindow):
         self.cookie_search_input.setPlaceholderText(tr("Search by UUID..."))
         self.cookie_search_input.textChanged.connect(lambda text: self.filter_profiles("cookie", text))
         search_layout.addWidget(self.cookie_search_input)
+        
+        # Sort by status dropdown
+        self.cookie_sort_combo = QComboBox()
+        self.cookie_sort_combo.addItem(tr("All"), "all")
+        self.cookie_sort_combo.addItem(tr("Google Auth") + " ✓", "google_auth")
+        self.cookie_sort_combo.addItem(tr("Google Auth") + " ✗", "no_google_auth")
+        self.cookie_sort_combo.setMinimumWidth(120)
+        self.cookie_sort_combo.currentIndexChanged.connect(lambda: self.filter_profiles_by_status("cookie"))
+        search_layout.addWidget(self.cookie_sort_combo)
+        
         layout.addLayout(search_layout)
         
         # Add profile
@@ -975,7 +1191,27 @@ class MainWindow(QMainWindow):
         add_btn.setMinimumWidth(60)
         add_btn.clicked.connect(lambda: self.add_site("cookie"))
         add_layout.addWidget(add_btn)
+        
+        bulk_add_btn = QPushButton(tr("Bulk Add"))
+        bulk_add_btn.setMinimumWidth(80)
+        bulk_add_btn.clicked.connect(lambda: self._show_bulk_add_dialog("cookie"))
+        add_layout.addWidget(bulk_add_btn)
+        
         layout.addLayout(add_layout)
+        
+        # Geo filter row
+        geo_filter_layout = QHBoxLayout()
+        geo_filter_layout.addWidget(QLabel("🌍"))
+        self.cookie_geo_filter = QComboBox()
+        self.cookie_geo_filter.setEditable(True)
+        self.cookie_geo_filter.setInsertPolicy(QComboBox.NoInsert)
+        self._populate_geo_filter(self.cookie_geo_filter)
+        self.cookie_geo_filter.setMinimumWidth(180)
+        self.cookie_geo_filter.currentIndexChanged.connect(lambda: self._filter_sites_by_geo("cookie"))
+        self.cookie_geo_filter.lineEdit().textChanged.connect(lambda t: self._filter_sites_by_geo_text("cookie", t))
+        geo_filter_layout.addWidget(self.cookie_geo_filter)
+        geo_filter_layout.addStretch()
+        layout.addLayout(geo_filter_layout)
         
         # List
         self.cookie_sites_list = QListWidget()
@@ -989,7 +1225,8 @@ class MainWindow(QMainWindow):
         
         for text, func in [(tr("Remove"), lambda: self.remove_site("cookie")),
                            (tr("Clear"), lambda: self.clear_sites("cookie")),
-                           (tr("Import"), lambda: self.import_sites("cookie"))]:
+                           (tr("Import"), lambda: self.import_sites("cookie")),
+                           (tr("Edit"), lambda: self._show_sites_editor("cookie"))]:
             btn = QPushButton(text)
             btn.clicked.connect(func)
             bottom.addWidget(btn)
@@ -999,39 +1236,178 @@ class MainWindow(QMainWindow):
         return widget
     
     def create_cookie_settings_tab(self):
-        widget = QWidget()
-        layout = QFormLayout(widget)
-        layout.setSpacing(15)
+        # Create scroll area for settings
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        content = QWidget()
+        layout = QFormLayout(content)
+        layout.setSpacing(12)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Style for consistent input heights and widths
+        input_style = "min-height: 28px; min-width: 90px;"
         
         self.cookie_min_time = QSpinBox()
         self.cookie_min_time.setRange(10, 600)
         self.cookie_min_time.setValue(self.get_mode_config("cookie").get("settings", {}).get("min_time_on_site", 30))
         self.cookie_min_time.setSuffix(" sec")
+        self.cookie_min_time.setStyleSheet(input_style)
         layout.addRow(tr("Min time on site:"), self.cookie_min_time)
         
         self.cookie_max_time = QSpinBox()
         self.cookie_max_time.setRange(30, 1800)
         self.cookie_max_time.setValue(self.get_mode_config("cookie").get("settings", {}).get("max_time_on_site", 120))
         self.cookie_max_time.setSuffix(" sec")
+        self.cookie_max_time.setStyleSheet(input_style)
         layout.addRow(tr("Max time on site:"), self.cookie_max_time)
+        
+        # Google Search navigation percentage
+        self.cookie_search_percent = QSpinBox()
+        self.cookie_search_percent.setRange(0, 100)
+        self.cookie_search_percent.setValue(self.get_mode_config("cookie").get("settings", {}).get("google_search_percent", 70))
+        self.cookie_search_percent.setSuffix(" %")
+        self.cookie_search_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Google Search navigation:"), self.cookie_search_percent)
+        
+        # Sites per session (min-max)
+        cookie_sites_layout = QHBoxLayout()
+        self.cookie_sites_min = QSpinBox()
+        self.cookie_sites_min.setRange(1, 100)
+        self.cookie_sites_min.setValue(self.get_mode_config("cookie").get("settings", {}).get("sites_per_session_min", 1))
+        self.cookie_sites_min.setStyleSheet(input_style)
+        cookie_sites_layout.addWidget(self.cookie_sites_min)
+        cookie_sites_layout.addWidget(QLabel("-"))
+        self.cookie_sites_max = QSpinBox()
+        self.cookie_sites_max.setRange(1, 100)
+        self.cookie_sites_max.setValue(self.get_mode_config("cookie").get("settings", {}).get("sites_per_session_max", 100))
+        self.cookie_sites_max.setStyleSheet(input_style)
+        cookie_sites_layout.addWidget(self.cookie_sites_max)
+        cookie_sites_layout.addStretch()
+        layout.addRow(tr("Sites per session:"), cookie_sites_layout)
+        
+        # Separator
+        sep1 = QFrame()
+        sep1.setFrameShape(QFrame.HLine)
+        sep1.setStyleSheet("background-color: #444;")
+        layout.addRow(sep1)
         
         self.cookie_scroll = QCheckBox(tr("Enable scrolling"))
         self.cookie_scroll.setChecked(self.get_mode_config("cookie").get("settings", {}).get("scroll_enabled", True))
         layout.addRow(self.cookie_scroll)
         
+        # Scroll settings
+        self.cookie_scroll_percent = QSpinBox()
+        self.cookie_scroll_percent.setRange(0, 100)
+        self.cookie_scroll_percent.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_percent", 70))
+        self.cookie_scroll_percent.setSuffix(" %")
+        self.cookie_scroll_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Scroll probability:"), self.cookie_scroll_percent)
+        
+        # Scroll iterations (min-max)
+        cookie_scroll_iter_layout = QHBoxLayout()
+        self.cookie_scroll_iter_min = QSpinBox()
+        self.cookie_scroll_iter_min.setRange(1, 20)
+        self.cookie_scroll_iter_min.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_iterations_min", 3))
+        self.cookie_scroll_iter_min.setStyleSheet(input_style)
+        cookie_scroll_iter_layout.addWidget(self.cookie_scroll_iter_min)
+        cookie_scroll_iter_layout.addWidget(QLabel("-"))
+        self.cookie_scroll_iter_max = QSpinBox()
+        self.cookie_scroll_iter_max.setRange(1, 20)
+        self.cookie_scroll_iter_max.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_iterations_max", 6))
+        self.cookie_scroll_iter_max.setStyleSheet(input_style)
+        cookie_scroll_iter_layout.addWidget(self.cookie_scroll_iter_max)
+        cookie_scroll_iter_layout.addStretch()
+        layout.addRow(tr("Scroll iterations:"), cookie_scroll_iter_layout)
+        
+        # Scroll pixels (min-max)
+        cookie_scroll_px_layout = QHBoxLayout()
+        self.cookie_scroll_px_min = QSpinBox()
+        self.cookie_scroll_px_min.setRange(10, 500)
+        self.cookie_scroll_px_min.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_pixels_min", 50))
+        self.cookie_scroll_px_min.setSuffix(" px")
+        self.cookie_scroll_px_min.setStyleSheet(input_style)
+        cookie_scroll_px_layout.addWidget(self.cookie_scroll_px_min)
+        cookie_scroll_px_layout.addWidget(QLabel("-"))
+        self.cookie_scroll_px_max = QSpinBox()
+        self.cookie_scroll_px_max.setRange(10, 500)
+        self.cookie_scroll_px_max.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_pixels_max", 150))
+        self.cookie_scroll_px_max.setSuffix(" px")
+        self.cookie_scroll_px_max.setStyleSheet(input_style)
+        cookie_scroll_px_layout.addWidget(self.cookie_scroll_px_max)
+        cookie_scroll_px_layout.addStretch()
+        layout.addRow(tr("Scroll pixels:"), cookie_scroll_px_layout)
+        
+        # Scroll pause (min-max) in seconds
+        cookie_scroll_pause_layout = QHBoxLayout()
+        self.cookie_scroll_pause_min = QDoubleSpinBox()
+        self.cookie_scroll_pause_min.setRange(0.05, 2.0)
+        self.cookie_scroll_pause_min.setSingleStep(0.05)
+        self.cookie_scroll_pause_min.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_pause_min", 0.1))
+        self.cookie_scroll_pause_min.setSuffix(" s")
+        self.cookie_scroll_pause_min.setStyleSheet(input_style)
+        cookie_scroll_pause_layout.addWidget(self.cookie_scroll_pause_min)
+        cookie_scroll_pause_layout.addWidget(QLabel("-"))
+        self.cookie_scroll_pause_max = QDoubleSpinBox()
+        self.cookie_scroll_pause_max.setRange(0.05, 2.0)
+        self.cookie_scroll_pause_max.setSingleStep(0.05)
+        self.cookie_scroll_pause_max.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_pause_max", 0.3))
+        self.cookie_scroll_pause_max.setSuffix(" s")
+        self.cookie_scroll_pause_max.setStyleSheet(input_style)
+        cookie_scroll_pause_layout.addWidget(self.cookie_scroll_pause_max)
+        cookie_scroll_pause_layout.addStretch()
+        layout.addRow(tr("Scroll pause:"), cookie_scroll_pause_layout)
+        
+        # Scroll direction (down %)
+        self.cookie_scroll_down_percent = QSpinBox()
+        self.cookie_scroll_down_percent.setRange(0, 100)
+        self.cookie_scroll_down_percent.setValue(self.get_mode_config("cookie").get("settings", {}).get("scroll_down_percent", 66))
+        self.cookie_scroll_down_percent.setSuffix(" %")
+        self.cookie_scroll_down_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Scroll down chance:"), self.cookie_scroll_down_percent)
+        
+        # Separator
+        sep2 = QFrame()
+        sep2.setFrameShape(QFrame.HLine)
+        sep2.setStyleSheet("background-color: #444;")
+        layout.addRow(sep2)
+        
         self.cookie_click = QCheckBox(tr("Click random links"))
         self.cookie_click.setChecked(self.get_mode_config("cookie").get("settings", {}).get("click_links_enabled", True))
         layout.addRow(self.cookie_click)
+        
+        # Click settings
+        self.cookie_click_percent = QSpinBox()
+        self.cookie_click_percent.setRange(0, 100)
+        self.cookie_click_percent.setValue(self.get_mode_config("cookie").get("settings", {}).get("click_percent", 20))
+        self.cookie_click_percent.setSuffix(" %")
+        self.cookie_click_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Click probability:"), self.cookie_click_percent)
+        
+        self.cookie_max_clicks = QSpinBox()
+        self.cookie_max_clicks.setRange(0, 10)
+        self.cookie_max_clicks.setValue(self.get_mode_config("cookie").get("settings", {}).get("max_clicks_per_site", 2))
+        self.cookie_max_clicks.setStyleSheet(input_style)
+        layout.addRow(tr("Max clicks per site:"), self.cookie_max_clicks)
+        
+        # Separator
+        sep3 = QFrame()
+        sep3.setFrameShape(QFrame.HLine)
+        sep3.setStyleSheet("background-color: #444;")
+        layout.addRow(sep3)
         
         self.cookie_human = QCheckBox(tr("Human behavior simulation"))
         self.cookie_human.setChecked(self.get_mode_config("cookie").get("settings", {}).get("human_behavior_enabled", True))
         layout.addRow(self.cookie_human)
         
         save_btn = QPushButton(tr("Save Settings"))
+        save_btn.setStyleSheet("min-height: 35px; font-weight: bold;")
         save_btn.clicked.connect(lambda: self.save_mode_settings("cookie"))
         layout.addRow(save_btn)
         
-        return widget
+        scroll.setWidget(content)
+        return scroll
     
     def create_google_mode(self):
         """Google Mode with tabs: Profiles | Sites | Settings"""
@@ -1063,6 +1439,22 @@ class MainWindow(QMainWindow):
         self.google_search_input.setPlaceholderText(tr("Search by UUID..."))
         self.google_search_input.textChanged.connect(lambda text: self.filter_profiles("google", text))
         search_layout.addWidget(self.google_search_input)
+        
+        # Sort by status dropdown for Google mode
+        self.google_sort_combo = QComboBox()
+        self.google_sort_combo.addItem(tr("All"), "all")
+        self.google_sort_combo.addItem("Ads ✓", "ads")
+        self.google_sort_combo.addItem("Ads ✗", "no_ads")
+        self.google_sort_combo.addItem(tr("Payment") + " ✓", "payment")
+        self.google_sort_combo.addItem(tr("Payment") + " ✗", "no_payment")
+        self.google_sort_combo.addItem(tr("Ad") + " ✓", "campaign")
+        self.google_sort_combo.addItem(tr("Ad") + " ✗", "no_campaign")
+        self.google_sort_combo.addItem(tr("Ready") + " ✓", "ready")
+        self.google_sort_combo.addItem(tr("Ready") + " ✗", "no_ready")
+        self.google_sort_combo.setMinimumWidth(120)
+        self.google_sort_combo.currentIndexChanged.connect(lambda: self.filter_profiles_by_status("google"))
+        search_layout.addWidget(self.google_sort_combo)
+        
         layout.addLayout(search_layout)
         
         add_layout = QHBoxLayout()
@@ -1126,7 +1518,25 @@ class MainWindow(QMainWindow):
         sites_add_btn.setMinimumWidth(60)
         sites_add_btn.clicked.connect(lambda: self._add_site_to_list("sites"))
         sites_add_layout.addWidget(sites_add_btn)
+        sites_bulk_btn = QPushButton(tr("Bulk Add"))
+        sites_bulk_btn.setMinimumWidth(80)
+        sites_bulk_btn.clicked.connect(lambda: self._show_bulk_add_dialog("google_sites"))
+        sites_add_layout.addWidget(sites_bulk_btn)
         layout.addLayout(sites_add_layout)
+        
+        # Geo filter for sites
+        sites_geo_layout = QHBoxLayout()
+        sites_geo_layout.addWidget(QLabel("🌍"))
+        self.google_sites_geo_filter = QComboBox()
+        self.google_sites_geo_filter.setEditable(True)
+        self.google_sites_geo_filter.setInsertPolicy(QComboBox.NoInsert)
+        self._populate_geo_filter(self.google_sites_geo_filter)
+        self.google_sites_geo_filter.setMinimumWidth(180)
+        self.google_sites_geo_filter.currentIndexChanged.connect(lambda: self._filter_sites_by_geo("google_sites"))
+        self.google_sites_geo_filter.lineEdit().textChanged.connect(lambda t: self._filter_sites_by_geo_text("google_sites", t))
+        sites_geo_layout.addWidget(self.google_sites_geo_filter)
+        sites_geo_layout.addStretch()
+        layout.addLayout(sites_geo_layout)
         
         self.google_sites_list = QListWidget()
         self.google_sites_list.setMaximumHeight(120)
@@ -1138,7 +1548,8 @@ class MainWindow(QMainWindow):
         sites_bottom.addStretch()
         for text, func in [(tr("Remove"), lambda: self._remove_site_from_list("sites")),
                            (tr("Clear"), lambda: self._clear_site_list("sites")),
-                           (tr("Import"), lambda: self._import_sites_to_list("sites"))]:
+                           (tr("Import"), lambda: self._import_sites_to_list("sites")),
+                           (tr("Edit"), lambda: self._show_sites_editor("google_sites"))]:
             btn = QPushButton(text)
             btn.setMinimumWidth(60)
             btn.clicked.connect(func)
@@ -1162,7 +1573,25 @@ class MainWindow(QMainWindow):
         onetap_add_btn.setMinimumWidth(60)
         onetap_add_btn.clicked.connect(lambda: self._add_site_to_list("onetap"))
         onetap_add_layout.addWidget(onetap_add_btn)
+        onetap_bulk_btn = QPushButton(tr("Bulk Add"))
+        onetap_bulk_btn.setMinimumWidth(80)
+        onetap_bulk_btn.clicked.connect(lambda: self._show_bulk_add_dialog("google_onetap"))
+        onetap_add_layout.addWidget(onetap_bulk_btn)
         layout.addLayout(onetap_add_layout)
+        
+        # Geo filter for One Tap sites
+        onetap_geo_layout = QHBoxLayout()
+        onetap_geo_layout.addWidget(QLabel("🌍"))
+        self.google_onetap_geo_filter = QComboBox()
+        self.google_onetap_geo_filter.setEditable(True)
+        self.google_onetap_geo_filter.setInsertPolicy(QComboBox.NoInsert)
+        self._populate_geo_filter(self.google_onetap_geo_filter)
+        self.google_onetap_geo_filter.setMinimumWidth(180)
+        self.google_onetap_geo_filter.currentIndexChanged.connect(lambda: self._filter_sites_by_geo("google_onetap"))
+        self.google_onetap_geo_filter.lineEdit().textChanged.connect(lambda t: self._filter_sites_by_geo_text("google_onetap", t))
+        onetap_geo_layout.addWidget(self.google_onetap_geo_filter)
+        onetap_geo_layout.addStretch()
+        layout.addLayout(onetap_geo_layout)
         
         self.google_onetap_list = QListWidget()
         self.google_onetap_list.setMaximumHeight(120)
@@ -1174,7 +1603,8 @@ class MainWindow(QMainWindow):
         onetap_bottom.addStretch()
         for text, func in [(tr("Remove"), lambda: self._remove_site_from_list("onetap")),
                            (tr("Clear"), lambda: self._clear_site_list("onetap")),
-                           (tr("Import"), lambda: self._import_sites_to_list("onetap"))]:
+                           (tr("Import"), lambda: self._import_sites_to_list("onetap")),
+                           (tr("Edit"), lambda: self._show_sites_editor("google_onetap"))]:
             btn = QPushButton(text)
             btn.setMinimumWidth(60)
             btn.clicked.connect(func)
@@ -1417,6 +1847,10 @@ class MainWindow(QMainWindow):
         scroll_widget = QWidget()
         layout = QFormLayout(scroll_widget)
         layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Style for consistent input heights and widths
+        input_style = "min-height: 28px; min-width: 90px;"
         
         # === SITES SECTION ===
         sites_label = QLabel(tr("🌐 Sites"))
@@ -1427,12 +1861,14 @@ class MainWindow(QMainWindow):
         self.google_min_time.setRange(10, 600)
         self.google_min_time.setValue(self.get_mode_config("google").get("settings", {}).get("min_time_on_site", 30))
         self.google_min_time.setSuffix(" sec")
+        self.google_min_time.setStyleSheet(input_style)
         layout.addRow(tr("Min time on site:"), self.google_min_time)
         
         self.google_max_time = QSpinBox()
         self.google_max_time.setRange(10, 1800)
         self.google_max_time.setValue(self.get_mode_config("google").get("settings", {}).get("max_time_on_site", 60))
         self.google_max_time.setSuffix(" sec")
+        self.google_max_time.setStyleSheet(input_style)
         layout.addRow(tr("Max time on site:"), self.google_max_time)
         
         self.google_auth_sites = QCheckBox(tr("Authorize on sites via Google"))
@@ -1444,6 +1880,7 @@ class MainWindow(QMainWindow):
         self.google_search_percent.setRange(0, 100)
         self.google_search_percent.setValue(self.get_mode_config("google").get("settings", {}).get("google_search_percent", 70))
         self.google_search_percent.setSuffix(" %")
+        self.google_search_percent.setStyleSheet(input_style)
         layout.addRow(tr("Google Search navigation:"), self.google_search_percent)
         
         # Sites per session (min-max)
@@ -1451,12 +1888,15 @@ class MainWindow(QMainWindow):
         self.sites_per_session_min = QSpinBox()
         self.sites_per_session_min.setRange(1, 100)
         self.sites_per_session_min.setValue(self.get_mode_config("google").get("settings", {}).get("sites_per_session_min", 1))
+        self.sites_per_session_min.setStyleSheet(input_style)
         sites_per_session_layout.addWidget(self.sites_per_session_min)
         sites_per_session_layout.addWidget(QLabel("-"))
         self.sites_per_session_max = QSpinBox()
         self.sites_per_session_max.setRange(1, 100)
         self.sites_per_session_max.setValue(self.get_mode_config("google").get("settings", {}).get("sites_per_session_max", 100))
+        self.sites_per_session_max.setStyleSheet(input_style)
         sites_per_session_layout.addWidget(self.sites_per_session_max)
+        sites_per_session_layout.addStretch()
         layout.addRow(tr("Sites per session:"), sites_per_session_layout)
         
         # === GMAIL SECTION ===
@@ -1472,6 +1912,7 @@ class MainWindow(QMainWindow):
         self.gmail_read_percent.setRange(10, 100)
         self.gmail_read_percent.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_read_percent", 40))
         self.gmail_read_percent.setSuffix(" %")
+        self.gmail_read_percent.setStyleSheet(input_style)
         layout.addRow(tr("% of emails to read:"), self.gmail_read_percent)
         
         # Time per email (min-max range)
@@ -1480,13 +1921,16 @@ class MainWindow(QMainWindow):
         self.gmail_read_time_min.setRange(5, 120)
         self.gmail_read_time_min.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_read_time_min", 15))
         self.gmail_read_time_min.setSuffix(" sec")
+        self.gmail_read_time_min.setStyleSheet(input_style)
         gmail_time_layout.addWidget(self.gmail_read_time_min)
         gmail_time_layout.addWidget(QLabel("-"))
         self.gmail_read_time_max = QSpinBox()
         self.gmail_read_time_max.setRange(5, 300)
         self.gmail_read_time_max.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_read_time_max", 45))
         self.gmail_read_time_max.setSuffix(" sec")
+        self.gmail_read_time_max.setStyleSheet(input_style)
         gmail_time_layout.addWidget(self.gmail_read_time_max)
+        gmail_time_layout.addStretch()
         layout.addRow(tr("Time per email:"), gmail_time_layout)
         
         # Promotions/Spam check chance
@@ -1494,6 +1938,7 @@ class MainWindow(QMainWindow):
         self.gmail_promo_spam_percent.setRange(0, 100)
         self.gmail_promo_spam_percent.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_promo_spam_percent", 10))
         self.gmail_promo_spam_percent.setSuffix(" %")
+        self.gmail_promo_spam_percent.setStyleSheet(input_style)
         layout.addRow(tr("Promotions/Spam chance:"), self.gmail_promo_spam_percent)
         
         # Click links in emails
@@ -1506,12 +1951,15 @@ class MainWindow(QMainWindow):
         self.gmail_check_sites_min = QSpinBox()
         self.gmail_check_sites_min.setRange(1, 20)
         self.gmail_check_sites_min.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_check_sites_min", 4))
+        self.gmail_check_sites_min.setStyleSheet(input_style)
         gmail_sites_layout.addWidget(self.gmail_check_sites_min)
         gmail_sites_layout.addWidget(QLabel("-"))
         self.gmail_check_sites_max = QSpinBox()
         self.gmail_check_sites_max.setRange(1, 30)
         self.gmail_check_sites_max.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_check_sites_max", 6))
+        self.gmail_check_sites_max.setStyleSheet(input_style)
         gmail_sites_layout.addWidget(self.gmail_check_sites_max)
+        gmail_sites_layout.addStretch()
         layout.addRow(tr("Check mail every N sites:"), gmail_sites_layout)
         
         # Final Gmail check at end of session
@@ -1524,6 +1972,7 @@ class MainWindow(QMainWindow):
         self.gmail_final_check_percent.setRange(0, 100)
         self.gmail_final_check_percent.setValue(self.get_mode_config("google").get("settings", {}).get("gmail_final_check_percent", 80))
         self.gmail_final_check_percent.setSuffix(" %")
+        self.gmail_final_check_percent.setStyleSheet(input_style)
         layout.addRow(tr("Final check probability:"), self.gmail_final_check_percent)
         
         # === YOUTUBE SECTION ===
@@ -1536,6 +1985,7 @@ class MainWindow(QMainWindow):
         self.youtube_activity_percent.setRange(0, 100)
         self.youtube_activity_percent.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_activity_percent", 100))
         self.youtube_activity_percent.setSuffix(" %")
+        self.youtube_activity_percent.setStyleSheet(input_style)
         layout.addRow(tr("Activity chance:"), self.youtube_activity_percent)
         
         # YouTube videos count (min-max)
@@ -1543,12 +1993,15 @@ class MainWindow(QMainWindow):
         self.youtube_videos_min = QSpinBox()
         self.youtube_videos_min.setRange(1, 10)
         self.youtube_videos_min.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_videos_min", 1))
+        self.youtube_videos_min.setStyleSheet(input_style)
         yt_videos_layout.addWidget(self.youtube_videos_min)
         yt_videos_layout.addWidget(QLabel("-"))
         self.youtube_videos_max = QSpinBox()
         self.youtube_videos_max.setRange(1, 10)
         self.youtube_videos_max.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_videos_max", 3))
+        self.youtube_videos_max.setStyleSheet(input_style)
         yt_videos_layout.addWidget(self.youtube_videos_max)
+        yt_videos_layout.addStretch()
         layout.addRow(tr("Videos to watch:"), yt_videos_layout)
         
         # YouTube watch time (min-max)
@@ -1557,13 +2010,16 @@ class MainWindow(QMainWindow):
         self.youtube_watch_min.setRange(5, 300)
         self.youtube_watch_min.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_watch_min", 15))
         self.youtube_watch_min.setSuffix(" sec")
+        self.youtube_watch_min.setStyleSheet(input_style)
         yt_time_layout.addWidget(self.youtube_watch_min)
         yt_time_layout.addWidget(QLabel("-"))
         self.youtube_watch_max = QSpinBox()
         self.youtube_watch_max.setRange(5, 300)
         self.youtube_watch_max.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_watch_max", 60))
         self.youtube_watch_max.setSuffix(" sec")
+        self.youtube_watch_max.setStyleSheet(input_style)
         yt_time_layout.addWidget(self.youtube_watch_max)
+        yt_time_layout.addStretch()
         layout.addRow(tr("Watch time:"), yt_time_layout)
         
         # YouTube like chance
@@ -1571,6 +2027,7 @@ class MainWindow(QMainWindow):
         self.youtube_like_percent.setRange(0, 100)
         self.youtube_like_percent.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_like_percent", 25))
         self.youtube_like_percent.setSuffix(" %")
+        self.youtube_like_percent.setStyleSheet(input_style)
         layout.addRow(tr("Like chance:"), self.youtube_like_percent)
         
         # YouTube Watch Later chance
@@ -1578,7 +2035,103 @@ class MainWindow(QMainWindow):
         self.youtube_watchlater_percent.setRange(0, 100)
         self.youtube_watchlater_percent.setValue(self.get_mode_config("google").get("settings", {}).get("youtube_watchlater_percent", 20))
         self.youtube_watchlater_percent.setSuffix(" %")
+        self.youtube_watchlater_percent.setStyleSheet(input_style)
         layout.addRow(tr("Watch Later chance:"), self.youtube_watchlater_percent)
+        
+        # === BROWSING BEHAVIOR ===
+        browsing_label = QLabel(tr("🖱️ Browsing Behavior"))
+        browsing_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        layout.addRow(browsing_label)
+        
+        self.google_scroll_enabled = QCheckBox(tr("Enable scrolling"))
+        self.google_scroll_enabled.setChecked(self.get_mode_config("google").get("settings", {}).get("scroll_enabled", True))
+        layout.addRow(self.google_scroll_enabled)
+        
+        self.google_scroll_percent = QSpinBox()
+        self.google_scroll_percent.setRange(0, 100)
+        self.google_scroll_percent.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_percent", 70))
+        self.google_scroll_percent.setSuffix(" %")
+        self.google_scroll_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Scroll probability:"), self.google_scroll_percent)
+        
+        # Scroll iterations (min-max)
+        google_scroll_iter_layout = QHBoxLayout()
+        self.google_scroll_iter_min = QSpinBox()
+        self.google_scroll_iter_min.setRange(1, 20)
+        self.google_scroll_iter_min.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_iterations_min", 3))
+        self.google_scroll_iter_min.setStyleSheet(input_style)
+        google_scroll_iter_layout.addWidget(self.google_scroll_iter_min)
+        google_scroll_iter_layout.addWidget(QLabel("-"))
+        self.google_scroll_iter_max = QSpinBox()
+        self.google_scroll_iter_max.setRange(1, 20)
+        self.google_scroll_iter_max.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_iterations_max", 6))
+        self.google_scroll_iter_max.setStyleSheet(input_style)
+        google_scroll_iter_layout.addWidget(self.google_scroll_iter_max)
+        google_scroll_iter_layout.addStretch()
+        layout.addRow(tr("Scroll iterations:"), google_scroll_iter_layout)
+        
+        # Scroll pixels (min-max)
+        google_scroll_px_layout = QHBoxLayout()
+        self.google_scroll_px_min = QSpinBox()
+        self.google_scroll_px_min.setRange(10, 500)
+        self.google_scroll_px_min.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_pixels_min", 50))
+        self.google_scroll_px_min.setSuffix(" px")
+        self.google_scroll_px_min.setStyleSheet(input_style)
+        google_scroll_px_layout.addWidget(self.google_scroll_px_min)
+        google_scroll_px_layout.addWidget(QLabel("-"))
+        self.google_scroll_px_max = QSpinBox()
+        self.google_scroll_px_max.setRange(10, 500)
+        self.google_scroll_px_max.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_pixels_max", 150))
+        self.google_scroll_px_max.setSuffix(" px")
+        self.google_scroll_px_max.setStyleSheet(input_style)
+        google_scroll_px_layout.addWidget(self.google_scroll_px_max)
+        google_scroll_px_layout.addStretch()
+        layout.addRow(tr("Scroll pixels:"), google_scroll_px_layout)
+        
+        # Scroll pause (min-max)
+        google_scroll_pause_layout = QHBoxLayout()
+        self.google_scroll_pause_min = QDoubleSpinBox()
+        self.google_scroll_pause_min.setRange(0.05, 2.0)
+        self.google_scroll_pause_min.setSingleStep(0.05)
+        self.google_scroll_pause_min.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_pause_min", 0.1))
+        self.google_scroll_pause_min.setSuffix(" s")
+        self.google_scroll_pause_min.setStyleSheet(input_style)
+        google_scroll_pause_layout.addWidget(self.google_scroll_pause_min)
+        google_scroll_pause_layout.addWidget(QLabel("-"))
+        self.google_scroll_pause_max = QDoubleSpinBox()
+        self.google_scroll_pause_max.setRange(0.05, 2.0)
+        self.google_scroll_pause_max.setSingleStep(0.05)
+        self.google_scroll_pause_max.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_pause_max", 0.3))
+        self.google_scroll_pause_max.setSuffix(" s")
+        self.google_scroll_pause_max.setStyleSheet(input_style)
+        google_scroll_pause_layout.addWidget(self.google_scroll_pause_max)
+        google_scroll_pause_layout.addStretch()
+        layout.addRow(tr("Scroll pause:"), google_scroll_pause_layout)
+        
+        # Scroll direction
+        self.google_scroll_down_percent = QSpinBox()
+        self.google_scroll_down_percent.setRange(0, 100)
+        self.google_scroll_down_percent.setValue(self.get_mode_config("google").get("settings", {}).get("scroll_down_percent", 66))
+        self.google_scroll_down_percent.setSuffix(" %")
+        self.google_scroll_down_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Scroll down chance:"), self.google_scroll_down_percent)
+        
+        self.google_click_enabled = QCheckBox(tr("Click random links"))
+        self.google_click_enabled.setChecked(self.get_mode_config("google").get("settings", {}).get("click_links_enabled", True))
+        layout.addRow(self.google_click_enabled)
+        
+        self.google_click_percent = QSpinBox()
+        self.google_click_percent.setRange(0, 100)
+        self.google_click_percent.setValue(self.get_mode_config("google").get("settings", {}).get("click_percent", 20))
+        self.google_click_percent.setSuffix(" %")
+        self.google_click_percent.setStyleSheet(input_style)
+        layout.addRow(tr("Click probability:"), self.google_click_percent)
+        
+        self.google_max_clicks = QSpinBox()
+        self.google_max_clicks.setRange(0, 10)
+        self.google_max_clicks.setValue(self.get_mode_config("google").get("settings", {}).get("max_clicks_per_site", 2))
+        self.google_max_clicks.setStyleSheet(input_style)
+        layout.addRow(tr("Max clicks per site:"), self.google_max_clicks)
         
         scroll_widget.setLayout(layout)
         scroll.setWidget(scroll_widget)
@@ -1668,6 +2221,39 @@ class MainWindow(QMainWindow):
         self.global_start_minimized.setChecked(self.config.get("start_minimized", True))
         form.addRow(self.global_start_minimized)
         
+        # === GEO-BASED VISITING ===
+        geo_label = QLabel(tr("🌍 Geo-based visiting"))
+        geo_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        form.addRow(geo_label)
+        
+        self.global_geo_enabled = QCheckBox(tr("Enable geo-based site visiting"))
+        self.global_geo_enabled.setChecked(self.config.get("geo_visiting_enabled", False))
+        self.global_geo_enabled.stateChanged.connect(self._toggle_geo_percent)
+        form.addRow(self.global_geo_enabled)
+        
+        geo_percent_layout = QHBoxLayout()
+        self.global_geo_percent = QSpinBox()
+        self.global_geo_percent.setRange(0, 100)
+        self.global_geo_percent.setValue(self.config.get("geo_visiting_percent", 70))
+        self.global_geo_percent.setSuffix(" %")
+        self.global_geo_percent.setEnabled(self.config.get("geo_visiting_enabled", False))
+        geo_percent_layout.addWidget(self.global_geo_percent)
+        geo_percent_layout.addStretch()
+        form.addRow(tr("Local geo sites percent:"), geo_percent_layout)
+        
+        geo_hint = QLabel(tr("Bot will visit X% sites matching profile's proxy geo"))
+        geo_hint.setStyleSheet("color: #6c7086; font-size: 10px;")
+        form.addRow(geo_hint)
+        
+        # === YOUTUBE ===
+        yt_label = QLabel(tr("📺 YouTube"))
+        yt_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        form.addRow(yt_label)
+        
+        yt_queries_btn = QPushButton(tr("Edit YouTube Queries"))
+        yt_queries_btn.clicked.connect(self._show_youtube_queries_editor)
+        form.addRow(yt_queries_btn)
+        
         dialog_layout.addLayout(form)
         
         # Buttons
@@ -1689,6 +2275,9 @@ class MainWindow(QMainWindow):
         self.config["autosave_logs"] = self.global_autosave_logs.isChecked()
         self.config["sound_on_finish"] = self.global_sound_finish.isChecked()
         self.config["start_minimized"] = self.global_start_minimized.isChecked()
+        # Geo-based visiting settings
+        self.config["geo_visiting_enabled"] = self.global_geo_enabled.isChecked()
+        self.config["geo_visiting_percent"] = self.global_geo_percent.value()
         
         # Update API URL in top bar
         self.api_url_input.setText(self.config["api_url"])
@@ -1704,6 +2293,67 @@ class MainWindow(QMainWindow):
         
         # Show message that restart is needed for language change
         QMessageBox.information(self, "OK", tr("Settings saved!") + "\n" + tr("Restart app for language change."))
+        dialog.accept()
+    
+    def _toggle_geo_percent(self, state):
+        """Enable/disable geo percent spinner based on checkbox."""
+        self.global_geo_percent.setEnabled(state == Qt.Checked)
+    
+    def _show_youtube_queries_editor(self):
+        """Show dialog to edit YouTube search queries."""
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTextEdit
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(tr("YouTube Search Queries"))
+        dialog.setMinimumWidth(500)
+        dialog.setMinimumHeight(400)
+        layout = QVBoxLayout(dialog)
+        
+        # Instructions
+        info_label = QLabel(tr("Enter search queries separated by commas:"))
+        layout.addWidget(info_label)
+        
+        # Text editor for queries
+        self.yt_queries_edit = QTextEdit()
+        self.yt_queries_edit.setPlaceholderText("music, gaming, tutorial, cooking, travel, ...")
+        
+        # Load saved queries or default
+        default_queries = "music, gaming, vlog, tutorial, review, unboxing, podcast, documentary, cooking, travel, animation, news, highlights, compilation, technology, programming, design, photography, finance, motivation, education, nature, wildlife, space, gadgets, smartphones, cars, fashion, makeup, fitness, yoga, football, basketball, esports, minecraft, fortnite, tips, memes, shorts, lofi, jazz, rock, pop, classical, hiphop, rap, piano, guitar, dance, kpop, anime, marvel, disney, netflix, movie, comedy, drama, action, diy, crafts, gardening, productivity, startup, asmr, relaxation"
+        saved_queries = self.config.get("youtube_queries", default_queries)
+        self.yt_queries_edit.setText(saved_queries)
+        
+        layout.addWidget(self.yt_queries_edit)
+        
+        # Query count label
+        self.yt_count_label = QLabel()
+        self._update_yt_query_count()
+        self.yt_queries_edit.textChanged.connect(self._update_yt_query_count)
+        layout.addWidget(self.yt_count_label)
+        
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(lambda: self._save_youtube_queries(dialog))
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        dialog.exec_()
+    
+    def _update_yt_query_count(self):
+        """Update the count of YouTube queries."""
+        text = self.yt_queries_edit.toPlainText()
+        queries = [q.strip() for q in text.split(",") if q.strip()]
+        self.yt_count_label.setText(tr("Total queries:") + f" {len(queries)}")
+    
+    def _save_youtube_queries(self, dialog):
+        """Save YouTube queries to config."""
+        text = self.yt_queries_edit.toPlainText()
+        # Clean up: remove extra spaces, empty items
+        queries = [q.strip() for q in text.split(",") if q.strip()]
+        cleaned = ", ".join(queries)
+        
+        self.config["youtube_queries"] = cleaned
+        self.save_config()
+        self.log(f"[global] YouTube queries saved ({len(queries)} queries)")
         dialog.accept()
     
     def switch_mode(self, mode):
@@ -1872,18 +2522,176 @@ class MainWindow(QMainWindow):
         return self.cookie_profile_input if mode == "cookie" else self.google_profile_input
     
     def filter_profiles(self, mode, search_text: str):
-        """Filter profiles list by UUID search text."""
+        """Filter profiles list by UUID search text (also applies status filter)."""
+        # Call the combined filter that handles both search and status
+        self.filter_profiles_by_status(mode)
+    
+    def filter_profiles_by_status(self, mode):
+        """Filter profiles list by status from dropdown."""
         lst = self.get_profiles_list(mode)
-        search_lower = search_text.lower().strip()
+        profile_info = self.get_mode_config(mode).get("profile_info", {})
+        
+        # Get selected filter
+        if mode == "cookie":
+            combo = self.cookie_sort_combo
+            search_text = self.cookie_search_input.text().lower().strip()
+        else:
+            combo = self.google_sort_combo
+            search_text = self.google_search_input.text().lower().strip()
+        
+        filter_type = combo.currentData()
         
         for i in range(lst.count()):
             item = lst.item(i)
             uuid = item.data(Qt.UserRole)
-            # Show item if search is empty or UUID contains search text
-            if not search_lower or search_lower in uuid.lower():
-                item.setHidden(False)
-            else:
+            info = profile_info.get(uuid, {})
+            
+            # First check search text filter
+            if search_text and search_text not in uuid.lower():
                 item.setHidden(True)
+                continue
+            
+            # Then apply status filter
+            show = True
+            if filter_type == "all":
+                show = True
+            elif filter_type == "google_auth":
+                show = info.get("google_authorized", False)
+            elif filter_type == "no_google_auth":
+                show = not info.get("google_authorized", False)
+            elif filter_type == "ads":
+                show = info.get("ads_registered", False)
+            elif filter_type == "no_ads":
+                show = not info.get("ads_registered", False)
+            elif filter_type == "payment":
+                show = info.get("payment_linked", False)
+            elif filter_type == "no_payment":
+                show = not info.get("payment_linked", False)
+            elif filter_type == "campaign":
+                show = info.get("campaign_launched", False)
+            elif filter_type == "no_campaign":
+                show = not info.get("campaign_launched", False)
+            elif filter_type == "ready":
+                show = info.get("profile_ready", False)
+            elif filter_type == "no_ready":
+                show = not info.get("profile_ready", False)
+            
+            item.setHidden(not show)
+    
+    def _populate_geo_filter(self, combo: QComboBox):
+        """Populate geo filter dropdown with all countries."""
+        combo.addItem(tr("All"), "all")
+        combo.addItem("🌐 " + tr("Generic") + " (.org, .net, .io...)", "generic")
+        combo.addItem("─────────────", "separator")
+        # Main countries
+        combo.addItem("🇺🇸 US (.us, .com)", "us")
+        combo.addItem("🇨🇦 CA (.ca)", "ca")
+        combo.addItem("🇬🇧 UK (.uk)", "uk")
+        combo.addItem("🇦🇺 AU (.au)", "au")
+        combo.addItem("─────────────", "separator2")
+        # EU countries (sorted)
+        eu_countries = [
+            ("🇦🇹", "AT", "at"), ("🇧🇪", "BE", "be"), ("🇧🇬", "BG", "bg"),
+            ("🇭🇷", "HR", "hr"), ("🇨🇾", "CY", "cy"), ("🇨🇿", "CZ", "cz"),
+            ("🇩🇰", "DK", "dk"), ("🇪🇪", "EE", "ee"), ("🇫🇮", "FI", "fi"),
+            ("🇫🇷", "FR", "fr"), ("🇩🇪", "DE", "de"), ("🇬🇷", "GR", "gr"),
+            ("🇭🇺", "HU", "hu"), ("🇮🇪", "IE", "ie"), ("🇮🇹", "IT", "it"),
+            ("🇱🇻", "LV", "lv"), ("🇱🇹", "LT", "lt"), ("🇱🇺", "LU", "lu"),
+            ("🇲🇹", "MT", "mt"), ("🇳🇱", "NL", "nl"), ("🇵🇱", "PL", "pl"),
+            ("🇵🇹", "PT", "pt"), ("🇷🇴", "RO", "ro"), ("🇸🇰", "SK", "sk"),
+            ("🇸🇮", "SI", "si"), ("🇪🇸", "ES", "es"), ("🇸🇪", "SE", "se"),
+        ]
+        for flag, code, tld in eu_countries:
+            combo.addItem(f"{flag} {code} (.{tld})", tld)
+        combo.addItem("─────────────", "separator3")
+        # Other countries
+        other_countries = [
+            ("🇷🇺", "RU", "ru"), ("🇺🇦", "UA", "ua"), ("🇹🇷", "TR", "tr"),
+            ("🇯🇵", "JP", "jp"), ("🇰🇷", "KR", "kr"), ("🇨🇳", "CN", "cn"),
+            ("🇮🇳", "IN", "in"), ("🇧🇷", "BR", "br"), ("🇲🇽", "MX", "mx"),
+            ("🇦🇷", "AR", "ar"), ("🇨🇭", "CH", "ch"), ("🇳🇴", "NO", "no"),
+        ]
+        for flag, code, tld in other_countries:
+            combo.addItem(f"{flag} {code} (.{tld})", tld)
+    
+    def _filter_sites_by_geo(self, target: str):
+        """Filter sites list by geo (TLD) using dropdown selection."""
+        # Get the appropriate widgets
+        if target == "cookie":
+            lst = self.cookie_sites_list
+            combo = self.cookie_geo_filter
+        elif target == "google_sites":
+            lst = self.google_sites_list
+            combo = self.google_sites_geo_filter
+        elif target == "google_onetap":
+            lst = self.google_onetap_list
+            combo = self.google_onetap_geo_filter
+        else:
+            return
+        
+        filter_data = combo.currentData()
+        
+        # Skip separators
+        if filter_data and filter_data.startswith("separator"):
+            return
+        
+        for i in range(lst.count()):
+            item = lst.item(i)
+            url = item.text()
+            tld = get_site_tld(url)
+            geo_cat = get_site_geo_category(url)
+            
+            show = True
+            
+            if filter_data == "all":
+                show = True
+            elif filter_data == "us":
+                show = geo_cat == "us" or tld in ('us', 'com')
+            elif filter_data == "uk":
+                show = tld in ('uk', 'co.uk')
+            elif filter_data == "ca":
+                show = tld == "ca"
+            elif filter_data == "au":
+                show = tld in ('au', 'com.au')
+            elif filter_data == "generic":
+                show = tld in GENERIC_TLDS
+            elif filter_data:
+                # Specific country TLD (e.g., 'de', 'fr', 'it')
+                show = tld == filter_data
+            
+            item.setHidden(not show)
+    
+    def _filter_sites_by_geo_text(self, target: str, search_text: str):
+        """Filter sites list by text input (dynamic search by TLD)."""
+        if target == "cookie":
+            lst = self.cookie_sites_list
+        elif target == "google_sites":
+            lst = self.google_sites_list
+        elif target == "google_onetap":
+            lst = self.google_onetap_list
+        else:
+            return
+        
+        search_lower = search_text.lower().strip()
+        
+        # If empty, show all sites
+        if not search_lower:
+            for i in range(lst.count()):
+                lst.item(i).setHidden(False)
+            return
+        
+        # Filter by TLD - search_lower should match the TLD
+        for i in range(lst.count()):
+            item = lst.item(i)
+            url = item.text()
+            tld = get_site_tld(url)
+            
+            # Show if TLD matches or starts with search text
+            # e.g., "si" matches ".si", "co" matches ".co.uk"
+            show = (tld == search_lower or 
+                    tld.startswith(search_lower) or 
+                    search_lower in tld)
+            item.setHidden(not show)
     
     def load_profiles_list(self, mode):
         lst = self.get_profiles_list(mode)
@@ -1899,6 +2707,12 @@ class MainWindow(QMainWindow):
             ads_registered = info.get("ads_registered", False)
             payment_linked = info.get("payment_linked", False)
             campaign_launched = info.get("campaign_launched", False)
+            profile_ready = info.get("profile_ready", False)
+            # Timestamps for time-ago display
+            ads_timestamp = info.get("ads_timestamp", "")
+            payment_timestamp = info.get("payment_timestamp", "")
+            campaign_timestamp = info.get("campaign_timestamp", "")
+            ready_timestamp = info.get("ready_timestamp", "")
             
             item = QListWidgetItem()
             item.setData(Qt.UserRole, uuid)  # Store UUID in item data
@@ -1906,7 +2720,8 @@ class MainWindow(QMainWindow):
             # Create custom widget with mode and states
             widget = ProfileItemWidget(
                 uuid, country, first_run, mode, 
-                google_authorized, ads_registered, payment_linked, campaign_launched
+                google_authorized, ads_registered, payment_linked, campaign_launched,
+                profile_ready, ads_timestamp, payment_timestamp, campaign_timestamp, ready_timestamp
             )
             widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
             if mode == "cookie":
@@ -1916,6 +2731,7 @@ class MainWindow(QMainWindow):
                 widget.ads_changed.connect(self._on_ads_changed)
                 widget.payment_changed.connect(self._on_payment_changed)
                 widget.campaign_changed.connect(self._on_campaign_changed)
+                widget.ready_changed.connect(self._on_ready_changed)
             
             item.setSizeHint(widget.sizeHint())
             lst.addItem(item)
@@ -1948,7 +2764,7 @@ class MainWindow(QMainWindow):
                 item = QListWidgetItem()
                 item.setData(Qt.UserRole, uuid)
                 
-                widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False)
+                widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False, False)
                 widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
                 if mode == "cookie":
                     widget.migrate_clicked.connect(self._on_migrate_profile)
@@ -1957,6 +2773,7 @@ class MainWindow(QMainWindow):
                     widget.ads_changed.connect(self._on_ads_changed)
                     widget.payment_changed.connect(self._on_payment_changed)
                     widget.campaign_changed.connect(self._on_campaign_changed)
+                    widget.ready_changed.connect(self._on_ready_changed)
                 
                 item.setSizeHint(widget.sizeHint())
                 lst.addItem(item)
@@ -2078,6 +2895,11 @@ class MainWindow(QMainWindow):
             profile_info[uuid] = {}
         
         profile_info[uuid]["ads_registered"] = registered
+        # Save timestamp on activation, clear on deactivation
+        if registered:
+            profile_info[uuid]["ads_timestamp"] = datetime.now().isoformat()
+        else:
+            profile_info[uuid]["ads_timestamp"] = ""
         self.set_mode_config("google", cfg)
         
         status = "✓" if registered else "✗"
@@ -2092,6 +2914,11 @@ class MainWindow(QMainWindow):
             profile_info[uuid] = {}
         
         profile_info[uuid]["payment_linked"] = linked
+        # Save timestamp on activation, clear on deactivation
+        if linked:
+            profile_info[uuid]["payment_timestamp"] = datetime.now().isoformat()
+        else:
+            profile_info[uuid]["payment_timestamp"] = ""
         self.set_mode_config("google", cfg)
         
         status = "✓" if linked else "✗"
@@ -2106,10 +2933,34 @@ class MainWindow(QMainWindow):
             profile_info[uuid] = {}
         
         profile_info[uuid]["campaign_launched"] = launched
+        # Save timestamp on activation, clear on deactivation
+        if launched:
+            profile_info[uuid]["campaign_timestamp"] = datetime.now().isoformat()
+        else:
+            profile_info[uuid]["campaign_timestamp"] = ""
         self.set_mode_config("google", cfg)
         
         status = "✓" if launched else "✗"
         self.log(f"[{uuid[:8]}] Campaign: {status}")
+    
+    def _on_ready_changed(self, uuid: str, ready: bool):
+        """Save profile ready state."""
+        cfg = self.get_mode_config("google")
+        profile_info = cfg.setdefault("profile_info", {})
+        
+        if uuid not in profile_info:
+            profile_info[uuid] = {}
+        
+        profile_info[uuid]["profile_ready"] = ready
+        # Save timestamp on activation, clear on deactivation
+        if ready:
+            profile_info[uuid]["ready_timestamp"] = datetime.now().isoformat()
+        else:
+            profile_info[uuid]["ready_timestamp"] = ""
+        self.set_mode_config("google", cfg)
+        
+        status = "✓" if ready else "✗"
+        self.log(f"[{uuid[:8]}] Ready: {status}")
     
     def _migrate_profile_to_google(self, uuid: str):
         """Move profile from Cookie mode to Google mode."""
@@ -2245,6 +3096,205 @@ class MainWindow(QMainWindow):
             self.get_sites_count(mode).setText(f"{len(cfg['sites'])} sites")
             self.log(f"[{mode}] Imported {count} sites")
     
+    def _show_bulk_add_dialog(self, target: str):
+        """Show dialog to bulk add sites (one per line)."""
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTextEdit
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(tr("Bulk Add Sites"))
+        dialog.setMinimumWidth(500)
+        dialog.setMinimumHeight(400)
+        layout = QVBoxLayout(dialog)
+        
+        # Instructions
+        info_label = QLabel(tr("Enter sites, one per line:"))
+        layout.addWidget(info_label)
+        
+        # Text editor for sites
+        text_edit = QTextEdit()
+        text_edit.setPlaceholderText("https://example1.com\nhttps://example2.com\nexample3.com")
+        layout.addWidget(text_edit)
+        
+        # Count label
+        count_label = QLabel(tr("Sites to add:") + " 0")
+        def update_count():
+            lines = [line.strip() for line in text_edit.toPlainText().split("\n") if line.strip()]
+            count_label.setText(tr("Sites to add:") + f" {len(lines)}")
+        text_edit.textChanged.connect(update_count)
+        layout.addWidget(count_label)
+        
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(lambda: self._process_bulk_add(dialog, text_edit.toPlainText(), target))
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        dialog.exec_()
+    
+    def _process_bulk_add(self, dialog, text: str, target: str):
+        """Process bulk add of sites."""
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
+        if not lines:
+            dialog.reject()
+            return
+        
+        added = 0
+        
+        if target == "cookie":
+            # Cookie mode sites
+            cfg = self.get_mode_config("cookie")
+            sites = cfg.get("sites", [])
+            lst = self.get_sites_list("cookie")
+            
+            for url in lines:
+                if not url.startswith(("http://", "https://")):
+                    url = "https://" + url
+                if url not in sites:
+                    sites.append(url)
+                    lst.addItem(url)
+                    added += 1
+            
+            cfg["sites"] = sites
+            self.set_mode_config("cookie", cfg)
+            self.get_sites_count("cookie").setText(f"{len(sites)} " + tr("sites"))
+            self.log(f"[cookie] Bulk added {added} sites")
+            
+        elif target == "google_sites":
+            # Google mode - regular sites
+            cfg = self.get_mode_config("google")
+            sites = cfg.get("browse_sites", [])
+            
+            for url in lines:
+                if not url.startswith(("http://", "https://")):
+                    url = "https://" + url
+                if url not in sites:
+                    sites.append(url)
+                    self.google_sites_list.addItem(url)
+                    added += 1
+            
+            cfg["browse_sites"] = sites
+            self.set_mode_config("google", cfg)
+            self.google_sites_count.setText(f"{len(sites)} " + tr("sites"))
+            self.log(f"[google] Bulk added {added} browse sites")
+            
+        elif target == "google_onetap":
+            # Google mode - One Tap sites
+            cfg = self.get_mode_config("google")
+            sites = cfg.get("onetap_sites", [])
+            
+            for url in lines:
+                if not url.startswith(("http://", "https://")):
+                    url = "https://" + url
+                if url not in sites:
+                    sites.append(url)
+                    self.google_onetap_list.addItem(url)
+                    added += 1
+            
+            cfg["onetap_sites"] = sites
+            self.set_mode_config("google", cfg)
+            self.google_onetap_count.setText(f"{len(sites)} " + tr("sites"))
+            self.log(f"[google] Bulk added {added} One Tap sites")
+        
+        dialog.accept()
+    
+    def _show_sites_editor(self, target: str):
+        """Show full sites editor dialog."""
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTextEdit
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(tr("Edit Sites"))
+        dialog.setMinimumWidth(550)
+        dialog.setMinimumHeight(450)
+        layout = QVBoxLayout(dialog)
+        
+        # Instructions
+        info_label = QLabel(tr("Edit sites list (one site per line):"))
+        layout.addWidget(info_label)
+        
+        # Text editor
+        text_edit = QTextEdit()
+        text_edit.setPlaceholderText("https://example1.com\nhttps://example2.com\nexample3.com")
+        
+        # Load current sites
+        current_sites = []
+        if target == "cookie":
+            current_sites = self.get_mode_config("cookie").get("sites", [])
+        elif target == "google_sites":
+            current_sites = self.get_mode_config("google").get("browse_sites", [])
+        elif target == "google_onetap":
+            current_sites = self.get_mode_config("google").get("onetap_sites", [])
+        
+        text_edit.setText("\n".join(current_sites))
+        layout.addWidget(text_edit)
+        
+        # Count label
+        count_label = QLabel(tr("Total sites:") + f" {len(current_sites)}")
+        def update_count():
+            lines = [line.strip() for line in text_edit.toPlainText().split("\n") if line.strip()]
+            count_label.setText(tr("Total sites:") + f" {len(lines)}")
+        text_edit.textChanged.connect(update_count)
+        layout.addWidget(count_label)
+        
+        # Hint
+        hint_label = QLabel(tr("Tip: You can add, remove or edit sites. Empty lines will be ignored."))
+        hint_label.setStyleSheet("color: #6c7086; font-size: 10px;")
+        layout.addWidget(hint_label)
+        
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(lambda: self._save_sites_from_editor(dialog, text_edit.toPlainText(), target))
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        dialog.exec_()
+    
+    def _save_sites_from_editor(self, dialog, text: str, target: str):
+        """Save sites from editor."""
+        # Parse and clean sites
+        sites = []
+        for line in text.split("\n"):
+            url = line.strip()
+            if url:
+                if not url.startswith(("http://", "https://")):
+                    url = "https://" + url
+                if url not in sites:  # Avoid duplicates
+                    sites.append(url)
+        
+        if target == "cookie":
+            cfg = self.get_mode_config("cookie")
+            cfg["sites"] = sites
+            self.set_mode_config("cookie", cfg)
+            # Refresh list widget
+            self.cookie_sites_list.clear()
+            for site in sites:
+                self.cookie_sites_list.addItem(site)
+            self.cookie_sites_count.setText(f"{len(sites)} " + tr("sites"))
+            self.log(f"[cookie] Sites updated: {len(sites)} total")
+            
+        elif target == "google_sites":
+            cfg = self.get_mode_config("google")
+            cfg["browse_sites"] = sites
+            self.set_mode_config("google", cfg)
+            # Refresh list widget
+            self.google_sites_list.clear()
+            for site in sites:
+                self.google_sites_list.addItem(site)
+            self.google_sites_count.setText(f"{len(sites)} " + tr("sites"))
+            self.log(f"[google] Browse sites updated: {len(sites)} total")
+            
+        elif target == "google_onetap":
+            cfg = self.get_mode_config("google")
+            cfg["onetap_sites"] = sites
+            self.set_mode_config("google", cfg)
+            # Refresh list widget
+            self.google_onetap_list.clear()
+            for site in sites:
+                self.google_onetap_list.addItem(site)
+            self.google_onetap_count.setText(f"{len(sites)} " + tr("sites"))
+            self.log(f"[google] One Tap sites updated: {len(sites)} total")
+        
+        dialog.accept()
+    
     # === SETTINGS ===
     def save_mode_settings(self, mode):
         cfg = self.get_mode_config(mode)
@@ -2252,8 +3302,21 @@ class MainWindow(QMainWindow):
             cfg["settings"] = {
                 "min_time_on_site": self.cookie_min_time.value(),
                 "max_time_on_site": self.cookie_max_time.value(),
+                "google_search_percent": self.cookie_search_percent.value(),
+                "sites_per_session_min": self.cookie_sites_min.value(),
+                "sites_per_session_max": self.cookie_sites_max.value(),
                 "scroll_enabled": self.cookie_scroll.isChecked(),
+                "scroll_percent": self.cookie_scroll_percent.value(),
+                "scroll_iterations_min": self.cookie_scroll_iter_min.value(),
+                "scroll_iterations_max": self.cookie_scroll_iter_max.value(),
+                "scroll_pixels_min": self.cookie_scroll_px_min.value(),
+                "scroll_pixels_max": self.cookie_scroll_px_max.value(),
+                "scroll_pause_min": self.cookie_scroll_pause_min.value(),
+                "scroll_pause_max": self.cookie_scroll_pause_max.value(),
+                "scroll_down_percent": self.cookie_scroll_down_percent.value(),
                 "click_links_enabled": self.cookie_click.isChecked(),
+                "click_percent": self.cookie_click_percent.value(),
+                "max_clicks_per_site": self.cookie_max_clicks.value(),
                 "human_behavior_enabled": self.cookie_human.isChecked()
             }
         else:
@@ -2284,6 +3347,19 @@ class MainWindow(QMainWindow):
                 "youtube_watch_max": self.youtube_watch_max.value(),
                 "youtube_like_percent": self.youtube_like_percent.value(),
                 "youtube_watchlater_percent": self.youtube_watchlater_percent.value(),
+                # Browsing behavior
+                "scroll_enabled": self.google_scroll_enabled.isChecked(),
+                "scroll_percent": self.google_scroll_percent.value(),
+                "scroll_iterations_min": self.google_scroll_iter_min.value(),
+                "scroll_iterations_max": self.google_scroll_iter_max.value(),
+                "scroll_pixels_min": self.google_scroll_px_min.value(),
+                "scroll_pixels_max": self.google_scroll_px_max.value(),
+                "scroll_pause_min": self.google_scroll_pause_min.value(),
+                "scroll_pause_max": self.google_scroll_pause_max.value(),
+                "scroll_down_percent": self.google_scroll_down_percent.value(),
+                "click_links_enabled": self.google_click_enabled.isChecked(),
+                "click_percent": self.google_click_percent.value(),
+                "max_clicks_per_site": self.google_max_clicks.value(),
             }
         self.set_mode_config(mode, cfg)
         self.log(f"[{mode}] Settings saved")
@@ -2315,22 +3391,43 @@ class MainWindow(QMainWindow):
             settings["browse_sites"] = cfg.get("browse_sites", [])
             settings["onetap_sites"] = cfg.get("onetap_sites", [])
             settings["services"] = cfg.get("services", {})
+            # Include YouTube checkbox state (stored at cfg level, not in settings)
+            settings["youtube_enabled"] = cfg.get("youtube_enabled", True)
         
         # Add global delay settings
         settings["base_delay_min"] = self.config.get("base_delay_min", 1)
         settings["base_delay_max"] = self.config.get("base_delay_max", 3)
+        # Add YouTube queries from global settings
+        settings["youtube_queries"] = self.config.get("youtube_queries", "")
+        # Add geo-visiting settings
+        settings["geo_visiting_enabled"] = self.config.get("geo_visiting_enabled", False)
+        settings["geo_visiting_percent"] = self.config.get("geo_visiting_percent", 70)
         # Get max parallel profiles from config
         max_parallel = self.config.get("max_parallel_profiles", 5)
         
         # Clear any old pending queue
         self.pending_queue = []
         
+        # Get profile info for geo data
+        profile_info = cfg.get("profile_info", {})
+        
         # Add all selected profiles to queue with their settings
         for uuid in selected:
+            # Get profile's country for geo-based visiting
+            info = profile_info.get(uuid, {})
+            profile_country = info.get("country", "")
+            # Normalize country to 2-letter code (country may be full name like "Slovenia")
+            if profile_country and len(profile_country) > 2:
+                profile_country = normalize_country(profile_country)
+            
+            # Create a copy of settings with profile-specific country
+            profile_settings = settings.copy()
+            profile_settings["profile_country"] = profile_country
+            
             self.pending_queue.append({
                 "uuid": uuid,
                 "sites": cfg.get("sites", []),
-                "settings": settings,
+                "settings": profile_settings,
                 "mode": mode
             })
         

@@ -600,5 +600,173 @@
         <translation>Поиск по UUID...</translation>
     </message>
     
+    <!-- Profile Ready Status -->
+    <message>
+        <source>Profile warmed up and ready</source>
+        <translation>Профиль прогрет и готов</translation>
+    </message>
+    <message>
+        <source>Profile not ready</source>
+        <translation>Профиль не готов</translation>
+    </message>
+    <message>
+        <source>Profile Ready</source>
+        <translation>Профиль готов</translation>
+    </message>
+    <message>
+        <source>Is the profile warmed up and ready for work?</source>
+        <translation>Готов ли профиль к работе?</translation>
+    </message>
+    <message>
+        <source>Deactivate Ready Status</source>
+        <translation>Деактивировать статус готовности</translation>
+    </message>
+    <message>
+        <source>Deactivate 'ready' status for this profile?</source>
+        <translation>Деактивировать статус готовности для этого профиля?</translation>
+    </message>
+    
+    <!-- Campaign button text -->
+    <message>
+        <source>Ad</source>
+        <translation>РК</translation>
+    </message>
+    
+    <!-- Sort/Filter dropdown -->
+    <message>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
+    <message>
+        <source>Google Auth</source>
+        <translation>Google Авторизация</translation>
+    </message>
+    <message>
+        <source>Payment</source>
+        <translation>Оплата</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation>Готов</translation>
+    </message>
+    
+    <!-- YouTube Queries Editor -->
+    <message>
+        <source>YouTube Search Queries</source>
+        <translation>Поисковые запросы YouTube</translation>
+    </message>
+    <message>
+        <source>Enter search queries separated by commas:</source>
+        <translation>Введите поисковые запросы через запятую:</translation>
+    </message>
+    <message>
+        <source>Edit YouTube Queries</source>
+        <translation>Редактировать запросы YouTube</translation>
+    </message>
+    <message>
+        <source>Total queries:</source>
+        <translation>Всего запросов:</translation>
+    </message>
+    
+    <!-- Bulk Add Sites -->
+    <message>
+        <source>Bulk Add</source>
+        <translation>Массовое добавление</translation>
+    </message>
+    <message>
+        <source>Bulk Add Sites</source>
+        <translation>Массовое добавление сайтов</translation>
+    </message>
+    <message>
+        <source>Enter sites, one per line:</source>
+        <translation>Введите сайты, каждый с новой строки:</translation>
+    </message>
+    <message>
+        <source>Sites to add:</source>
+        <translation>Сайтов для добавления:</translation>
+    </message>
+    
+    <!-- Sites Editor -->
+    <message>
+        <source>Edit</source>
+        <translation>Редактировать</translation>
+    </message>
+    <message>
+        <source>Edit Sites</source>
+        <translation>Редактирование сайтов</translation>
+    </message>
+    <message>
+        <source>Edit sites list (one site per line):</source>
+        <translation>Редактируйте список сайтов (каждый сайт с новой строки):</translation>
+    </message>
+    <message>
+        <source>Total sites:</source>
+        <translation>Всего сайтов:</translation>
+    </message>
+    <message>
+        <source>Tip: You can add, remove or edit sites. Empty lines will be ignored.</source>
+        <translation>Подсказка: Вы можете добавлять, удалять или редактировать сайты. Пустые строки будут игнорироваться.</translation>
+    </message>
+    
+    <!-- Geo Filter -->
+    <message>
+        <source>Generic</source>
+        <translation>Общие</translation>
+    </message>
+    
+    <!-- Geo-based Visiting Settings -->
+    <message>
+        <source>🌍 Geo-based visiting</source>
+        <translation>🌍 Посещение по гео</translation>
+    </message>
+    <message>
+        <source>Enable geo-based site visiting</source>
+        <translation>Включить посещение сайтов по гео</translation>
+    </message>
+    <message>
+        <source>Local geo sites percent:</source>
+        <translation>Процент локальных сайтов:</translation>
+    </message>
+    <message>
+        <source>Bot will visit X% sites matching profile's proxy geo</source>
+        <translation>Бот будет посещать X% сайтов, соответствующих гео прокси профиля</translation>
+    </message>
+    
+    <!-- Browsing Behavior Settings -->
+    <message>
+        <source>🖱️ Browsing Behavior</source>
+        <translation>🖱️ Поведение при просмотре</translation>
+    </message>
+    <message>
+        <source>Scroll probability:</source>
+        <translation>Вероятность скроллинга:</translation>
+    </message>
+    <message>
+        <source>Click probability:</source>
+        <translation>Вероятность клика:</translation>
+    </message>
+    <message>
+        <source>Max clicks per site:</source>
+        <translation>Макс. кликов на сайт:</translation>
+    </message>
+    
+    <!-- Scroll Parameters -->
+    <message>
+        <source>Scroll iterations:</source>
+        <translation>Итераций скролла:</translation>
+    </message>
+    <message>
+        <source>Scroll pixels:</source>
+        <translation>Пикселей за итерацию:</translation>
+    </message>
+    <message>
+        <source>Scroll pause:</source>
+        <translation>Пауза между итерациями:</translation>
+    </message>
+    <message>
+        <source>Scroll down chance:</source>
+        <translation>Вероятность скролла вниз:</translation>
+    </message>
+    
 </context>
 </TS>
