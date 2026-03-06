@@ -28,6 +28,7 @@ class ScheduledProfile:
     mode: str  # "cookie" or "google"
     country: str
     sessions_today: int = 0
+    target_sessions: int = 0  # Daily target, set once per day
     errors_today: int = 0
     last_session_end: Optional[datetime] = None
     status: ProfileStatus = ProfileStatus.WAITING
@@ -191,14 +192,16 @@ class AutoScheduler:
     Manages profile scheduling based on timezones, session limits, and cooldowns.
     """
     
-    def __init__(self, settings: Dict = None):
+    def __init__(self, settings: Dict = None, auto_state = None):
         """
         Initialize scheduler.
         
         Args:
             settings: Auto mode settings dictionary
+            auto_state: AutoStateManager instance for persisting target_sessions
         """
         self.settings = settings or {}
+        self.auto_state = auto_state  # For persisting target_sessions
         self._profiles: Dict[str, ScheduledProfile] = {}
         self._running_profiles: List[str] = []
         self._manually_running: List[str] = []
@@ -392,6 +395,7 @@ class AutoScheduler:
     
     def add_profile(self, uuid: str, mode: str, country: str, 
                     sessions_today: int = 0, errors_today: int = 0,
+                    target_sessions: int = 0,
                     last_session_end: datetime = None):
         """Add a profile to the scheduler."""
         profile = ScheduledProfile(
@@ -399,6 +403,7 @@ class AutoScheduler:
             mode=mode,
             country=country,
             sessions_today=sessions_today,
+            target_sessions=target_sessions,
             errors_today=errors_today,
             last_session_end=last_session_end
         )
@@ -448,11 +453,19 @@ class AutoScheduler:
             logging.info(f"[SCHEDULER_DEBUG] {profile.uuid[:8]} -> SKIPPED (errors)")
             return
         
-        # Check session limit
-        target_sessions = random.randint(self.sessions_min, self.sessions_max)
-        if profile.sessions_today >= target_sessions:
+        # Check session limit - target_sessions is set ONCE per day
+        # If not set yet (0), generate random target
+        if profile.target_sessions == 0:
+            profile.target_sessions = random.randint(self.sessions_min, self.sessions_max)
+            logging.info(f"[SCHEDULER_DEBUG] {profile.uuid[:8]} daily target set to {profile.target_sessions}")
+            
+            # Save to persistent state if available
+            if self.auto_state:
+                self.auto_state.set_profile_target_sessions(profile.uuid, profile.target_sessions)
+        
+        if profile.sessions_today >= profile.target_sessions:
             profile.status = ProfileStatus.COMPLETED
-            logging.info(f"[SCHEDULER_DEBUG] {profile.uuid[:8]} -> COMPLETED")
+            logging.info(f"[SCHEDULER_DEBUG] {profile.uuid[:8]} -> COMPLETED ({profile.sessions_today}/{profile.target_sessions})")
             return
         
         # Check if sleeping (timezone)

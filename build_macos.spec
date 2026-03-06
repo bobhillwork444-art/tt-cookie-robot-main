@@ -1,41 +1,69 @@
 # -*- mode: python ; coding: utf-8 -*-
-
-import os
-from PyInstaller.utils.hooks import collect_submodules
+# TT Cookie Robot - macOS Build Spec
+# Run: pyinstaller build_macos.spec --clean
 
 block_cipher = None
 
-# Get current directory
-current_dir = os.path.abspath('.')
-
 a = Analysis(
     ['main.py'],
-    pathex=[current_dir],
+    pathex=[],
     binaries=[],
     datas=[
         ('config.json', '.'),
         ('translations', 'translations'),
         ('assets/flags', 'assets/flags'),
-        ('gui', 'gui'),
-        ('core', 'core'),
+        ('assets/icon.png', 'assets'),
     ],
     hiddenimports=[
+        # PyQt5
         'PyQt5',
         'PyQt5.QtCore',
         'PyQt5.QtGui',
         'PyQt5.QtWidgets',
+        # Playwright
         'playwright',
         'playwright.async_api',
+        'playwright.sync_api',
+        # Standard library
         'asyncio',
+        'queue',
+        'threading',
+        'dataclasses',
+        'typing',
+        'logging',
+        'json',
+        'random',
+        'datetime',
+        # External packages
         'requests',
         'tldextract',
         'lxml',
         'lxml.etree',
-    ] + collect_submodules('gui') + collect_submodules('core'),
+        # Core modules
+        'core.octo_api',
+        'core.octo_api_async',
+        'core.automation',
+        'core.translator',
+        'core.auto_state',
+        'core.auto_scheduler',
+        'core.notifications',
+        # GUI modules
+        'gui.main_window',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'matplotlib',
+        'numpy',
+        'scipy',
+        'pandas',
+        'PIL',
+        'tkinter',
+    ],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
     noarchive=False,
 )
 
@@ -50,7 +78,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -65,7 +93,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='TTCookieRobot',
 )
@@ -74,13 +102,13 @@ app = BUNDLE(
     coll,
     name='TT Cookie Robot.app',
     icon='assets/icon.icns',
-    bundle_identifier='com.ttteam.cookierobot',
+    bundle_identifier='com.ttcookierobot.app',
     info_plist={
         'CFBundleName': 'TT Cookie Robot',
         'CFBundleDisplayName': 'TT Cookie Robot',
-        'CFBundleVersion': '1.0.0',
-        'CFBundleShortVersionString': '1.0.0',
-        'NSHighResolutionCapable': 'True',
+        'CFBundleVersion': '2.0.0',
+        'CFBundleShortVersionString': '2.0.0',
+        'NSHighResolutionCapable': True,
         'LSMinimumSystemVersion': '10.13.0',
     },
 )

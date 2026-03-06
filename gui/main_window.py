@@ -12,12 +12,13 @@ from PyQt5.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QSpinBox, QDoubleSpinBox, QCheckBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
     QStackedWidget, QFrame, QScrollArea, QSplitter, QApplication, QComboBox,
-    QSizePolicy
+    QSizePolicy, QProgressDialog
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize
 from PyQt5.QtGui import QFont, QPixmap
 
 from core.octo_api import OctoAPI
+from core.octo_api_async import OctoApiManager
 from core.automation import BrowserAutomation
 from core.translator import load_translation, tr
 from core.auto_state import AutoStateManager
@@ -997,10 +998,15 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.config = self.load_config()
         self.octo_api = None
+        self.api_manager = None  # Async API manager (initialized when connected)
         self.workers = {}
         self.current_mode = "cookie"
         self.pending_queue = []  # Queue of profiles waiting to start
         self.running_count = 0   # Number of currently running profiles
+        
+        # Progress dialog for async operations
+        self._async_progress_dialog = None
+        self._current_async_task = None
         
         # Initialize Auto Mode managers
         app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1008,8 +1014,8 @@ class MainWindow(QMainWindow):
         self.notifications = NotificationManager(app_dir)
         self.notifications.on_change(self._update_notification_badge)
         
-        # Initialize Auto Mode scheduler
-        self.auto_scheduler = AutoScheduler()
+        # Initialize Auto Mode scheduler (with auto_state for persistence)
+        self.auto_scheduler = AutoScheduler(auto_state=self.auto_state)
         self.auto_workers = {}  # Workers running in auto mode {uuid: worker}
         self.auto_scheduler_timer = None
         
@@ -1128,7 +1134,7 @@ class MainWindow(QMainWindow):
         self.stop_btn = QPushButton("⏹ " + tr("STOP"))
         self.stop_btn.setMinimumHeight(40)
         self.stop_btn.setEnabled(False)
-        self.stop_btn.clicked.connect(self.stop_automation)
+        self.stop_btn.clicked.connect(lambda: self.stop_automation(sync=False))
         self.stop_btn.setStyleSheet("""
             QPushButton { background-color: #f38ba8; color: #1e1e2e; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #e879a0; }
@@ -2763,8 +2769,9 @@ class MainWindow(QMainWindow):
             sessions = self.auto_state.get_profile_sessions_today(uuid)
             errors = self.auto_state.get_profile_errors_today(uuid)
             last_session = self.auto_state.get_last_session_time(uuid)
+            target_sessions = self.auto_state.get_profile_target_sessions(uuid)
             
-            self.log(f"[Auto]   {uuid[:8]}... country={country}")
+            self.log(f"[Auto]   {uuid[:8]}... country={country}, target={target_sessions}")
             
             self.auto_scheduler.add_profile(
                 uuid=uuid,
@@ -2772,6 +2779,7 @@ class MainWindow(QMainWindow):
                 country=country,
                 sessions_today=sessions,
                 errors_today=errors,
+                target_sessions=target_sessions,
                 last_session_end=last_session
             )
         
@@ -2789,8 +2797,9 @@ class MainWindow(QMainWindow):
             sessions = self.auto_state.get_profile_sessions_today(uuid)
             errors = self.auto_state.get_profile_errors_today(uuid)
             last_session = self.auto_state.get_last_session_time(uuid)
+            target_sessions = self.auto_state.get_profile_target_sessions(uuid)
             
-            self.log(f"[Auto]   {uuid[:8]}... country={country}")
+            self.log(f"[Auto]   {uuid[:8]}... country={country}, target={target_sessions}")
             
             self.auto_scheduler.add_profile(
                 uuid=uuid,
@@ -2798,6 +2807,7 @@ class MainWindow(QMainWindow):
                 country=country,
                 sessions_today=sessions,
                 errors_today=errors,
+                target_sessions=target_sessions,
                 last_session_end=last_session
             )
     
@@ -2862,9 +2872,9 @@ class MainWindow(QMainWindow):
         if self.auto_state.is_auto_paused():
             return
         
-        # CRITICAL: Refresh geo-data for ALL profiles BEFORE scheduling decisions
-        # This ensures scheduler uses fresh country data when determining awake/sleep status
-        self._refresh_all_auto_profiles_geo()
+        # NOTE: Geo refresh removed - it was blocking UI and didn't work anyway
+        # (Octo API doesn't return actual proxy country until profile starts)
+        # Real country detection happens in _on_auto_country_detected() after profile starts
         
         # Update UI
         self._update_auto_stats_display()
@@ -3030,8 +3040,10 @@ class MainWindow(QMainWindow):
                 worker = self.auto_workers[uuid]
                 worker.stop()
                 
-                # Force stop the browser profile
-                if self.octo_api:
+                # Force stop the browser profile (async if manager available)
+                if self.api_manager:
+                    self.api_manager.stop_profile_async(uuid, force=True)
+                elif self.octo_api:
                     self.octo_api.force_stop_profile(uuid)
                 
                 # Remove from auto_workers
@@ -3100,22 +3112,74 @@ class MainWindow(QMainWindow):
     
     def stop_auto_mode(self):
         """Stop auto mode completely."""
-        # Stop scheduler timer
+        # Stop scheduler timer first
         if self.auto_scheduler_timer:
             self.auto_scheduler_timer.stop()
             self.auto_scheduler_timer = None
         
-        # Stop all auto workers and close profiles
+        # Stop all worker threads (tell them to stop)
         for uuid, worker in list(self.auto_workers.items()):
-            self.log(f"[Auto] ⏹ Stopping {uuid[:8]}...")
             worker.stop()
-            # Close profile in Octo
-            try:
-                if self.octo_api:
-                    self.octo_api.stop_profile(uuid)
-            except Exception as e:
-                self.log(f"[Auto] ⚠️ Error closing {uuid[:8]}: {e}")
         
+        # Get list of profiles to close
+        uuids_to_stop = list(self.auto_workers.keys())
+        
+        if uuids_to_stop and self.api_manager:
+            # Use async manager with progress dialog
+            self._stop_auto_mode_async(uuids_to_stop)
+        else:
+            # No profiles to stop or no manager - finish immediately
+            self._finish_stop_auto_mode()
+    
+    def _stop_auto_mode_async(self, uuids: list):
+        """Stop profiles asynchronously with progress dialog."""
+        # Create progress dialog
+        self._async_progress_dialog = QProgressDialog(
+            tr("Stopping profiles..."),
+            tr("Cancel"),
+            0, len(uuids),
+            self
+        )
+        self._async_progress_dialog.setWindowModality(Qt.WindowModal)
+        self._async_progress_dialog.setAutoClose(False)
+        self._async_progress_dialog.setAutoReset(False)
+        self._async_progress_dialog.canceled.connect(self._on_stop_auto_cancelled)
+        self._async_progress_dialog.show()
+        
+        # Start async batch stop
+        self._current_async_task = self.api_manager.stop_profiles_batch_async(
+            uuids,
+            force=False,
+            callback=self._on_stop_auto_complete
+        )
+    
+    def _on_stop_auto_cancelled(self):
+        """Handle cancellation of stop operation."""
+        if self.api_manager:
+            self.api_manager.cancel_current_operation()
+        self.log("[Auto] ⚠️ Stop operation cancelled by user")
+        self._finish_stop_auto_mode()
+    
+    def _on_stop_auto_complete(self, result: dict):
+        """Handle completion of async stop operation."""
+        try:
+            if self._async_progress_dialog:
+                self._async_progress_dialog.close()
+        except (RuntimeError, AttributeError):
+            pass
+        finally:
+            self._async_progress_dialog = None
+            self._current_async_task = None
+        
+        # Log results
+        results = result.get("results", [])
+        success_count = sum(1 for r in results if r.get("success"))
+        self.log(f"[Auto] Stopped {success_count}/{len(results)} profiles")
+        
+        self._finish_stop_auto_mode()
+    
+    def _finish_stop_auto_mode(self):
+        """Finish stopping auto mode - update state and UI."""
         self.auto_workers.clear()
         
         self.auto_state.set_auto_running(False)
@@ -3616,13 +3680,42 @@ class MainWindow(QMainWindow):
             json.dump(self.config, f, indent=2, ensure_ascii=False)
     
     def log(self, msg):
+        """Log message to UI with throttling to prevent UI freeze."""
         timestamp = datetime.now().strftime('%H:%M:%S')
         log_line = f"[{timestamp}] {msg}"
-        self.log_area.append(log_line)
         
-        # Auto-save logs to file if enabled
+        # Use buffered logging to prevent UI freeze
+        if not hasattr(self, '_log_buffer'):
+            self._log_buffer = []
+            self._log_timer = None
+        
+        self._log_buffer.append(log_line)
+        
+        # Batch logs - update UI max once per 100ms
+        if self._log_timer is None:
+            from PyQt5.QtCore import QTimer
+            self._log_timer = QTimer()
+            self._log_timer.setSingleShot(True)
+            self._log_timer.timeout.connect(self._flush_log_buffer)
+            self._log_timer.start(100)  # 100ms delay
+        
+        # Auto-save logs to file if enabled (write immediately)
         if self.config.get("autosave_logs", False):
             self._save_log_to_file(log_line)
+    
+    def _flush_log_buffer(self):
+        """Flush buffered log messages to UI."""
+        if not hasattr(self, '_log_buffer') or not self._log_buffer:
+            self._log_timer = None
+            return
+        
+        # Join all buffered messages and append at once
+        batch = '\n'.join(self._log_buffer)
+        self._log_buffer.clear()
+        self._log_timer = None
+        
+        # Single UI update instead of multiple
+        self.log_area.append(batch)
     
     def connect_to_octo(self):
         url = self.api_url_input.text()
@@ -3637,9 +3730,80 @@ class MainWindow(QMainWindow):
             self.connection_status.setStyleSheet("color: #a6e3a1; font-size: 16px;")
             self.start_btn.setEnabled(True)
             self.log("Connected to Octo Browser")
+            
+            # Initialize async API manager
+            self._init_api_manager()
         else:
             self.connection_status.setStyleSheet("color: #f38ba8; font-size: 16px;")
             self.log("Connection failed")
+    
+    def _init_api_manager(self):
+        """Initialize the async API manager."""
+        if self.api_manager:
+            self.api_manager.shutdown()
+        
+        self.api_manager = OctoApiManager(self.octo_api)
+        
+        # Connect signals for progress tracking
+        self.api_manager.operation_progress.connect(self._on_api_progress)
+        self.api_manager.operation_finished.connect(self._on_api_finished)
+        self.api_manager.operation_error.connect(self._on_api_error)
+        self.api_manager.operation_cancelled.connect(self._on_api_cancelled)
+        self.api_manager.profile_stopped.connect(self._on_profile_stopped_async)
+        
+        logging.info("[MainWindow] Async API manager initialized")
+    
+    def _on_api_progress(self, task_id: str, current: int, total: int, message: str):
+        """Handle async API progress update."""
+        try:
+            if self._async_progress_dialog and self._current_async_task == task_id:
+                self._async_progress_dialog.setValue(current)
+                self._async_progress_dialog.setLabelText(f"{message}")
+        except (RuntimeError, AttributeError):
+            # Dialog was closed/destroyed
+            pass
+    
+    def _on_api_finished(self, task_id: str, result: object):
+        """Handle async API task completion."""
+        try:
+            if self._async_progress_dialog and self._current_async_task == task_id:
+                self._async_progress_dialog.close()
+        except (RuntimeError, AttributeError):
+            pass
+        finally:
+            self._async_progress_dialog = None
+            self._current_async_task = None
+    
+    def _on_api_error(self, task_id: str, error: str):
+        """Handle async API error."""
+        try:
+            if self._async_progress_dialog:
+                self._async_progress_dialog.close()
+        except (RuntimeError, AttributeError):
+            pass
+        finally:
+            self._async_progress_dialog = None
+            self._current_async_task = None
+            self.log(f"API Error: {error}")
+    
+    def _on_api_cancelled(self, task_id: str):
+        """Handle async API cancellation."""
+        try:
+            if self._async_progress_dialog:
+                self._async_progress_dialog.close()
+        except (RuntimeError, AttributeError):
+            pass
+        finally:
+            self._async_progress_dialog = None
+            self._current_async_task = None
+            self.log("Operation cancelled")
+    
+    def _on_profile_stopped_async(self, uuid: str, success: bool):
+        """Handle individual profile stopped in batch operation."""
+        if success:
+            self.log(f"[Auto] ⏹ Stopped {uuid[:8]}...")
+        else:
+            self.log(f"[Auto] ⚠️ Failed to stop {uuid[:8]}...")
     
     # === PROFILES ===
     def get_profiles_list(self, mode):
@@ -4161,6 +4325,36 @@ class MainWindow(QMainWindow):
         
         cfg = self.get_mode_config(mode)
         profiles = cfg.get("profiles", [])
+        
+        if not profiles:
+            self.log(f"[{mode}] No profiles to refresh")
+            return
+        
+        if self.api_manager:
+            # Async refresh with progress
+            self._refresh_mode = mode
+            self._async_progress_dialog = QProgressDialog(
+                tr("Refreshing profile info..."),
+                tr("Cancel"),
+                0, len(profiles),
+                self
+            )
+            self._async_progress_dialog.setWindowModality(Qt.WindowModal)
+            self._async_progress_dialog.setAutoClose(True)
+            self._async_progress_dialog.show()
+            
+            self._current_async_task = self.api_manager.get_profiles_info_batch_async(
+                profiles,
+                callback=self._on_refresh_profiles_complete
+            )
+        else:
+            # Sync fallback
+            self._refresh_profiles_sync(mode)
+    
+    def _refresh_profiles_sync(self, mode):
+        """Synchronous profile refresh (fallback)."""
+        cfg = self.get_mode_config(mode)
+        profiles = cfg.get("profiles", [])
         profile_info = cfg.setdefault("profile_info", {})
         
         updated = 0
@@ -4168,13 +4362,11 @@ class MainWindow(QMainWindow):
             info = self.octo_api.get_profile_info(uuid)
             if info:
                 country = info.get("country", "")
-                # Preserve existing data, only update country
                 if uuid not in profile_info:
                     profile_info[uuid] = {}
                 old_country = profile_info[uuid].get("country", "")
                 profile_info[uuid]["country"] = country
                 
-                # Log if country changed
                 if old_country and old_country != country:
                     self.log(f"[{mode}] {uuid[:8]}... geo changed: {old_country} → {country}")
                 
@@ -4184,11 +4376,41 @@ class MainWindow(QMainWindow):
         self.set_mode_config(mode, cfg)
         self.load_profiles_list(mode)
         
-        # Update scheduler if auto mode is active
         if hasattr(self, 'auto_scheduler') and self.auto_scheduler:
             self._load_profiles_to_scheduler()
         
         self.log(f"[{mode}] Refreshed {updated}/{len(profiles)} profiles")
+    
+    def _on_refresh_profiles_complete(self, result: dict):
+        """Handle completion of async profile refresh."""
+        mode = getattr(self, '_refresh_mode', 'cookie')
+        results = result.get("results", {})
+        
+        cfg = self.get_mode_config(mode)
+        profile_info = cfg.setdefault("profile_info", {})
+        
+        updated = 0
+        for uuid, info in results.items():
+            if info:
+                country = info.get("country", "")
+                if uuid not in profile_info:
+                    profile_info[uuid] = {}
+                old_country = profile_info[uuid].get("country", "")
+                profile_info[uuid]["country"] = country
+                
+                if old_country and old_country != country:
+                    self.log(f"[{mode}] {uuid[:8]}... geo changed: {old_country} → {country}")
+                
+                updated += 1
+        
+        cfg["profile_info"] = profile_info
+        self.set_mode_config(mode, cfg)
+        self.load_profiles_list(mode)
+        
+        if hasattr(self, 'auto_scheduler') and self.auto_scheduler:
+            self._load_profiles_to_scheduler()
+        
+        self.log(f"[{mode}] Refreshed {updated}/{len(results)} profiles")
 
     # === SITES ===
     def get_sites_list(self, mode):
@@ -4670,14 +4892,64 @@ class MainWindow(QMainWindow):
         # Refresh list to show new country and age
         self.load_profiles_list(mode)
     
-    def stop_automation(self):
+    def stop_automation(self, sync: bool = False):
+        """Stop all running automation.
+        
+        Args:
+            sync: If True, stop synchronously (for closeEvent). 
+                  If False, stop asynchronously with progress dialog.
+        """
         # Clear pending queue
         self.pending_queue = []
         
+        # Stop worker threads
         for uuid, w in self.workers.items():
             w.stop()
-            if self.octo_api:
-                self.octo_api.force_stop_profile(uuid)
+        
+        uuids_to_stop = list(self.workers.keys())
+        
+        if not uuids_to_stop:
+            self.log("Nothing to stop")
+            return
+        
+        if sync or not self.api_manager:
+            # Synchronous stop (for closeEvent or when no manager)
+            for uuid in uuids_to_stop:
+                if self.octo_api:
+                    self.octo_api.force_stop_profile(uuid)
+            self.log("Stopped all profiles")
+        else:
+            # Async stop with progress
+            self._stop_automation_async(uuids_to_stop)
+    
+    def _stop_automation_async(self, uuids: list):
+        """Stop profiles asynchronously."""
+        self._async_progress_dialog = QProgressDialog(
+            tr("Stopping profiles..."),
+            tr("Cancel"),
+            0, len(uuids),
+            self
+        )
+        self._async_progress_dialog.setWindowModality(Qt.WindowModal)
+        self._async_progress_dialog.setAutoClose(True)
+        self._async_progress_dialog.show()
+        
+        def on_manual_stop_complete(result):
+            try:
+                if self._async_progress_dialog:
+                    self._async_progress_dialog.close()
+            except (RuntimeError, AttributeError):
+                pass
+            finally:
+                self._async_progress_dialog = None
+                self._current_async_task = None
+            self.log(f"Stopped {len(result.get('results', []))} profiles")
+        
+        self._current_async_task = self.api_manager.stop_profiles_batch_async(
+            uuids,
+            force=True,
+            callback=on_manual_stop_complete
+        )
         self.log("Stopping...")
     
     def on_finished(self, uuid):
@@ -4743,6 +5015,16 @@ class MainWindow(QMainWindow):
             print(f"Log save error: {e}")
     
     def closeEvent(self, e):
-        self.stop_automation()
+        # Flush any remaining log messages
+        if hasattr(self, '_log_buffer') and self._log_buffer:
+            self._flush_log_buffer()
+        
+        # Use synchronous stop on close
+        self.stop_automation(sync=True)
+        
+        # Shutdown async API manager
+        if self.api_manager:
+            self.api_manager.shutdown()
+        
         self.save_config()
         e.accept()

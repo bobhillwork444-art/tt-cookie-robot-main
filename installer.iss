@@ -1,5 +1,5 @@
 #define MyAppName "TT Cookie Robot"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "TT Team"
 #define MyAppURL "https://github.com/ttteam/tt-cookie-robot"
 #define MyAppExeName "TTCookieRobot.exe"
@@ -8,6 +8,7 @@
 AppId={{B2C3D4E5-F6A7-8901-BCDE-F12345678901}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
@@ -15,21 +16,22 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile=
 OutputDir=installer_output
 OutputBaseFilename=TTCookieRobot_Setup_v{#MyAppVersion}
 SetupIconFile=assets\icon.ico
-Compression=lzma
+Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
+ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checked
 
 [Files]
 Source: "dist\TTCookieRobot\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

@@ -1,0 +1,163 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 2.0.0)'
+        required: false
+        default: '2.0.0'
+
+env:
+  APP_NAME: TTCookieRobot
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Install Playwright browsers
+        run: playwright install chromium
+      
+      - name: Build EXE with PyInstaller
+        run: pyinstaller build_windows.spec --clean --noconfirm
+      
+      - name: Create portable ZIP
+        run: |
+          Compress-Archive -Path "dist\${{ env.APP_NAME }}\*" -DestinationPath "${{ env.APP_NAME }}_Windows_Portable.zip"
+      
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+      
+      - name: Build Installer
+        run: iscc installer.iss
+        continue-on-error: true
+      
+      - name: Upload Windows Portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Portable
+          path: ${{ env.APP_NAME }}_Windows_Portable.zip
+      
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Installer
+          path: installer_output/*.exe
+        continue-on-error: true
+      
+      - name: Upload Build Folder (Debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Build-Debug
+          path: dist/${{ env.APP_NAME }}/
+        if: failure()
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Install Playwright browsers
+        run: playwright install chromium
+      
+      - name: Install create-dmg
+        run: brew install create-dmg
+      
+      - name: Create ICNS icon
+        run: |
+          mkdir -p icon.iconset
+          sips -z 16 16     assets/icon.png --out icon.iconset/icon_16x16.png
+          sips -z 32 32     assets/icon.png --out icon.iconset/icon_16x16@2x.png
+          sips -z 32 32     assets/icon.png --out icon.iconset/icon_32x32.png
+          sips -z 64 64     assets/icon.png --out icon.iconset/icon_32x32@2x.png
+          sips -z 128 128   assets/icon.png --out icon.iconset/icon_128x128.png
+          sips -z 256 256   assets/icon.png --out icon.iconset/icon_128x128@2x.png
+          sips -z 256 256   assets/icon.png --out icon.iconset/icon_256x256.png
+          sips -z 512 512   assets/icon.png --out icon.iconset/icon_256x256@2x.png
+          sips -z 512 512   assets/icon.png --out icon.iconset/icon_512x512.png
+          sips -z 1024 1024 assets/icon.png --out icon.iconset/icon_512x512@2x.png
+          iconutil -c icns icon.iconset -o assets/icon.icns
+        continue-on-error: true
+      
+      - name: Build APP
+        run: pyinstaller build_macos.spec --clean --noconfirm
+      
+      - name: Create DMG
+        run: |
+          create-dmg \
+            --volname "TT Cookie Robot" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "TT Cookie Robot.app" 150 185 \
+            --hide-extension "TT Cookie Robot.app" \
+            --app-drop-link 450 185 \
+            "${{ env.APP_NAME }}_macOS.dmg" \
+            "dist/TT Cookie Robot.app" || true
+      
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-DMG
+          path: "*.dmg"
+        continue-on-error: true
+      
+      - name: Upload macOS APP
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-APP
+          path: "dist/TT Cookie Robot.app"
+
+  create-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/Windows-Portable/*.zip
+            artifacts/Windows-Installer/*.exe
+            artifacts/macOS-DMG/*.dmg
+          draft: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

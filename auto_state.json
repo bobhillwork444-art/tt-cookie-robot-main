@@ -2,27 +2,45 @@
   "date": "2026-03-06",
   "profiles": {
     "3d8516e091b1444788f5fd4f1724e73c": {
-      "sessions_today": 2,
+      "sessions_today": 1,
       "errors_today": 0,
-      "last_session": "2026-03-06T16:20:06.239840+00:00",
+      "target_sessions": 3,
+      "last_session": "2026-03-06T19:12:50.484081+00:00",
       "mode": "cookie"
+    },
+    "f01d65725466469097a00ed23dbb336a": {
+      "sessions_today": 0,
+      "errors_today": 0,
+      "target_sessions": 3,
+      "last_session": null,
+      "mode": ""
+    },
+    "2ef7cfcf123d4b1b9f059813c353aea0": {
+      "sessions_today": 0,
+      "errors_today": 0,
+      "target_sessions": 3,
+      "last_session": null,
+      "mode": ""
     },
     "b83d537f9adb404b99c0348bd6061868": {
-      "sessions_today": 2,
+      "sessions_today": 1,
       "errors_today": 0,
-      "last_session": "2026-03-06T16:21:36.854238+00:00",
+      "target_sessions": 2,
+      "last_session": "2026-03-06T19:12:51.242958+00:00",
       "mode": "cookie"
     },
-    "84b19dec90c84df78b6ac0949c3c7e08": {
-      "sessions_today": 2,
+    "24298afd1b404eb48ae35f1befe5c050": {
+      "sessions_today": 1,
       "errors_today": 0,
-      "last_session": "2026-03-06T16:30:36.311168+00:00",
+      "target_sessions": 3,
+      "last_session": "2026-03-06T19:13:21.576921+00:00",
       "mode": "google"
     },
-    "24298afd1b404eb48ae35f1befe5c050": {
-      "sessions_today": 2,
+    "84b19dec90c84df78b6ac0949c3c7e08": {
+      "sessions_today": 1,
       "errors_today": 0,
-      "last_session": "2026-03-06T16:29:40.533710+00:00",
+      "target_sessions": 3,
+      "last_session": "2026-03-06T19:12:58.477999+00:00",
       "mode": "google"
     }
   },

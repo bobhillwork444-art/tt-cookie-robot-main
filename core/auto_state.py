@@ -108,6 +108,7 @@ class AutoStateManager:
             self._state["profiles"][uuid] = {
                 "sessions_today": 0,
                 "errors_today": 0,
+                "target_sessions": 0,
                 "last_session": None,
                 "mode": mode
             }
@@ -130,6 +131,31 @@ class AutoStateManager:
             except:
                 pass
         return None
+    
+    def get_profile_target_sessions(self, uuid: str) -> int:
+        """Get target sessions for a profile (set once per day)."""
+        self._check_day_reset()
+        profile_data = self._state.get("profiles", {}).get(uuid, {})
+        return profile_data.get("target_sessions", 0)
+    
+    def set_profile_target_sessions(self, uuid: str, target: int):
+        """Set target sessions for a profile (should be called once per day)."""
+        self._check_day_reset()
+        
+        if "profiles" not in self._state:
+            self._state["profiles"] = {}
+        
+        if uuid not in self._state["profiles"]:
+            self._state["profiles"][uuid] = {
+                "sessions_today": 0,
+                "errors_today": 0,
+                "target_sessions": 0,
+                "last_session": None,
+                "mode": ""
+            }
+        
+        self._state["profiles"][uuid]["target_sessions"] = target
+        self._save_state()
     
     # === Error Tracking ===
     
