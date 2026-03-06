@@ -4,11 +4,16 @@
 
 block_cipher = None
 
+import os
+SPEC_DIR = os.path.dirname(os.path.abspath(SPEC))
+
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[SPEC_DIR],
     binaries=[],
     datas=[
+        ('core', 'core'),
+        ('gui', 'gui'),
         ('config.json', '.'),
         ('translations', 'translations'),
         ('assets/flags', 'assets/flags'),
