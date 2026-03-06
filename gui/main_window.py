@@ -934,13 +934,16 @@ class WorkerThread(QThread):
     async def _try_minimize_browser(self):
         """Try to minimize browser window using CDP or pywin32."""
         try:
+            # Small delay for browser to initialize
+            await asyncio.sleep(0.3)
+            
             if self.automation and self.automation.page:
                 # Method 1: Use CDP to minimize window
-                cdp = await self.automation.page.context.new_cdp_session(self.automation.page)
                 try:
+                    cdp = await self.automation.page.context.new_cdp_session(self.automation.page)
                     # Get window bounds
                     window_id = await cdp.send("Browser.getWindowForTarget")
-                    if window_id:
+                    if window_id and window_id.get("windowId"):
                         # Set window state to minimized
                         await cdp.send("Browser.setWindowBounds", {
                             "windowId": window_id.get("windowId"),
@@ -949,7 +952,7 @@ class WorkerThread(QThread):
                         self.log_signal.emit(f"[{self.profile_uuid[:8]}] Window minimized via CDP")
                         return
                 except Exception as e:
-                    pass  # CDP method failed, try alternatives
+                    self.log_signal.emit(f"[{self.profile_uuid[:8]}] CDP minimize failed: {e}")
                 
                 # Method 2: Use pywin32 on Windows
                 try:
@@ -3402,6 +3405,8 @@ class MainWindow(QMainWindow):
         # Add geo-visiting settings
         settings["geo_visiting_enabled"] = self.config.get("geo_visiting_enabled", False)
         settings["geo_visiting_percent"] = self.config.get("geo_visiting_percent", 70)
+        # Add start minimized setting
+        settings["start_minimized"] = self.config.get("start_minimized", True)
         # Get max parallel profiles from config
         max_parallel = self.config.get("max_parallel_profiles", 5)
         

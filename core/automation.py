@@ -526,6 +526,22 @@ class BrowserAutomation:
         except:
             pass
     
+    async def minimize_window(self):
+        """Minimize browser window using CDP."""
+        try:
+            if self.page and not self.page.is_closed():
+                cdp = await self.page.context.new_cdp_session(self.page)
+                window_id = await cdp.send("Browser.getWindowForTarget")
+                if window_id and window_id.get("windowId"):
+                    await cdp.send("Browser.setWindowBounds", {
+                        "windowId": window_id.get("windowId"),
+                        "bounds": {"windowState": "minimized"}
+                    })
+                    return True
+        except:
+            pass
+        return False
+    
     async def disconnect(self):
         try:
             # Close all extra tabs before disconnecting (keep only one to preserve session)
@@ -810,6 +826,10 @@ class BrowserAutomation:
         sites_per_session_min = settings.get("sites_per_session_min", 1)
         sites_per_session_max = settings.get("sites_per_session_max", 100)
         
+        # Base delay settings (from global config)
+        base_delay_min = settings.get("base_delay_min", 1)
+        base_delay_max = settings.get("base_delay_max", 3)
+        
         # Geo-based visiting settings
         geo_enabled = settings.get("geo_visiting_enabled", False)
         geo_percent = settings.get("geo_visiting_percent", 70)
@@ -900,7 +920,8 @@ class BrowserAutomation:
             )
             
             if i < len(sites):
-                await asyncio.sleep(random.randint(3, 8))
+                # Use base delay from global settings + some variability
+                await asyncio.sleep(random.randint(base_delay_min + 1, base_delay_max + 3))
         
         self.is_running = False
         
@@ -1228,6 +1249,13 @@ class BrowserAutomation:
             plan_parts.append("YouTube activity")
         plan_parts.append("Gmail checks")
         self.log(f"📋 Plan: {' + '.join(plan_parts)}")
+        
+        # Set minimize flag for methods that open new tabs
+        self._should_minimize = settings.get("start_minimized", True)
+        
+        # Try to minimize window at start of session
+        if self._should_minimize:
+            await self.minimize_window()
         
         # Track geo stats for final log
         local_visited = 0
@@ -3204,6 +3232,10 @@ class BrowserAutomation:
             # Create new tab for the site
             site_tab = await self.context.new_page()
             
+            # Re-minimize window after opening new tab (browsers often restore on new tab)
+            if getattr(self, '_should_minimize', False):
+                await self.minimize_window()
+            
             # Navigate to site in new tab
             try:
                 await site_tab.goto(href, wait_until="domcontentloaded", timeout=30000)
@@ -3271,6 +3303,10 @@ class BrowserAutomation:
             
             # Create new tab for the site
             site_tab = await self.context.new_page()
+            
+            # Re-minimize window after opening new tab (browsers often restore on new tab)
+            if getattr(self, '_should_minimize', False):
+                await self.minimize_window()
             
             # Navigate to site
             try:
