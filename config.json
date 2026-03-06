@@ -2,7 +2,10 @@
   "api_url": "http://localhost:58888",
   "cookie_mode": {
     "profiles": [
-      "3d8516e091b1444788f5fd4f1724e73c"
+      "3d8516e091b1444788f5fd4f1724e73c",
+      "f01d65725466469097a00ed23dbb336a",
+      "2ef7cfcf123d4b1b9f059813c353aea0",
+      "b83d537f9adb404b99c0348bd6061868"
     ],
     "sites": [
       "https://www.france24.com/fr/",
@@ -175,8 +178,8 @@
       "min_time_on_site": 10,
       "max_time_on_site": 30,
       "google_search_percent": 70,
-      "sites_per_session_min": 2,
-      "sites_per_session_max": 2,
+      "sites_per_session_min": 1,
+      "sites_per_session_max": 4,
       "scroll_enabled": true,
       "scroll_percent": 90,
       "scroll_iterations_min": 2,
@@ -194,7 +197,20 @@
     "profile_info": {
       "3d8516e091b1444788f5fd4f1724e73c": {
         "country": "Slovenia",
-        "first_run": "2026-03-05T20:55:35.089440"
+        "first_run": "2026-03-05T20:55:35.089440",
+        "google_authorized": false
+      },
+      "2ef7cfcf123d4b1b9f059813c353aea0": {
+        "country": "Japan",
+        "first_run": "2026-03-06T15:50:56.959966"
+      },
+      "f01d65725466469097a00ed23dbb336a": {
+        "country": "Australia",
+        "first_run": "2026-03-06T15:50:56.992072"
+      },
+      "b83d537f9adb404b99c0348bd6061868": {
+        "country": "United States",
+        "first_run": "2026-03-06T15:51:02.668618"
       }
     }
   },
@@ -390,7 +406,7 @@
       "auth_on_sites": true,
       "google_search_percent": 70,
       "sites_per_session_min": 1,
-      "sites_per_session_max": 20,
+      "sites_per_session_max": 4,
       "read_gmail": true,
       "gmail_read_percent": 30,
       "gmail_read_time_min": 10,
@@ -400,10 +416,10 @@
       "gmail_check_sites_min": 4,
       "gmail_check_sites_max": 7,
       "gmail_final_check": true,
-      "gmail_final_check_percent": 100,
-      "youtube_activity_percent": 100,
+      "gmail_final_check_percent": 30,
+      "youtube_activity_percent": 50,
       "youtube_videos_min": 1,
-      "youtube_videos_max": 5,
+      "youtube_videos_max": 2,
       "youtube_watch_min": 15,
       "youtube_watch_max": 60,
       "youtube_like_percent": 20,
@@ -415,7 +431,7 @@
       "scroll_pixels_min": 50,
       "scroll_pixels_max": 150,
       "scroll_pause_min": 0.1,
-      "scroll_pause_max": 0.49999999999999994,
+      "scroll_pause_max": 0.5,
       "scroll_down_percent": 75,
       "click_links_enabled": true,
       "click_percent": 30,
@@ -606,12 +622,12 @@
       "https://guardian.co.uk"
     ],
     "services": {
-      "drive": true,
-      "sheets": true,
-      "docs": true,
-      "calendar": true,
-      "photos": true,
-      "maps": true
+      "drive": false,
+      "sheets": false,
+      "docs": false,
+      "calendar": false,
+      "photos": false,
+      "maps": false
     },
     "profile_info": {
       "24298afd1b404eb48ae35f1befe5c050": {
@@ -637,7 +653,7 @@
   },
   "language": "Русский",
   "theme": "Light",
-  "max_parallel_profiles": 3,
+  "max_parallel_profiles": 20,
   "base_delay_min": 1,
   "base_delay_max": 4,
   "autosave_logs": true,
@@ -645,5 +661,23 @@
   "start_minimized": true,
   "youtube_queries": "music, gaming, vlog, tutorial, review, unboxing, podcast, documentary, cooking, travel, animation, news, highlights, compilation, technology, programming, design, photography, finance, motivation, education, nature, wildlife, space, gadgets, smartphones, cars, fashion, makeup, fitness, yoga, football, basketball, esports, minecraft, fortnite, tips, memes, shorts, lofi, jazz, rock, pop, classical, hiphop, rap, piano, guitar, dance, kpop, anime, marvel, disney, netflix, movie, comedy, drama, action, diy, crafts, gardening, productivity, startup, asmr, relaxation",
   "geo_visiting_enabled": true,
-  "geo_visiting_percent": 50
+  "geo_visiting_percent": 50,
+  "auto_mode": {
+    "work_start_weekday": 7,
+    "work_end_weekday": 23,
+    "work_start_weekend": 9,
+    "work_end_weekend": 25,
+    "start_randomization": 30,
+    "sessions_per_profile_min": 2,
+    "sessions_per_profile_max": 2,
+    "cooldown_min": 5,
+    "cooldown_max": 5,
+    "max_errors": 3,
+    "error_action": "skip_today",
+    "notify_cycle_complete": true,
+    "notify_profile_errors": true,
+    "notify_time_shortage": true,
+    "max_parallel": 20
+  },
+  "hide_windows_offscreen": true
 }

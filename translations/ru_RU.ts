@@ -768,5 +768,299 @@
         <translation>Вероятность скролла вниз:</translation>
     </message>
     
+    <!-- Notifications -->
+    <message>
+        <source>Notifications</source>
+        <translation>Уведомления</translation>
+    </message>
+    <message>
+        <source>unread</source>
+        <translation>непрочитанных</translation>
+    </message>
+    <message>
+        <source>Mark All Read</source>
+        <translation>Прочитать все</translation>
+    </message>
+    <message>
+        <source>Clear All</source>
+        <translation>Очистить все</translation>
+    </message>
+    <message>
+        <source>No notifications</source>
+        <translation>Нет уведомлений</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    
+    <!-- Auto Mode -->
+    <message>
+        <source>Auto Mode Settings</source>
+        <translation>Настройки авто-режима</translation>
+    </message>
+    <message>
+        <source>Weekdays:</source>
+        <translation>Будни:</translation>
+    </message>
+    <message>
+        <source>Weekends:</source>
+        <translation>Выходные:</translation>
+    </message>
+    <message>
+        <source>Start randomization:</source>
+        <translation>Разброс старта:</translation>
+    </message>
+    <message>
+        <source>Random offset for wake-up time</source>
+        <translation>Случайное смещение времени пробуждения</translation>
+    </message>
+    <message>
+        <source>Sessions per profile:</source>
+        <translation>Сессий на профиль:</translation>
+    </message>
+    <message>
+        <source>Cooldown between sessions:</source>
+        <translation>Перерыв между сессиями:</translation>
+    </message>
+    <message>
+        <source>Max errors per profile:</source>
+        <translation>Макс. ошибок на профиль:</translation>
+    </message>
+    <message>
+        <source>After max errors:</source>
+        <translation>После макс. ошибок:</translation>
+    </message>
+    <message>
+        <source>Skip for today</source>
+        <translation>Пропустить сегодня</translation>
+    </message>
+    <message>
+        <source>Skip for 1 hour</source>
+        <translation>Пропустить на 1 час</translation>
+    </message>
+    <message>
+        <source>Only notify</source>
+        <translation>Только уведомить</translation>
+    </message>
+    <message>
+        <source>Daily cycle complete</source>
+        <translation>Завершение дневного цикла</translation>
+    </message>
+    <message>
+        <source>Profile errors</source>
+        <translation>Ошибки профиля</translation>
+    </message>
+    <message>
+        <source>Not enough time</source>
+        <translation>Недостаточно времени</translation>
+    </message>
+    <message>
+        <source>Statistics</source>
+        <translation>Статистика</translation>
+    </message>
+    <message>
+        <source>Today's Progress</source>
+        <translation>Прогресс за сегодня</translation>
+    </message>
+    <message>
+        <source>Total Sessions</source>
+        <translation>Всего сессий</translation>
+    </message>
+    <message>
+        <source>Profiles Worked</source>
+        <translation>Профилей работало</translation>
+    </message>
+    <message>
+        <source>Errors</source>
+        <translation>Ошибок</translation>
+    </message>
+    <message>
+        <source>View History</source>
+        <translation>История</translation>
+    </message>
+    <message>
+        <source>Control</source>
+        <translation>Управление</translation>
+    </message>
+    <message>
+        <source>Status: Stopped</source>
+        <translation>Статус: Остановлен</translation>
+    </message>
+    <message>
+        <source>Status: Running</source>
+        <translation>Статус: Работает</translation>
+    </message>
+    <message>
+        <source>Status: Paused</source>
+        <translation>Статус: Пауза</translation>
+    </message>
+    <message>
+        <source>PAUSE</source>
+        <translation>ПАУЗА</translation>
+    </message>
+    <message>
+        <source>RESUME</source>
+        <translation>ПРОДОЛЖИТЬ</translation>
+    </message>
+    <message>
+        <source>Next action:</source>
+        <translation>Следующее действие:</translation>
+    </message>
+    <message>
+        <source>Auto Mode History</source>
+        <translation>История авто-режима</translation>
+    </message>
+    <message>
+        <source>Select date:</source>
+        <translation>Выберите дату:</translation>
+    </message>
+    <message>
+        <source>No history available</source>
+        <translation>История недоступна</translation>
+    </message>
+    <message>
+        <source>No data for this date</source>
+        <translation>Нет данных за эту дату</translation>
+    </message>
+    <message>
+        <source>25 = 01:00 next day</source>
+        <translation>25 = 01:00 след. дня</translation>
+    </message>
+    <message>
+        <source>min</source>
+        <translation>мин</translation>
+    </message>
+    <message>
+        <source>Regional Time</source>
+        <translation>Время регионов</translation>
+    </message>
+    <message>
+        <source>No Profiles</source>
+        <translation>Нет профилей</translation>
+    </message>
+    <message>
+        <source>No profiles found in Cookie or Google modes.\nAdd profiles first.</source>
+        <translation>Профили не найдены в режимах Cookie или Google.\nСначала добавьте профили.</translation>
+    </message>
+    <message>
+        <source>Next action</source>
+        <translation>Следующее действие</translation>
+    </message>
+    <message>
+        <source>now</source>
+        <translation>сейчас</translation>
+    </message>
+    <message>
+        <source>skipped for today</source>
+        <translation>пропущен на сегодня</translation>
+    </message>
+    <message>
+        <source>skipped for 1 hour</source>
+        <translation>пропущен на 1 час</translation>
+    </message>
+    <message>
+        <source>continuing (notify only)</source>
+        <translation>продолжение (только уведомление)</translation>
+    </message>
+    <message>
+        <source>Current State</source>
+        <translation>Текущее состояние</translation>
+    </message>
+    <message>
+        <source>Running</source>
+        <translation>Работает</translation>
+    </message>
+    <message>
+        <source>Waiting</source>
+        <translation>Ожидает</translation>
+    </message>
+    <message>
+        <source>Cooldown</source>
+        <translation>Перерыв</translation>
+    </message>
+    <message>
+        <source>Sleeping</source>
+        <translation>Спит</translation>
+    </message>
+    <message>
+        <source>Completed</source>
+        <translation>Завершено</translation>
+    </message>
+    <message>
+        <source>Skipped</source>
+        <translation>Пропущено</translation>
+    </message>
+    <message>
+        <source>Est. finish</source>
+        <translation>Прим. завершение</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Сегодня</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Неизвестно</translation>
+    </message>
+    <message>
+        <source>Hide browser windows off-screen</source>
+        <translation>Скрывать окна браузеров за экраном</translation>
+    </message>
+    <message>
+        <source>Move browser windows to position -3000,-3000 (invisible but running)</source>
+        <translation>Переместить окна браузеров на позицию -3000,-3000 (невидимы, но работают)</translation>
+    </message>
+    <message>
+        <source>History</source>
+        <translation>История</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>Сброс</translation>
+    </message>
+    <message>
+        <source>Reset today's progress (for testing)</source>
+        <translation>Сбросить прогресс за сегодня (для тестирования)</translation>
+    </message>
+    <message>
+        <source>Reset Progress</source>
+        <translation>Сброс прогресса</translation>
+    </message>
+    <message>
+        <source>Reset all session counters for today?\n\nThis is useful for testing.</source>
+        <translation>Сбросить все счётчики сессий за сегодня?\n\nПолезно для тестирования.</translation>
+    </message>
+    <message>
+        <source>Reset all session counters for today?</source>
+        <translation>Сбросить все счётчики сессий за сегодня?</translation>
+    </message>
+    <message>
+        <source>This is useful for testing.</source>
+        <translation>Полезно для тестирования.</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Да</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Нет</translation>
+    </message>
+    
+    <!-- Profile Duplicate Errors -->
+    <message>
+        <source>Cannot Add Profile</source>
+        <translation>Невозможно добавить профиль</translation>
+    </message>
+    <message>
+        <source>This profile is already in Google mode!\n\nProfiles cannot exist in both modes simultaneously.</source>
+        <translation>Этот профиль уже в Google режиме!\n\nПрофили не могут существовать в обоих режимах одновременно.</translation>
+    </message>
+    <message>
+        <source>This profile exists in Cookie mode.\n\nUse the migration button (→) in Cookie mode to move it to Google mode.</source>
+        <translation>Этот профиль существует в Cookie режиме.\n\nИспользуйте кнопку миграции (→) в Cookie режиме для переноса в Google режим.</translation>
+    </message>
+    
 </context>
 </TS>

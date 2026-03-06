@@ -5,6 +5,7 @@ Two modes: Cookie Mode and Google Warm-up Mode
 import json
 import asyncio
 import os
+import logging
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
@@ -19,6 +20,9 @@ from PyQt5.QtGui import QFont, QPixmap
 from core.octo_api import OctoAPI
 from core.automation import BrowserAutomation
 from core.translator import load_translation, tr
+from core.auto_state import AutoStateManager
+from core.notifications import NotificationManager, NotificationType
+from core.auto_scheduler import AutoScheduler, ProfileStatus
 
 
 # Country name to ISO code mapping (API returns full names)
@@ -860,7 +864,11 @@ class WorkerThread(QThread):
     async def _run_async(self):
         try:
             self.log_signal.emit(f"[{self.profile_uuid[:8]}] Starting ({self.mode})...")
-            connection = self.octo_api.start_profile(self.profile_uuid, minimized=self.start_minimized)
+            
+            connection = self.octo_api.start_profile(
+                self.profile_uuid, 
+                minimized=self.start_minimized
+            )
             
             if not connection:
                 self.log_signal.emit(f"[{self.profile_uuid[:8]}] Failed to start")
@@ -994,6 +1002,17 @@ class MainWindow(QMainWindow):
         self.pending_queue = []  # Queue of profiles waiting to start
         self.running_count = 0   # Number of currently running profiles
         
+        # Initialize Auto Mode managers
+        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.auto_state = AutoStateManager(app_dir)
+        self.notifications = NotificationManager(app_dir)
+        self.notifications.on_change(self._update_notification_badge)
+        
+        # Initialize Auto Mode scheduler
+        self.auto_scheduler = AutoScheduler()
+        self.auto_workers = {}  # Workers running in auto mode {uuid: worker}
+        self.auto_scheduler_timer = None
+        
         # Load language from config
         self.current_language = self.config.get("language", "English")
         self.current_theme = self.config.get("theme", "Dark")
@@ -1004,6 +1023,12 @@ class MainWindow(QMainWindow):
         
         self.init_ui()
         self.apply_theme(self.current_theme)
+        
+        # Start clock update timer (every 30 seconds)
+        from PyQt5.QtCore import QTimer
+        self.clock_timer = QTimer(self)
+        self.clock_timer.timeout.connect(self._update_world_clock)
+        self.clock_timer.start(30000)  # 30 seconds
         
     def init_ui(self):
         self.setWindowTitle("TT Cookie Robot")
@@ -1055,6 +1080,12 @@ class MainWindow(QMainWindow):
         self.google_mode_btn.clicked.connect(lambda: self.switch_mode("google"))
         top_bar.addWidget(self.google_mode_btn)
         
+        self.auto_mode_btn = QPushButton("🤖 Auto")
+        self.auto_mode_btn.setCheckable(True)
+        self.auto_mode_btn.setMinimumWidth(100)
+        self.auto_mode_btn.clicked.connect(lambda: self.switch_mode("auto"))
+        top_bar.addWidget(self.auto_mode_btn)
+        
         # Global settings button
         self.global_settings_btn = QPushButton("⚙️")
         self.global_settings_btn.setFixedWidth(40)
@@ -1062,12 +1093,22 @@ class MainWindow(QMainWindow):
         self.global_settings_btn.clicked.connect(self.show_global_settings)
         top_bar.addWidget(self.global_settings_btn)
         
+        # Notifications button with badge
+        self.notifications_btn = QPushButton("🔔")
+        self.notifications_btn.setFixedWidth(50)
+        self.notifications_btn.setToolTip(tr("Notifications"))
+        self.notifications_btn.clicked.connect(self.show_notifications)
+        self.notifications_btn.setStyleSheet("font-size: 16px;")
+        top_bar.addWidget(self.notifications_btn)
+        self._update_notification_badge()
+        
         main_layout.addLayout(top_bar)
         
         # === MAIN CONTENT: Stacked modes ===
         self.mode_stack = QStackedWidget()
         self.mode_stack.addWidget(self.create_cookie_mode())
         self.mode_stack.addWidget(self.create_google_mode())
+        self.mode_stack.addWidget(self.create_auto_mode())
         main_layout.addWidget(self.mode_stack, 1)
         
         # === CONTROL BUTTONS ===
@@ -2147,6 +2188,1081 @@ class MainWindow(QMainWindow):
         
         return widget
     
+    # === AUTO MODE ===
+    
+    def create_auto_mode(self):
+        """Create Auto Mode tab with settings and statistics."""
+        widget = QWidget()
+        main_layout = QHBoxLayout(widget)
+        main_layout.setSpacing(10)
+        
+        # === LEFT PANEL: Settings ===
+        settings_group = QGroupBox(tr("Auto Mode Settings"))
+        settings_layout = QVBoxLayout(settings_group)
+        
+        # Create scroll area for settings
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        form_layout = QFormLayout(scroll_widget)
+        form_layout.setSpacing(8)
+        
+        input_style = "min-height: 28px; min-width: 90px;"
+        
+        # --- Schedule Section ---
+        schedule_label = QLabel(tr("📅 Schedule"))
+        schedule_label.setStyleSheet("font-weight: bold; font-size: 13px; margin-top: 10px;")
+        form_layout.addRow(schedule_label)
+        
+        # Weekday hours
+        weekday_layout = QHBoxLayout()
+        self.auto_work_start_weekday = QSpinBox()
+        self.auto_work_start_weekday.setRange(0, 23)
+        self.auto_work_start_weekday.setValue(self.config.get("auto_mode", {}).get("work_start_weekday", 7))
+        self.auto_work_start_weekday.setSuffix(":00")
+        self.auto_work_start_weekday.setStyleSheet(input_style)
+        weekday_layout.addWidget(self.auto_work_start_weekday)
+        weekday_layout.addWidget(QLabel("-"))
+        self.auto_work_end_weekday = QSpinBox()
+        self.auto_work_end_weekday.setRange(0, 24)
+        self.auto_work_end_weekday.setValue(self.config.get("auto_mode", {}).get("work_end_weekday", 23))
+        self.auto_work_end_weekday.setSuffix(":00")
+        self.auto_work_end_weekday.setStyleSheet(input_style)
+        weekday_layout.addWidget(self.auto_work_end_weekday)
+        weekday_layout.addStretch()
+        form_layout.addRow(tr("Weekdays:"), weekday_layout)
+        
+        # Weekend hours
+        weekend_layout = QHBoxLayout()
+        self.auto_work_start_weekend = QSpinBox()
+        self.auto_work_start_weekend.setRange(0, 23)
+        self.auto_work_start_weekend.setValue(self.config.get("auto_mode", {}).get("work_start_weekend", 9))
+        self.auto_work_start_weekend.setSuffix(":00")
+        self.auto_work_start_weekend.setStyleSheet(input_style)
+        weekend_layout.addWidget(self.auto_work_start_weekend)
+        weekend_layout.addWidget(QLabel("-"))
+        self.auto_work_end_weekend = QSpinBox()
+        self.auto_work_end_weekend.setRange(0, 25)  # 25 = 01:00 next day
+        self.auto_work_end_weekend.setValue(self.config.get("auto_mode", {}).get("work_end_weekend", 25))
+        self.auto_work_end_weekend.setSuffix(":00")
+        self.auto_work_end_weekend.setStyleSheet(input_style)
+        self.auto_work_end_weekend.setToolTip(tr("25 = 01:00 next day"))
+        weekend_layout.addWidget(self.auto_work_end_weekend)
+        weekend_layout.addStretch()
+        form_layout.addRow(tr("Weekends:"), weekend_layout)
+        
+        # Start randomization
+        self.auto_start_random = QSpinBox()
+        self.auto_start_random.setRange(0, 60)
+        self.auto_start_random.setValue(self.config.get("auto_mode", {}).get("start_randomization", 30))
+        self.auto_start_random.setSuffix(" " + tr("min"))
+        self.auto_start_random.setStyleSheet(input_style)
+        self.auto_start_random.setToolTip(tr("Random offset for wake-up time"))
+        form_layout.addRow(tr("Start randomization:"), self.auto_start_random)
+        
+        # --- Sessions Section ---
+        sessions_label = QLabel(tr("🔄 Sessions"))
+        sessions_label.setStyleSheet("font-weight: bold; font-size: 13px; margin-top: 10px;")
+        form_layout.addRow(sessions_label)
+        
+        # Sessions per profile
+        sessions_layout = QHBoxLayout()
+        self.auto_sessions_min = QSpinBox()
+        self.auto_sessions_min.setRange(1, 10)
+        self.auto_sessions_min.setValue(self.config.get("auto_mode", {}).get("sessions_per_profile_min", 2))
+        self.auto_sessions_min.setStyleSheet(input_style)
+        sessions_layout.addWidget(self.auto_sessions_min)
+        sessions_layout.addWidget(QLabel("-"))
+        self.auto_sessions_max = QSpinBox()
+        self.auto_sessions_max.setRange(1, 10)
+        self.auto_sessions_max.setValue(self.config.get("auto_mode", {}).get("sessions_per_profile_max", 4))
+        self.auto_sessions_max.setStyleSheet(input_style)
+        sessions_layout.addWidget(self.auto_sessions_max)
+        sessions_layout.addStretch()
+        form_layout.addRow(tr("Sessions per profile:"), sessions_layout)
+        
+        # Cooldown between sessions
+        cooldown_layout = QHBoxLayout()
+        self.auto_cooldown_min = QSpinBox()
+        self.auto_cooldown_min.setRange(1, 240)
+        self.auto_cooldown_min.setValue(self.config.get("auto_mode", {}).get("cooldown_min", 30))
+        self.auto_cooldown_min.setSuffix(" " + tr("min"))
+        self.auto_cooldown_min.setStyleSheet(input_style)
+        cooldown_layout.addWidget(self.auto_cooldown_min)
+        cooldown_layout.addWidget(QLabel("-"))
+        self.auto_cooldown_max = QSpinBox()
+        self.auto_cooldown_max.setRange(1, 240)
+        self.auto_cooldown_max.setValue(self.config.get("auto_mode", {}).get("cooldown_max", 120))
+        self.auto_cooldown_max.setSuffix(" " + tr("min"))
+        self.auto_cooldown_max.setStyleSheet(input_style)
+        cooldown_layout.addWidget(self.auto_cooldown_max)
+        cooldown_layout.addStretch()
+        form_layout.addRow(tr("Cooldown between sessions:"), cooldown_layout)
+        
+        # --- Error Handling Section ---
+        errors_label = QLabel(tr("⚠️ Error Handling"))
+        errors_label.setStyleSheet("font-weight: bold; font-size: 13px; margin-top: 10px;")
+        form_layout.addRow(errors_label)
+        
+        # Max errors
+        self.auto_max_errors = QSpinBox()
+        self.auto_max_errors.setRange(1, 10)
+        self.auto_max_errors.setValue(self.config.get("auto_mode", {}).get("max_errors", 3))
+        self.auto_max_errors.setStyleSheet(input_style)
+        form_layout.addRow(tr("Max errors per profile:"), self.auto_max_errors)
+        
+        # Error action
+        self.auto_error_action = QComboBox()
+        self.auto_error_action.addItems([
+            tr("Skip for today"),
+            tr("Skip for 1 hour"),
+            tr("Only notify")
+        ])
+        error_action_map = {"skip_today": 0, "skip_hour": 1, "notify": 2}
+        current_action = self.config.get("auto_mode", {}).get("error_action", "skip_today")
+        self.auto_error_action.setCurrentIndex(error_action_map.get(current_action, 0))
+        self.auto_error_action.setStyleSheet(input_style)
+        form_layout.addRow(tr("After max errors:"), self.auto_error_action)
+        
+        # --- Notifications Section ---
+        notif_label = QLabel(tr("🔔 Notifications"))
+        notif_label.setStyleSheet("font-weight: bold; font-size: 13px; margin-top: 10px;")
+        form_layout.addRow(notif_label)
+        
+        self.auto_notify_cycle_complete = QCheckBox(tr("Daily cycle complete"))
+        self.auto_notify_cycle_complete.setChecked(self.config.get("auto_mode", {}).get("notify_cycle_complete", True))
+        form_layout.addRow(self.auto_notify_cycle_complete)
+        
+        self.auto_notify_profile_errors = QCheckBox(tr("Profile errors"))
+        self.auto_notify_profile_errors.setChecked(self.config.get("auto_mode", {}).get("notify_profile_errors", True))
+        form_layout.addRow(self.auto_notify_profile_errors)
+        
+        self.auto_notify_time_shortage = QCheckBox(tr("Not enough time"))
+        self.auto_notify_time_shortage.setChecked(self.config.get("auto_mode", {}).get("notify_time_shortage", True))
+        form_layout.addRow(self.auto_notify_time_shortage)
+        
+        scroll.setWidget(scroll_widget)
+        settings_layout.addWidget(scroll)
+        
+        # Save settings button
+        save_auto_btn = QPushButton(tr("Save Settings"))
+        save_auto_btn.clicked.connect(self.save_auto_settings)
+        settings_layout.addWidget(save_auto_btn)
+        
+        main_layout.addWidget(settings_group, 1)
+        
+        # === RIGHT PANEL: Statistics & Control ===
+        right_panel = QVBoxLayout()
+        
+        # World Clock Panel
+        clock_group = QGroupBox(tr("🌍 Regional Time"))
+        clock_layout = QVBoxLayout(clock_group)
+        
+        self.auto_clock_label = QLabel()
+        self.auto_clock_label.setStyleSheet("font-size: 11px; padding: 5px;")
+        self._update_world_clock()
+        clock_layout.addWidget(self.auto_clock_label)
+        
+        right_panel.addWidget(clock_group)
+        
+        # Statistics Group
+        stats_group = QGroupBox(tr("📊 Statistics"))
+        stats_layout = QVBoxLayout(stats_group)
+        
+        # Today's progress
+        self.auto_stats_label = QLabel()
+        self.auto_stats_label.setWordWrap(True)
+        self.auto_stats_label.setStyleSheet("font-size: 12px; padding: 10px;")
+        self._update_auto_stats_display()
+        stats_layout.addWidget(self.auto_stats_label)
+        
+        # Buttons row
+        stats_buttons = QHBoxLayout()
+        
+        # History button
+        history_btn = QPushButton(tr("📅 History"))
+        history_btn.clicked.connect(self.show_auto_history)
+        stats_buttons.addWidget(history_btn)
+        
+        # Reset progress button
+        reset_btn = QPushButton(tr("🔄 Reset"))
+        reset_btn.setToolTip(tr("Reset today's progress (for testing)"))
+        reset_btn.clicked.connect(self.reset_auto_progress)
+        stats_buttons.addWidget(reset_btn)
+        
+        stats_layout.addLayout(stats_buttons)
+        
+        right_panel.addWidget(stats_group)
+        
+        # Control Group
+        control_group = QGroupBox(tr("🎮 Control"))
+        control_layout = QVBoxLayout(control_group)
+        
+        # Status label
+        self.auto_status_label = QLabel(tr("Status: Stopped"))
+        self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px;")
+        self.auto_status_label.setAlignment(Qt.AlignCenter)
+        control_layout.addWidget(self.auto_status_label)
+        
+        # Control buttons
+        buttons_layout = QHBoxLayout()
+        
+        self.auto_start_btn = QPushButton("▶ " + tr("START"))
+        self.auto_start_btn.setMinimumHeight(50)
+        self.auto_start_btn.clicked.connect(self.start_auto_mode)
+        self.auto_start_btn.setStyleSheet("""
+            QPushButton { background-color: #a6e3a1; color: #1e1e2e; font-weight: bold; font-size: 14px; }
+            QPushButton:hover { background-color: #94d990; }
+            QPushButton:disabled { background-color: #4a5a48; color: #6c7086; }
+        """)
+        buttons_layout.addWidget(self.auto_start_btn)
+        
+        self.auto_stop_btn = QPushButton("⏹ " + tr("STOP"))
+        self.auto_stop_btn.setMinimumHeight(50)
+        self.auto_stop_btn.setEnabled(False)
+        self.auto_stop_btn.clicked.connect(self.stop_auto_mode)
+        self.auto_stop_btn.setStyleSheet("""
+            QPushButton { background-color: #f38ba8; color: #1e1e2e; font-weight: bold; font-size: 14px; }
+            QPushButton:hover { background-color: #e879a0; }
+            QPushButton:disabled { background-color: #5a4a50; color: #6c7086; }
+        """)
+        buttons_layout.addWidget(self.auto_stop_btn)
+        
+        control_layout.addLayout(buttons_layout)
+        
+        # Next action info
+        self.auto_next_action_label = QLabel(tr("Next action: -"))
+        self.auto_next_action_label.setStyleSheet("color: #6c7086; padding: 5px;")
+        control_layout.addWidget(self.auto_next_action_label)
+        
+        right_panel.addWidget(control_group)
+        right_panel.addStretch()
+        
+        main_layout.addLayout(right_panel, 1)
+        
+        return widget
+    
+    def _update_auto_stats_display(self):
+        """Update the auto mode statistics display."""
+        summary = self.auto_state.get_today_summary()
+        
+        # Get scheduler info if running
+        running_count = len(self.auto_workers)
+        
+        # Get scheduler summary if available
+        if hasattr(self, 'auto_scheduler') and self.auto_scheduler:
+            sched_summary = self.auto_scheduler.get_summary()
+            waiting = sched_summary.get("by_status", {}).get("waiting", 0)
+            sleeping = sched_summary.get("by_status", {}).get("sleeping", 0)
+            cooldown = sched_summary.get("by_status", {}).get("cooldown", 0)
+            completed = sched_summary.get("by_status", {}).get("completed", 0)
+            skipped = sched_summary.get("by_status", {}).get("skipped", 0)
+            planned = sched_summary.get("planned_sessions", 0)
+        else:
+            waiting = sleeping = cooldown = completed = skipped = planned = 0
+        
+        # Calculate progress percentage
+        total_done = summary['total_sessions']
+        if planned > 0:
+            progress_pct = min(100, int(total_done / planned * 100))
+            progress_str = f"{total_done} / ~{planned} ({progress_pct}%)"
+        else:
+            progress_str = str(total_done)
+        
+        # Estimate completion time
+        completion_str = self._estimate_completion_time()
+        
+        stats_text = f"""
+<b>{tr("Today's Progress")}</b><br>
+{tr("Total Sessions")}: {progress_str}<br>
+• Cookie: {summary['cookie_sessions']}<br>
+• Google: {summary['google_sessions']}<br><br>
+<b>{tr("Current State")}</b><br>
+▶ {tr("Running")}: {running_count}<br>
+⏳ {tr("Waiting")}: {waiting}<br>
+❄️ {tr("Cooldown")}: {cooldown}<br>
+😴 {tr("Sleeping")}: {sleeping}<br>
+✅ {tr("Completed")}: {completed}<br>
+⏭️ {tr("Skipped")}: {skipped}<br><br>
+🏁 {tr("Est. finish")}: {completion_str}<br>
+{tr("Errors")}: {summary['total_errors']}
+        """
+        self.auto_stats_label.setText(stats_text)
+    
+    def _estimate_completion_time(self) -> str:
+        """Estimate when all sessions will be completed."""
+        if not hasattr(self, 'auto_scheduler') or not self.auto_scheduler:
+            return "-"
+        
+        from datetime import datetime, timezone, timedelta
+        
+        # Find the latest sleep time among all profiles
+        latest_end = None
+        
+        for profile in self.auto_scheduler.get_all_profiles():
+            if profile.status.value in ('completed', 'skipped'):
+                continue
+            
+            sleep_time = self.auto_scheduler.get_sleep_time(profile.country)
+            if sleep_time:
+                if latest_end is None or sleep_time > latest_end:
+                    latest_end = sleep_time
+        
+        if latest_end:
+            now = datetime.now(timezone.utc)
+            diff = latest_end - now
+            
+            if diff.total_seconds() < 0:
+                return tr("Today")
+            
+            hours = int(diff.total_seconds() // 3600)
+            minutes = int((diff.total_seconds() % 3600) // 60)
+            
+            # Format as local time
+            local_end = latest_end.astimezone()
+            time_str = local_end.strftime("%H:%M")
+            
+            if hours > 0:
+                return f"~{time_str} ({hours}h {minutes}m)"
+            else:
+                return f"~{time_str} ({minutes}m)"
+        
+        return tr("Unknown")
+    
+    def _update_world_clock(self):
+        """Update the world clock display."""
+        from datetime import datetime, timezone, timedelta
+        
+        # Key regions with their UTC offsets
+        regions = [
+            ("🇺🇸 US (CST)", -6),
+            ("🇬🇧 UK", 0),
+            ("🇪🇺 EU (CET)", 1),
+            ("🇷🇺 RU (MSK)", 3),
+            ("🇯🇵 JP", 9),
+            ("🇦🇺 AU", 10),
+        ]
+        
+        utc_now = datetime.now(timezone.utc)
+        
+        # Get auto mode settings for working hours
+        auto_cfg = self.config.get("auto_mode", {})
+        work_start = auto_cfg.get("work_start_weekday", 7)
+        work_end = auto_cfg.get("work_end_weekday", 23)
+        
+        lines = []
+        for name, offset in regions:
+            local_time = utc_now + timedelta(hours=offset)
+            hour = local_time.hour
+            time_str = local_time.strftime("%H:%M")
+            
+            # Check if within working hours
+            is_weekend = local_time.weekday() >= 5
+            if is_weekend:
+                ws = auto_cfg.get("work_start_weekend", 9)
+                we = auto_cfg.get("work_end_weekend", 25)
+            else:
+                ws = work_start
+                we = work_end
+            
+            # Simple check: is current hour within working hours?
+            # Working hours are defined as start-end in local time (e.g., 7-23)
+            # For weekend overnight (e.g., 9-25 meaning 9:00-01:00), we need special handling
+            if we > 24:
+                # Overnight schedule (e.g., 9:00 to 01:00 next day)
+                # Only consider "awake" during the main working period (ws to 24)
+                # Early morning hours (00:00 to we-24) are NOT considered working hours
+                # because that would be "yesterday's late night", not today's work
+                awake = ws <= hour < 24
+            else:
+                awake = ws <= hour < we
+            
+            status = "✅" if awake else "😴"
+            lines.append(f"{name}: <b>{time_str}</b> {status}")
+        
+        self.auto_clock_label.setText("<br>".join(lines))
+    
+    def save_auto_settings(self):
+        """Save auto mode settings."""
+        error_actions = ["skip_today", "skip_hour", "notify"]
+        
+        auto_config = {
+            "work_start_weekday": self.auto_work_start_weekday.value(),
+            "work_end_weekday": self.auto_work_end_weekday.value(),
+            "work_start_weekend": self.auto_work_start_weekend.value(),
+            "work_end_weekend": self.auto_work_end_weekend.value(),
+            "start_randomization": self.auto_start_random.value(),
+            "sessions_per_profile_min": self.auto_sessions_min.value(),
+            "sessions_per_profile_max": self.auto_sessions_max.value(),
+            "cooldown_min": self.auto_cooldown_min.value(),
+            "cooldown_max": self.auto_cooldown_max.value(),
+            "max_errors": self.auto_max_errors.value(),
+            "error_action": error_actions[self.auto_error_action.currentIndex()],
+            "notify_cycle_complete": self.auto_notify_cycle_complete.isChecked(),
+            "notify_profile_errors": self.auto_notify_profile_errors.isChecked(),
+            "notify_time_shortage": self.auto_notify_time_shortage.isChecked(),
+        }
+        
+        self.config["auto_mode"] = auto_config
+        self.save_config()
+        self.log("✅ Auto mode settings saved")
+    
+    def reset_auto_progress(self):
+        """Reset today's auto mode progress for testing."""
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(tr("Reset Progress"))
+        layout = QVBoxLayout(dialog)
+        
+        layout.addWidget(QLabel(tr("Reset all session counters for today?") + "\n\n" + tr("This is useful for testing.")))
+        
+        buttons = QHBoxLayout()
+        yes_btn = QPushButton(tr("Yes"))
+        no_btn = QPushButton(tr("No"))
+        yes_btn.clicked.connect(dialog.accept)
+        no_btn.clicked.connect(dialog.reject)
+        buttons.addWidget(yes_btn)
+        buttons.addWidget(no_btn)
+        layout.addLayout(buttons)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            # Reset state file
+            self.auto_state._state["profiles"] = {}
+            self.auto_state._state["skipped_profiles"] = {}
+            self.auto_state._save_state()
+            
+            # Reload profiles into scheduler with reset counters
+            if self.auto_state.is_auto_running():
+                self._load_profiles_to_scheduler()
+            
+            self._update_auto_stats_display()
+            self.log("🔄 Auto mode progress reset")
+    
+    def show_auto_history(self):
+        """Show auto mode history dialog."""
+        from PyQt5.QtWidgets import QDialog
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(tr("Auto Mode History"))
+        dialog.setMinimumSize(500, 400)
+        layout = QVBoxLayout(dialog)
+        
+        # Date selector
+        date_layout = QHBoxLayout()
+        date_layout.addWidget(QLabel(tr("Select date:")))
+        
+        date_combo = QComboBox()
+        available_dates = self.auto_state.get_available_stats_dates()
+        if available_dates:
+            date_combo.addItems(available_dates)
+        else:
+            date_combo.addItem(tr("No history available"))
+        date_layout.addWidget(date_combo)
+        date_layout.addStretch()
+        layout.addLayout(date_layout)
+        
+        # Stats display
+        stats_display = QTextEdit()
+        stats_display.setReadOnly(True)
+        
+        def load_stats():
+            date_str = date_combo.currentText()
+            if date_str and date_str != tr("No history available"):
+                content = self.auto_state.get_stats_for_date(date_str)
+                if content:
+                    stats_display.setPlainText(content)
+                else:
+                    stats_display.setPlainText(tr("No data for this date"))
+            else:
+                stats_display.setPlainText(tr("No history available"))
+        
+        date_combo.currentTextChanged.connect(load_stats)
+        load_stats()  # Load initial
+        
+        layout.addWidget(stats_display)
+        
+        # Close button
+        close_btn = QPushButton(tr("Close"))
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+        
+        dialog.exec_()
+    
+    def start_auto_mode(self):
+        """Start auto mode."""
+        if not self.octo_api:
+            QMessageBox.warning(self, tr("Error"), tr("Not connected to Octo Browser"))
+            return
+        
+        # Load profiles into scheduler
+        self._load_profiles_to_scheduler()
+        
+        # Check if there are profiles
+        if not self.auto_scheduler.get_all_profiles():
+            QMessageBox.warning(
+                self, 
+                tr("No Profiles"),
+                tr("No profiles found in Cookie or Google modes.\nAdd profiles first.")
+            )
+            return
+        
+        # Update scheduler settings
+        auto_cfg = self.config.get("auto_mode", {})
+        auto_cfg["max_parallel"] = self.config.get("max_parallel_profiles", 5)
+        self.auto_scheduler.update_settings(auto_cfg)
+        
+        # Check capacity and warn if needed
+        capacity = self.auto_scheduler.estimate_daily_capacity()
+        summary = self.auto_scheduler.get_summary()
+        
+        if capacity.get("profiles_insufficient_time", 0) > 0:
+            if self.config.get("auto_mode", {}).get("notify_time_shortage", True):
+                self.notifications.notify_not_enough_time(
+                    summary.get("planned_sessions", 0),
+                    capacity.get("remaining_sessions", 0),
+                    summary.get("planned_sessions", 0) - capacity.get("remaining_sessions", 0)
+                )
+        
+        self.auto_state.set_auto_running(True)
+        self.auto_state.set_auto_paused(False)
+        
+        self.auto_start_btn.setEnabled(False)
+        self.auto_stop_btn.setEnabled(True)
+        self.auto_status_label.setText(tr("Status: Running"))
+        self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px; color: #a6e3a1;")
+        
+        # Start scheduler timer (check every 30 seconds)
+        from PyQt5.QtCore import QTimer
+        self.auto_scheduler_timer = QTimer(self)
+        self.auto_scheduler_timer.timeout.connect(self._auto_scheduler_tick)
+        self.auto_scheduler_timer.start(30000)  # 30 seconds
+        
+        # Immediate first tick
+        self._auto_scheduler_tick()
+        
+        self.log("🤖 Auto mode STARTED")
+        self.log(f"   📊 Profiles: {summary.get('cookie_profiles', 0)} Cookie + {summary.get('google_profiles', 0)} Google")
+    
+    def _load_profiles_to_scheduler(self):
+        """Load all profiles from Cookie and Google modes into scheduler."""
+        self.auto_scheduler.clear_profiles()
+        
+        # Load Cookie profiles
+        cookie_cfg = self.get_mode_config("cookie")
+        cookie_profiles = cookie_cfg.get("profiles", [])
+        cookie_info = cookie_cfg.get("profile_info", {})
+        
+        self.log(f"[Auto] Loading {len(cookie_profiles)} cookie profiles to scheduler...")
+        
+        for uuid in cookie_profiles:
+            info = cookie_info.get(uuid, {})
+            country = info.get("country", "US")
+            
+            # Get state from auto_state
+            sessions = self.auto_state.get_profile_sessions_today(uuid)
+            errors = self.auto_state.get_profile_errors_today(uuid)
+            last_session = self.auto_state.get_last_session_time(uuid)
+            
+            self.log(f"[Auto]   {uuid[:8]}... country={country}")
+            
+            self.auto_scheduler.add_profile(
+                uuid=uuid,
+                mode="cookie",
+                country=country,
+                sessions_today=sessions,
+                errors_today=errors,
+                last_session_end=last_session
+            )
+        
+        # Load Google profiles
+        google_cfg = self.get_mode_config("google")
+        google_profiles = google_cfg.get("profiles", [])
+        google_info = google_cfg.get("profile_info", {})
+        
+        self.log(f"[Auto] Loading {len(google_profiles)} google profiles to scheduler...")
+        
+        for uuid in google_profiles:
+            info = google_info.get(uuid, {})
+            country = info.get("country", "US")
+            
+            sessions = self.auto_state.get_profile_sessions_today(uuid)
+            errors = self.auto_state.get_profile_errors_today(uuid)
+            last_session = self.auto_state.get_last_session_time(uuid)
+            
+            self.log(f"[Auto]   {uuid[:8]}... country={country}")
+            
+            self.auto_scheduler.add_profile(
+                uuid=uuid,
+                mode="google",
+                country=country,
+                sessions_today=sessions,
+                errors_today=errors,
+                last_session_end=last_session
+            )
+    
+
+    def _refresh_all_auto_profiles_geo(self):
+        """
+        Refresh geo-data for ALL profiles in the auto scheduler from Octo API.
+        This MUST run BEFORE get_profiles_to_start() to ensure scheduling decisions
+        use the latest country/proxy data.
+        """
+        if not self.octo_api:
+            return
+        
+        all_profiles = self.auto_scheduler.get_all_profiles()
+        if not all_profiles:
+            return
+        
+        geo_updated = False
+        
+        for profile in all_profiles:
+            uuid = profile.uuid
+            mode = profile.mode
+            old_country = profile.country
+            
+            # Fetch fresh info from Octo API
+            fresh_info = self.octo_api.get_profile_info(uuid)
+            if not fresh_info:
+                continue
+            
+            new_country = fresh_info.get("country", "")
+            if not new_country:
+                continue
+            
+            # Check if country changed
+            if old_country != new_country:
+                logging.info(f"[AUTO_GEO_REFRESH] {uuid[:8]} country changed: {old_country} -> {new_country}")
+                self.log(f"[Auto] 🌍 {uuid[:8]}... geo updated: {old_country} → {new_country}")
+                
+                # Update in scheduler (this will also re-evaluate awake/sleep status)
+                self.auto_scheduler.update_profile_country(uuid, new_country)
+                
+                # Update in config/profile_info for persistence and UI
+                cfg = self.get_mode_config(mode)
+                profile_info = cfg.setdefault("profile_info", {})
+                if uuid not in profile_info:
+                    profile_info[uuid] = {}
+                profile_info[uuid]["country"] = new_country
+                self.set_mode_config(mode, cfg)
+                
+                geo_updated = True
+        
+        # If any geo changed, reload profile lists to update UI flags
+        if geo_updated:
+            self.load_profiles_list("cookie")
+            self.load_profiles_list("google")
+
+    def _auto_scheduler_tick(self):
+        """Called periodically to check and start profiles."""
+        if not self.auto_state.is_auto_running():
+            return
+        
+        if self.auto_state.is_auto_paused():
+            return
+        
+        # CRITICAL: Refresh geo-data for ALL profiles BEFORE scheduling decisions
+        # This ensures scheduler uses fresh country data when determining awake/sleep status
+        self._refresh_all_auto_profiles_geo()
+        
+        # Update UI
+        self._update_auto_stats_display()
+        self._update_auto_next_action()
+        
+        # Get profiles to start
+        to_start = self.auto_scheduler.get_profiles_to_start()
+        logging.info(f"[AUTO_DEBUG] _auto_scheduler_tick: to_start has {len(to_start)} profiles")
+        
+        for profile in to_start:
+            logging.info(f"[AUTO_DEBUG] Starting profile from to_start: {profile.uuid[:8]}, mode={profile.mode}, country={profile.country}")
+            self._start_auto_profile(profile.uuid, profile.mode)
+    
+    def _update_auto_next_action(self):
+        """Update the next action label."""
+        next_time, description = self.auto_scheduler.get_next_action_time()
+        
+        if next_time:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            diff = next_time - now
+            
+            if diff.total_seconds() < 60:
+                time_str = tr("now")
+            elif diff.total_seconds() < 3600:
+                time_str = f"{int(diff.total_seconds() // 60)} " + tr("min")
+            else:
+                time_str = f"{int(diff.total_seconds() // 3600)}h {int((diff.total_seconds() % 3600) // 60)}m"
+            
+            self.auto_next_action_label.setText(f"{tr('Next action')}: {time_str} - {description}")
+        else:
+            self.auto_next_action_label.setText(f"{tr('Next action')}: -")
+    
+    def _start_auto_profile(self, uuid: str, mode: str):
+        """Start a profile in auto mode."""
+        logging.info(f"[AUTO_DEBUG] _start_auto_profile called: uuid={uuid[:8]}, mode={mode}")
+        
+        # Check if already running (in auto or manual)
+        if uuid in self.auto_workers:
+            logging.info(f"[AUTO_DEBUG] {uuid[:8]} already in auto_workers, skipping")
+            return
+        if uuid in self.workers:
+            # Running manually - mark as manual in scheduler
+            self.auto_scheduler.mark_profile_manual(uuid, True)
+            logging.info(f"[AUTO_DEBUG] {uuid[:8]} in manual workers, marking as manual")
+            return
+        
+        # NOTE: Geo-data refresh now happens in _refresh_all_auto_profiles_geo() 
+        # BEFORE get_profiles_to_start(), so we use already-fresh data here.
+        
+        # Final safety check: verify profile is still awake (in case of race condition)
+        profile = self.auto_scheduler.get_profile(uuid)
+        logging.info(f"[AUTO_DEBUG] get_profile({uuid[:8]}) returned: {profile}")
+        
+        if profile:
+            logging.info(f"[AUTO_DEBUG] profile.country = '{profile.country}'")
+            is_awake = self.auto_scheduler.is_profile_awake(profile.country)
+            local_time = self.auto_scheduler.get_local_time(profile.country)
+            logging.info(f"[AUTO_DEBUG] {uuid[:8]}: country={profile.country}, local_time={local_time}, is_awake={is_awake}")
+            self.log(f"[Auto] 🕐 {uuid[:8]}... country={profile.country}, local={local_time.strftime('%H:%M')}, awake={is_awake}")
+            if not is_awake:
+                logging.info(f"[AUTO_DEBUG] {uuid[:8]} is NOT awake, SKIPPING!")
+                self.log(f"[Auto] 😴 {uuid[:8]}... ({profile.country}) went to sleep, skipping")
+                self.auto_scheduler._update_profile_status(profile)
+                return
+        else:
+            logging.info(f"[AUTO_DEBUG] {uuid[:8]} NOT FOUND in scheduler!")
+            self.log(f"[Auto] ⚠️ {uuid[:8]}... not found in scheduler!")
+        
+        # Get mode config and settings
+        cfg = self.get_mode_config(mode)
+        settings = cfg.get("settings", {}).copy()
+        
+        # Get profile country for geo-targeting
+        profile_info = cfg.get("profile_info", {})
+        profile_country = profile_info.get(uuid, {}).get("country", "")
+        
+        # Add global settings
+        settings["base_delay_min"] = self.config.get("base_delay_min", 1)
+        settings["base_delay_max"] = self.config.get("base_delay_max", 3)
+        settings["start_minimized"] = self.config.get("start_minimized", True)
+        settings["geo_visiting_enabled"] = self.config.get("geo_visiting_enabled", False)
+        settings["geo_visiting_percent"] = self.config.get("geo_visiting_percent", 70)
+        settings["profile_country"] = profile_country  # For geo-targeting
+        
+        # Get sites for this mode
+        if mode == "cookie":
+            sites = cfg.get("sites", [])
+            youtube_enabled = cfg.get("youtube_enabled", False)
+            settings["youtube_enabled"] = youtube_enabled
+        else:  # google
+            sites = cfg.get("browse_sites", [])
+        
+        if not sites:
+            self.log(f"[Auto] ⚠️ No sites for {uuid[:8]}... ({mode})")
+            return
+        
+        # Create and start worker
+        start_minimized = self.config.get("start_minimized", True)
+        worker = WorkerThread(uuid, sites, settings, self.octo_api, mode, start_minimized)
+        worker.log_signal.connect(self.log)
+        worker.finished_signal.connect(lambda u: self._on_auto_worker_finished(u, True))
+        worker.error_signal.connect(lambda u, e: self._on_auto_worker_error(u, e))
+        # CRITICAL: Connect country_detected to check timezone after REAL country is known
+        worker.country_detected.connect(lambda u, c: self._on_auto_country_detected(u, c, mode))
+        
+        self.auto_workers[uuid] = worker
+        self.auto_scheduler.mark_profile_started(uuid)
+        
+        worker.start()
+        self.log(f"[Auto] ▶ Started {uuid[:8]}... ({mode})")
+    
+    def _on_auto_worker_error(self, uuid: str, error: str):
+        """Handle auto mode worker error."""
+        self.log(f"[Auto] ❌ Error {uuid[:8]}...: {error}")
+        self._on_auto_worker_finished(uuid, False)
+
+    def _on_auto_country_detected(self, uuid: str, real_country: str, mode: str):
+        """
+        Handle country detection in Auto mode.
+        This is called when the profile ACTUALLY starts and we get the REAL country from proxy.
+        If the real country shows the profile should be sleeping, STOP it immediately.
+        """
+        logging.info(f"[AUTO_COUNTRY_DETECTED] {uuid[:8]}: REAL country = {real_country}")
+        
+        # Get old country from scheduler
+        profile = self.auto_scheduler.get_profile(uuid)
+        old_country = profile.country if profile else ""
+        
+        # Log country change if different
+        if old_country != real_country:
+            self.log(f"[Auto] 🌍 {uuid[:8]}... REAL country: {old_country} → {real_country}")
+            logging.info(f"[AUTO_COUNTRY_DETECTED] {uuid[:8]}: country changed {old_country} -> {real_country}")
+            
+            # Update scheduler with real country
+            self.auto_scheduler.update_profile_country(uuid, real_country)
+            
+            # Update config for persistence
+            cfg = self.get_mode_config(mode)
+            profile_info = cfg.setdefault("profile_info", {})
+            if uuid not in profile_info:
+                profile_info[uuid] = {}
+            profile_info[uuid]["country"] = real_country
+            self.set_mode_config(mode, cfg)
+            
+            # Refresh UI to show new country flag
+            self.load_profiles_list(mode)
+        
+        # CRITICAL: Check if profile should be sleeping based on REAL country
+        is_awake = self.auto_scheduler.is_profile_awake(real_country)
+        local_time = self.auto_scheduler.get_local_time(real_country)
+        
+        logging.info(f"[AUTO_COUNTRY_DETECTED] {uuid[:8]}: local_time={local_time}, is_awake={is_awake}")
+        self.log(f"[Auto] 🕐 {uuid[:8]}... ({real_country}) local={local_time.strftime('%H:%M')}, awake={is_awake}")
+        
+        if not is_awake:
+            # Profile should be sleeping! Stop it immediately
+            self.log(f"[Auto] 😴 {uuid[:8]}... STOPPING - {real_country} is sleeping at {local_time.strftime('%H:%M')}")
+            logging.info(f"[AUTO_COUNTRY_DETECTED] {uuid[:8]}: STOPPING - profile should be sleeping!")
+            
+            # Stop the worker
+            if uuid in self.auto_workers:
+                worker = self.auto_workers[uuid]
+                worker.stop()
+                
+                # Force stop the browser profile
+                if self.octo_api:
+                    self.octo_api.force_stop_profile(uuid)
+                
+                # Remove from auto_workers
+                del self.auto_workers[uuid]
+                
+                # Update scheduler - mark as not running, set to sleeping status
+                self.auto_scheduler.mark_profile_completed(uuid, False)  # Mark as not successful
+                
+                self.log(f"[Auto] ⏹️ {uuid[:8]}... stopped due to timezone")
+                self._update_auto_stats_display()
+
+    
+    def _on_auto_worker_finished(self, uuid: str, success: bool):
+        """Handle auto mode worker completion."""
+        if uuid in self.auto_workers:
+            del self.auto_workers[uuid]
+        
+        # Update scheduler and state
+        self.auto_scheduler.mark_profile_completed(uuid, success)
+        
+        if success:
+            profile = self.auto_scheduler.get_profile(uuid)
+            if profile:
+                self.auto_state.increment_profile_session(uuid, profile.mode)
+                self.auto_state.reset_profile_errors(uuid)
+        else:
+            self.auto_state.increment_profile_error(uuid)
+            
+            # Check if max errors reached
+            errors = self.auto_state.get_profile_errors_today(uuid)
+            max_errors = self.config.get("auto_mode", {}).get("max_errors", 3)
+            
+            if errors >= max_errors:
+                error_action = self.config.get("auto_mode", {}).get("error_action", "skip_today")
+                
+                if error_action == "skip_today":
+                    self.auto_state.mark_profile_skipped(uuid, "today")
+                    action_str = tr("skipped for today")
+                elif error_action == "skip_hour":
+                    from datetime import datetime, timezone, timedelta
+                    skip_until = datetime.now(timezone.utc) + timedelta(hours=1)
+                    self.auto_state.mark_profile_skipped(uuid, skip_until.isoformat())
+                    action_str = tr("skipped for 1 hour")
+                else:
+                    action_str = tr("continuing (notify only)")
+                
+                if self.config.get("auto_mode", {}).get("notify_profile_errors", True):
+                    self.notifications.notify_profile_errors(uuid, errors, action_str)
+                
+                self.log(f"[Auto] ⚠️ {uuid[:8]}... reached {errors} errors - {action_str}")
+        
+        # Update display
+        self._update_auto_stats_display()
+        
+        # Check if all done for today
+        summary = self.auto_scheduler.get_summary()
+        if (summary.get("by_status", {}).get("waiting", 0) == 0 and 
+            summary.get("by_status", {}).get("cooldown", 0) == 0 and
+            summary.get("by_status", {}).get("sleeping", 0) == 0 and
+            len(self.auto_workers) == 0):
+            
+            # Daily cycle complete
+            if self.config.get("auto_mode", {}).get("notify_cycle_complete", True):
+                self.notifications.notify_daily_cycle_complete(self.auto_state.get_today_summary())
+            self.log("🤖 Auto mode: Daily cycle complete!")
+    
+    def stop_auto_mode(self):
+        """Stop auto mode completely."""
+        # Stop scheduler timer
+        if self.auto_scheduler_timer:
+            self.auto_scheduler_timer.stop()
+            self.auto_scheduler_timer = None
+        
+        # Stop all auto workers and close profiles
+        for uuid, worker in list(self.auto_workers.items()):
+            self.log(f"[Auto] ⏹ Stopping {uuid[:8]}...")
+            worker.stop()
+            # Close profile in Octo
+            try:
+                if self.octo_api:
+                    self.octo_api.stop_profile(uuid)
+            except Exception as e:
+                self.log(f"[Auto] ⚠️ Error closing {uuid[:8]}: {e}")
+        
+        self.auto_workers.clear()
+        
+        self.auto_state.set_auto_running(False)
+        self.auto_state.save_current_stats()  # Archive today's stats
+        
+        self.auto_start_btn.setEnabled(True)
+        self.auto_stop_btn.setEnabled(False)
+        self.auto_status_label.setText(tr("Status: Stopped"))
+        self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px; color: #f38ba8;")
+        
+        self.log("🤖 Auto mode STOPPED")
+    
+    # === NOTIFICATIONS SYSTEM ===
+    
+    def _update_notification_badge(self):
+        """Update notification button badge."""
+        count = self.notifications.get_unread_count()
+        if count > 0:
+            self.notifications_btn.setText(f"🔔 {count}")
+            self.notifications_btn.setStyleSheet("""
+                QPushButton {
+                    font-size: 14px;
+                    background-color: #f38ba8;
+                    color: white;
+                    font-weight: bold;
+                    border-radius: 4px;
+                }
+                QPushButton:hover { background-color: #e879a0; }
+            """)
+        else:
+            self.notifications_btn.setText("🔔")
+            self.notifications_btn.setStyleSheet("font-size: 16px;")
+    
+    def show_notifications(self):
+        """Show notifications popup dialog."""
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QScrollArea
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(tr("Notifications"))
+        dialog.setMinimumSize(400, 300)
+        dialog_layout = QVBoxLayout(dialog)
+        
+        # Header with mark all read and clear buttons
+        header = QHBoxLayout()
+        
+        count_label = QLabel(f"{self.notifications.get_unread_count()} " + tr("unread"))
+        count_label.setStyleSheet("font-weight: bold;")
+        header.addWidget(count_label)
+        
+        header.addStretch()
+        
+        mark_read_btn = QPushButton(tr("Mark All Read"))
+        mark_read_btn.clicked.connect(lambda: self._mark_all_notifications_read(dialog, count_label))
+        header.addWidget(mark_read_btn)
+        
+        clear_btn = QPushButton(tr("Clear All"))
+        clear_btn.clicked.connect(lambda: self._clear_all_notifications(dialog))
+        header.addWidget(clear_btn)
+        
+        dialog_layout.addLayout(header)
+        
+        # Scrollable notification list
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+        scroll_layout.setSpacing(8)
+        
+        notifications = self.notifications.get_all()
+        
+        if not notifications:
+            empty_label = QLabel(tr("No notifications"))
+            empty_label.setAlignment(Qt.AlignCenter)
+            empty_label.setStyleSheet("color: #6c7086; padding: 20px;")
+            scroll_layout.addWidget(empty_label)
+        else:
+            for notif in notifications:
+                notif_widget = self._create_notification_widget(notif)
+                scroll_layout.addWidget(notif_widget)
+        
+        scroll_layout.addStretch()
+        scroll.setWidget(scroll_widget)
+        dialog_layout.addWidget(scroll)
+        
+        # Close button
+        close_btn = QPushButton(tr("Close"))
+        close_btn.clicked.connect(dialog.reject)
+        dialog_layout.addWidget(close_btn)
+        
+        dialog.exec_()
+    
+    def _create_notification_widget(self, notif):
+        """Create a widget for displaying a single notification."""
+        frame = QFrame()
+        frame.setFrameShape(QFrame.StyledPanel)
+        
+        # Different background for unread
+        if not notif.read:
+            frame.setStyleSheet("QFrame { background-color: rgba(166, 227, 161, 0.1); border-radius: 4px; padding: 8px; }")
+        else:
+            frame.setStyleSheet("QFrame { background-color: rgba(108, 112, 134, 0.1); border-radius: 4px; padding: 8px; }")
+        
+        layout = QVBoxLayout(frame)
+        layout.setSpacing(4)
+        layout.setContentsMargins(8, 8, 8, 8)
+        
+        # Header: icon + title + time
+        header = QHBoxLayout()
+        
+        icon_label = QLabel(notif.get_icon())
+        icon_label.setStyleSheet("font-size: 16px;")
+        header.addWidget(icon_label)
+        
+        if notif.title:
+            title_label = QLabel(notif.title)
+            title_label.setStyleSheet("font-weight: bold;")
+            header.addWidget(title_label)
+        
+        header.addStretch()
+        
+        time_label = QLabel(notif.get_time_ago())
+        time_label.setStyleSheet("color: #6c7086; font-size: 11px;")
+        header.addWidget(time_label)
+        
+        layout.addLayout(header)
+        
+        # Message
+        msg_label = QLabel(notif.message)
+        msg_label.setWordWrap(True)
+        layout.addWidget(msg_label)
+        
+        return frame
+    
+    def _mark_all_notifications_read(self, dialog, count_label):
+        """Mark all notifications as read."""
+        self.notifications.mark_all_read()
+        count_label.setText("0 " + tr("unread"))
+        # Refresh dialog content
+        dialog.close()
+        self.show_notifications()
+    
+    def _clear_all_notifications(self, dialog):
+        """Clear all notifications."""
+        self.notifications.clear_all()
+        dialog.close()
+        self.show_notifications()
+    
     def show_global_settings(self):
         """Show global settings dialog"""
         from PyQt5.QtWidgets import QDialog, QDialogButtonBox
@@ -2363,7 +3479,15 @@ class MainWindow(QMainWindow):
         self.current_mode = mode
         self.cookie_mode_btn.setChecked(mode == "cookie")
         self.google_mode_btn.setChecked(mode == "google")
-        self.mode_stack.setCurrentIndex(0 if mode == "cookie" else 1)
+        self.auto_mode_btn.setChecked(mode == "auto")
+        
+        if mode == "cookie":
+            self.mode_stack.setCurrentIndex(0)
+        elif mode == "google":
+            self.mode_stack.setCurrentIndex(1)
+        else:  # auto
+            self.mode_stack.setCurrentIndex(2)
+        
         self.log(f"Mode: {mode.upper()}")
     
     def get_mode_config(self, mode):
@@ -2744,6 +3868,29 @@ class MainWindow(QMainWindow):
         inp = self.get_profile_input(mode)
         uuid = inp.text().strip()
         if uuid:
+            # Check if UUID already exists in the OTHER mode
+            other_mode = "google" if mode == "cookie" else "cookie"
+            other_cfg = self.get_mode_config(other_mode)
+            other_profiles = other_cfg.get("profiles", [])
+            
+            if uuid in other_profiles:
+                if mode == "cookie":
+                    # Trying to add to Cookie, but exists in Google
+                    QMessageBox.warning(
+                        self, 
+                        tr("Cannot Add Profile"),
+                        tr("This profile is already in Google mode!\n\nProfiles cannot exist in both modes simultaneously.")
+                    )
+                else:
+                    # Trying to add to Google, but exists in Cookie
+                    QMessageBox.warning(
+                        self, 
+                        tr("Cannot Add Profile"),
+                        tr("This profile exists in Cookie mode.\n\nUse the migration button (→) in Cookie mode to move it to Google mode.")
+                    )
+                inp.clear()
+                return
+            
             cfg = self.get_mode_config(mode)
             profiles = cfg.get("profiles", [])
             if uuid not in profiles:
@@ -3021,12 +4168,26 @@ class MainWindow(QMainWindow):
             info = self.octo_api.get_profile_info(uuid)
             if info:
                 country = info.get("country", "")
-                profile_info[uuid] = {"country": country}
+                # Preserve existing data, only update country
+                if uuid not in profile_info:
+                    profile_info[uuid] = {}
+                old_country = profile_info[uuid].get("country", "")
+                profile_info[uuid]["country"] = country
+                
+                # Log if country changed
+                if old_country and old_country != country:
+                    self.log(f"[{mode}] {uuid[:8]}... geo changed: {old_country} → {country}")
+                
                 updated += 1
         
         cfg["profile_info"] = profile_info
         self.set_mode_config(mode, cfg)
         self.load_profiles_list(mode)
+        
+        # Update scheduler if auto mode is active
+        if hasattr(self, 'auto_scheduler') and self.auto_scheduler:
+            self._load_profiles_to_scheduler()
+        
         self.log(f"[{mode}] Refreshed {updated}/{len(profiles)} profiles")
 
     # === SITES ===
@@ -3385,6 +4546,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No sites")
             return
         
+        # Check if any selected profile is running in Auto mode
+        for uuid in selected:
+            if uuid in self.auto_workers:
+                # Stop it in auto mode and mark as manual
+                self.auto_workers[uuid].stop()
+                del self.auto_workers[uuid]
+                self.auto_scheduler.mark_profile_manual(uuid, True)
+                self.log(f"[Auto] ⏹ Stopped {uuid[:8]}... for manual control")
+        
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         
@@ -3416,7 +4586,11 @@ class MainWindow(QMainWindow):
         # Get profile info for geo data
         profile_info = cfg.get("profile_info", {})
         
+        # Check if timezone filtering is enabled
+        timezone_filter_enabled = self.config.get("auto_mode", {}).get("timezone_filter_batch", False)
+        
         # Add all selected profiles to queue with their settings
+        skipped_sleeping = []
         for uuid in selected:
             # Get profile's country for geo-based visiting
             info = profile_info.get(uuid, {})
@@ -3424,6 +4598,13 @@ class MainWindow(QMainWindow):
             # Normalize country to 2-letter code (country may be full name like "Slovenia")
             if profile_country and len(profile_country) > 2:
                 profile_country = normalize_country(profile_country)
+            
+            # Check if profile is sleeping (timezone-based)
+            if timezone_filter_enabled and hasattr(self, 'auto_scheduler') and profile_country:
+                if not self.auto_scheduler.is_profile_awake(profile_country):
+                    local_time = self.auto_scheduler.get_local_time(profile_country)
+                    skipped_sleeping.append(f"{uuid[:8]}... ({profile_country}, {local_time.strftime('%H:%M')})")
+                    continue
             
             # Create a copy of settings with profile-specific country
             profile_settings = settings.copy()
@@ -3435,6 +4616,12 @@ class MainWindow(QMainWindow):
                 "settings": profile_settings,
                 "mode": mode
             })
+        
+        # Log skipped profiles
+        if skipped_sleeping:
+            self.log(f"😴 Skipped {len(skipped_sleeping)} sleeping profiles:")
+            for p in skipped_sleeping:
+                self.log(f"   {p}")
         
         total_profiles = len(self.pending_queue)
         self.log(f"Queued {total_profiles} profiles (max parallel: {max_parallel})")
@@ -3498,6 +4685,11 @@ class MainWindow(QMainWindow):
             del self.workers[uuid]
             self.running_count = max(0, self.running_count - 1)
             self.log(f"[{uuid[:8]}] Done (running: {self.running_count}, pending: {len(self.pending_queue)})")
+        
+        # Return profile to Auto mode if it was taken from there
+        if self.auto_state.is_auto_running():
+            self.auto_scheduler.mark_profile_manual(uuid, False)
+            self.log(f"[{uuid[:8]}] Returned to Auto queue")
         
         # Start next worker from queue
         if self.pending_queue:

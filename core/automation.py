@@ -542,6 +542,22 @@ class BrowserAutomation:
             pass
         return False
     
+    async def move_window_offscreen(self):
+        """Move browser window off-screen (position -3000, -3000)."""
+        try:
+            if self.page and not self.page.is_closed():
+                cdp = await self.page.context.new_cdp_session(self.page)
+                window_id = await cdp.send("Browser.getWindowForTarget")
+                if window_id and window_id.get("windowId"):
+                    await cdp.send("Browser.setWindowBounds", {
+                        "windowId": window_id.get("windowId"),
+                        "bounds": {"left": -3000, "top": -3000, "width": 1280, "height": 800}
+                    })
+                    return True
+        except Exception as e:
+            print(f"[Automation] move_window_offscreen error: {e}")
+        return False
+    
     async def disconnect(self):
         try:
             # Close all extra tabs before disconnecting (keep only one to preserve session)
@@ -952,6 +968,11 @@ class BrowserAutomation:
             while (time.time() - start) < time_on_site:
                 if self.should_stop:
                     return
+                
+                # Check if minimize was requested (from Auto mode)
+                if getattr(self, '_should_minimize', False):
+                    await self.minimize_window()
+                    self._should_minimize = False
                 
                 if human_behavior:
                     await HumanBehavior.random_mouse(self.page)
@@ -1431,6 +1452,11 @@ class BrowserAutomation:
             while (time.time() - start) < time_on_site:
                 if self.should_stop:
                     return
+                
+                # Check if minimize was requested (from Auto mode)
+                if getattr(self, '_should_minimize', False):
+                    await self.minimize_window()
+                    self._should_minimize = False
                 
                 # Human behavior - mouse movement
                 await HumanBehavior.random_mouse(self.page)

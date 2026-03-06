@@ -20,12 +20,18 @@ class OctoAPI:
         except:
             return False
     
-    def start_profile(self, profile_uuid: str, headless: bool = False, minimized: bool = True, disable_fedcm: bool = True) -> Optional[Dict[str, Any]]:
-        """Start profile with optional minimized mode and FedCM disabled"""
+    def start_profile(self, profile_uuid: str, headless: bool = False, minimized: bool = True, 
+                      disable_fedcm: bool = True, window_position: tuple = None) -> Optional[Dict[str, Any]]:
+        """Start profile with optional minimized mode, FedCM disabled, and window position"""
         try:
             args = []
             if minimized:
                 args.append("--start-minimized")
+            
+            # Set window position (for hiding off-screen)
+            if window_position:
+                x, y = window_position
+                args.append(f"--window-position={x},{y}")
             
             # Disable FedCM to force Google One Tap to use iframe mode
             # This allows bot to interact with Google Sign-In popup
