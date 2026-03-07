@@ -1,6 +1,14 @@
 {
   "notifications": [
     {
+      "id": "20260307163038156398",
+      "message": "Planned sessions: 12\nPossible today: 8\nDeficit: 4 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-07T16:30:38.156398+00:00",
+      "read": false
+    },
+    {
       "id": "20260306191124488385",
       "message": "Planned sessions: 12\nPossible today: 8\nDeficit: 4 sessions\n\nConsider reducing profiles or sessions per profile.",
       "title": "Schedule Overload",

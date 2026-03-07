@@ -307,6 +307,7 @@ class ProfileItemWidget(QWidget):
     payment_changed = pyqtSignal(str, bool)  # Payment method state
     campaign_changed = pyqtSignal(str, bool)  # Ad campaign state
     ready_changed = pyqtSignal(str, bool)  # Profile ready state
+    play_clicked = pyqtSignal(str)  # Emits UUID when play clicked for manual profile launch
     
     def __init__(self, uuid: str, country: str = "", first_run: str = "", mode: str = "cookie", 
                  google_authorized: bool = False, ads_registered: bool = False,
@@ -447,6 +448,26 @@ class ProfileItemWidget(QWidget):
         self.copy_btn.setToolTip(tr("Copy UUID"))
         self.copy_btn.clicked.connect(self._on_copy)
         layout.addWidget(self.copy_btn)
+        
+        # Play button - manual profile launch without bot logic
+        self.play_btn = QPushButton("▶")
+        self.play_btn.setMinimumWidth(32)
+        self.play_btn.setMaximumWidth(40)
+        self.play_btn.setToolTip(tr("Open profile manually"))
+        self.play_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                color: #4CAF50;
+                border: 1px solid #4CAF50;
+                border-radius: 4px;
+                background: transparent;
+            }
+            QPushButton:hover {
+                background: rgba(76, 175, 80, 0.15);
+            }
+        """)
+        self.play_btn.clicked.connect(self._on_play)
+        layout.addWidget(self.play_btn)
     
     def _update_google_btn_style(self):
         """Update Google button style based on authorization state."""
@@ -831,6 +852,10 @@ class ProfileItemWidget(QWidget):
     
     def _on_migrate(self):
         self.migrate_clicked.emit(self.uuid, self.age_days, self.google_authorized)
+    
+    def _on_play(self):
+        """Emit signal to open profile manually without bot logic."""
+        self.play_clicked.emit(self.uuid)
     
     def _on_check_changed(self, state):
         self.check_changed.emit(self.uuid, state == Qt.Checked)
@@ -3547,10 +3572,23 @@ class MainWindow(QMainWindow):
         
         if mode == "cookie":
             self.mode_stack.setCurrentIndex(0)
+            # Show START TEST / STOP TEST buttons for manual test
+            self.start_btn.setText("▶ " + tr("START TEST"))
+            self.stop_btn.setText("⏹ " + tr("STOP TEST"))
+            self.start_btn.setVisible(True)
+            self.stop_btn.setVisible(True)
         elif mode == "google":
             self.mode_stack.setCurrentIndex(1)
+            # Show START TEST / STOP TEST buttons for manual test
+            self.start_btn.setText("▶ " + tr("START TEST"))
+            self.stop_btn.setText("⏹ " + tr("STOP TEST"))
+            self.start_btn.setVisible(True)
+            self.stop_btn.setVisible(True)
         else:  # auto
             self.mode_stack.setCurrentIndex(2)
+            # Hide big START/STOP buttons in Auto mode - not needed
+            self.start_btn.setVisible(False)
+            self.stop_btn.setVisible(False)
         
         self.log(f"Mode: {mode.upper()}")
     
@@ -4015,6 +4053,7 @@ class MainWindow(QMainWindow):
                 profile_ready, ads_timestamp, payment_timestamp, campaign_timestamp, ready_timestamp
             )
             widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
+            widget.play_clicked.connect(self._on_play_profile)
             if mode == "cookie":
                 widget.migrate_clicked.connect(self._on_migrate_profile)
                 widget.google_auth_changed.connect(self._on_google_auth_changed)
@@ -4080,6 +4119,7 @@ class MainWindow(QMainWindow):
                 
                 widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False, False)
                 widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
+                widget.play_clicked.connect(self._on_play_profile)
                 if mode == "cookie":
                     widget.migrate_clicked.connect(self._on_migrate_profile)
                     widget.google_auth_changed.connect(self._on_google_auth_changed)
@@ -4144,6 +4184,52 @@ class MainWindow(QMainWindow):
             if widget and hasattr(widget, 'isChecked') and widget.isChecked():
                 selected.append(lst.item(i).data(Qt.UserRole))
         return selected
+    
+    def _on_play_profile(self, uuid: str):
+        """
+        Open profile manually without any bot logic.
+        Just starts the browser profile for manual operator interaction.
+        """
+        if not self.octo_api:
+            QMessageBox.warning(
+                self,
+                tr("Error"),
+                tr("Not connected to Octo Browser!")
+            )
+            return
+        
+        # Check if profile is already running
+        if uuid in self.workers:
+            QMessageBox.information(
+                self,
+                tr("Profile Running"),
+                tr("This profile is already running!")
+            )
+            return
+        
+        # Start profile without minimized mode (normal window)
+        self.log(f"[{uuid[:8]}] Opening profile manually...")
+        
+        try:
+            result = self.octo_api.start_profile(uuid, minimized=False)
+            
+            if result and "error" not in result:
+                self.log(f"[{uuid[:8]}] Profile opened successfully")
+            else:
+                error_msg = result.get("error", "Unknown error") if result else "Failed to start"
+                self.log(f"[{uuid[:8]}] Failed to open: {error_msg}")
+                QMessageBox.warning(
+                    self,
+                    tr("Error"),
+                    tr("Failed to open profile:") + f"\n{error_msg}"
+                )
+        except Exception as e:
+            self.log(f"[{uuid[:8]}] Error opening profile: {e}")
+            QMessageBox.warning(
+                self,
+                tr("Error"),
+                tr("Error opening profile:") + f"\n{str(e)}"
+            )
     
     def _on_migrate_profile(self, uuid: str, age_days: int, google_authorized: bool):
         """Handle profile migration from Cookie to Google mode."""

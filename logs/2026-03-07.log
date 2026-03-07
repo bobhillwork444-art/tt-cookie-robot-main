@@ -1,0 +1,271 @@
+[18:27:23] Mode: AUTO
+[18:27:31] Mode: GOOGLE
+[18:27:42] Mode: COOKIE
+[18:27:45] Mode: GOOGLE
+[18:27:46] Mode: COOKIE
+[18:27:49] Connected to Octo Browser
+[18:27:52] Mode: GOOGLE
+[18:27:53] Mode: AUTO
+[18:27:55] Mode: COOKIE
+[18:27:56] [3d8516e0] Opening profile manually...
+[18:28:00] [3d8516e0] Profile opened successfully
+[18:28:22] [b83d537f] Opening profile manually...
+[18:28:28] [b83d537f] Profile opened successfully
+[18:28:42] Mode: GOOGLE
+[18:28:43] [84b19dec] Opening profile manually...
+[18:28:48] [84b19dec] Profile opened successfully
+[18:29:06] Mode: COOKIE
+[18:29:23] [b83d537f] Opening profile manually...
+[18:29:26] [b83d537f] Profile opened successfully
+[18:29:29] [b83d537f] Opening profile manually...
+[18:29:31] [b83d537f] Failed to open: {"code":"profiles.already_started","error":"Profile is already started","error_code":2}
+[18:30:17] Mode: GOOGLE
+[18:30:23] Mode: AUTO
+[18:30:38] [Auto] Loading 4 cookie profiles to scheduler...
+[18:30:38] [Auto]   3d8516e0... country=Slovenia, target=0
+[18:30:38] [Auto]   f01d6572... country=Australia, target=0
+[18:30:38] [Auto]   2ef7cfcf... country=Japan, target=0
+[18:30:38] [Auto]   b83d537f... country=United States, target=0
+[18:30:38] [Auto] Loading 2 google profiles to scheduler...
+[18:30:38] [Auto]   24298afd... country=The Netherlands, target=0
+[18:30:38] [Auto]   84b19dec... country=United Kingdom, target=0
+[18:30:38] [Auto] 🕐 3d8516e0... country=Slovenia, local=17:30, awake=True
+[18:30:38] [Auto] ▶ Started 3d8516e0... (cookie)
+[18:30:38] [Auto] 🕐 b83d537f... country=United States, local=10:30, awake=True
+[18:30:38] [Auto] ▶ Started b83d537f... (cookie)
+[18:30:38] [Auto] 🕐 24298afd... country=The Netherlands, local=17:30, awake=True
+[18:30:38] [Auto] ▶ Started 24298afd... (google)
+[18:30:38] [Auto] 🕐 84b19dec... country=United Kingdom, local=16:30, awake=True
+[18:30:38] [Auto] ▶ Started 84b19dec... (google)
+[18:30:38] 🤖 Auto mode STARTED
+[18:30:38]    📊 Profiles: 4 Cookie + 2 Google
+[18:30:38] [3d8516e0] Starting (cookie)...
+[18:30:38] [b83d537f] Starting (cookie)...
+[18:30:38] [24298afd] Starting (google)...
+[18:30:38] [84b19dec] Starting (google)...
+[18:30:42] [Auto] 🕐 3d8516e0... (Slovenia) local=17:30, awake=True
+[18:30:42] [3d8516e0] Proxy: 212.102.153.89 (Slovenia)
+[18:30:43] [Auto] 🕐 b83d537f... (United States) local=10:30, awake=True
+[18:30:43] [b83d537f] Proxy: 186.179.63.67 (United States)
+[18:30:43] [Auto] 🕐 84b19dec... (United Kingdom) local=16:30, awake=True
+[18:30:43] [84b19dec] Proxy: 161.0.4.138 (United Kingdom)
+[18:30:43] [Auto] 🕐 24298afd... (The Netherlands) local=17:30, awake=True
+[18:30:43] [24298afd] Proxy: 185.168.250.53 (The Netherlands)
+[18:30:51] [b83d537f] Media blocking enabled
+[18:30:51] [3d8516e0] Media blocking enabled
+[18:30:51] [3d8516e0] Notifications blocked
+[18:30:51] [b83d537f] Notifications blocked
+[18:30:51] [84b19dec] Media blocking enabled
+[18:30:51] [84b19dec] Notifications blocked
+[18:30:51] [24298afd] Media blocking enabled
+[18:30:51] [3d8516e0] Connected to Octo Browser
+[18:30:51] [84b19dec] Connected to Octo Browser
+[18:30:51] [b83d537f] Connected to Octo Browser
+[18:30:51] [24298afd] Notifications blocked
+[18:30:51] [24298afd] Connected to Octo Browser
+[18:30:51] [84b19dec] Window minimized via CDP
+[18:30:51] [3d8516e0] Window minimized via CDP
+[18:30:51] [84b19dec] 🚀 Google Warm-up mode
+[18:30:51] [b83d537f] Window minimized via CDP
+[18:30:51] [24298afd] Window minimized via CDP
+[18:30:51] [3d8516e0] 🌍 Geo mode (SI): 2 local + 1 generic = 3 sites
+[18:30:51] [84b19dec] 📺 YouTube skipped this session (50% chance)
+[18:30:51] [b83d537f] 🌍 Geo mode (US): 2 local + 2 generic = 4 sites
+[18:30:51] [24298afd] 🚀 Google Warm-up mode
+[18:30:51] [3d8516e0] [1/3] https://www.bsi.si/
+[18:30:51] [84b19dec] 🌍 Geo mode (GB): 2 local + 2 generic = 4 sites
+[18:30:51] [b83d537f] [1/4] https://www.huffpost.com/
+[18:30:51] [24298afd] 📺 YouTube skipped this session (50% chance)
+[18:30:51] [3d8516e0]    🔍 Navigating via Google Search...
+[18:30:51] [84b19dec] 📋 Plan: 4 sites + Gmail checks
+[18:30:51] [24298afd] 🌍 Geo mode (NL): 1 local + 0 generic = 1 sites
+[18:30:51] [3d8516e0]    🔍 Searching Google for: bsi
+[18:30:51] [24298afd] 📋 Plan: 1 sites + Gmail checks
+[18:30:51] [84b19dec] 
+[1/4] https://storyset.com
+[18:30:51] [84b19dec]    🔍 Searching Google for: storyset
+[18:30:51] [24298afd] 
+[1/1] https://www.rabobank.nl/
+[18:30:51] [24298afd]    Opening site directly...
+[18:30:56] [b83d537f]    Browsing for 12s...
+[18:30:59] [24298afd]    Scanning for Google One Tap...
+[18:31:00] [3d8516e0]    ✓ Found bsi.si, opening in new tab...
+[18:31:02] [84b19dec]    ✓ Found storyset.com, opening in new tab...
+[18:31:04] [3d8516e0]    ✓ Navigated via Google search
+[18:31:05] [3d8516e0]    Browsing for 17s...
+[18:31:06] [84b19dec]    ✓ Navigated via Google search
+[18:31:07] [Auto] ⏹ Stopped 3d8516e0...
+[18:31:07] [b83d537f] ✅ Session completed: 1 US sites, 0 generic sites
+[18:31:07] [b83d537f] 🧹 Closing 1 extra tab(s)...
+[18:31:07] [b83d537f] ✅ Tabs cleaned up
+[18:31:07] [b83d537f] Blocked 7 media requests
+[18:31:09] [84b19dec]    Scanning for Google One Tap...
+[18:31:10] [3d8516e0] ✅ Session completed: 1 SI sites, 0 generic sites
+[18:31:10] [3d8516e0] Blocked 2 media requests
+[18:31:12] [Auto] ⏹ Stopped b83d537f...
+[18:31:12] [b83d537f] Done
+[18:31:12] [3d8516e0] Done
+[18:31:17] [Auto] ⏹ Stopped 24298afd...
+[18:31:20] [24298afd]    No One Tap found, trying Login button flow...
+[18:31:20] [24298afd]    No Google One Tap found
+[18:31:22] [24298afd]    Browsing for 29s...
+[18:31:22] [24298afd] 
+✅ Google Warm-up complete! (1 NL sites, 0 generic)
+[18:31:22] [Auto] ⏹ Stopped 84b19dec...
+[18:31:22] [Auto] ⚠️ Stop operation cancelled by user
+[18:31:22] 🤖 Auto mode STOPPED
+[18:31:22] [Auto] Stopped 4/4 profiles
+[18:31:22] 🤖 Auto mode STOPPED
+[18:31:24] [24298afd] Done
+[18:31:29] [84b19dec]    No One Tap found, trying Login button flow...
+[18:31:29] [84b19dec]    No Google One Tap found
+[18:31:30] Mode: COOKIE
+[18:31:31] [84b19dec]    Browsing for 25s...
+[18:31:33] [b83d537f] Opening profile manually...
+[18:31:37] [b83d537f] Profile opened successfully
+[18:31:37] [84b19dec] 
+✅ Google Warm-up complete! (0 GB sites, 1 generic)
+[18:31:37] [84b19dec] Blocked 4 media requests
+[18:31:39] [84b19dec] Done
+[18:32:06] Queued 4 profiles (max parallel: 20)
+[18:32:06] [3d8516e0] Started (running: 1)
+[18:32:06] [f01d6572] Started (running: 2)
+[18:32:06] [2ef7cfcf] Started (running: 3)
+[18:32:06] [b83d537f] Started (running: 4)
+[18:32:06] [3d8516e0] Starting (cookie)...
+[18:32:06] [f01d6572] Starting (cookie)...
+[18:32:06] [b83d537f] Starting (cookie)...
+[18:32:06] [2ef7cfcf] Starting (cookie)...
+[18:32:09] [3d8516e0] Country detected: Slovenia
+[18:32:09] [3d8516e0] Proxy: 212.102.153.89 (Slovenia)
+[18:32:10] [b83d537f] Country detected: United States
+[18:32:10] [b83d537f] Proxy: 186.179.63.67 (United States)
+[18:32:10] [3d8516e0] Media blocking enabled
+[18:32:10] [3d8516e0] Notifications blocked
+[18:32:10] [3d8516e0] Connected to Octo Browser
+[18:32:11] [3d8516e0] Window minimized via CDP
+[18:32:11] [3d8516e0] 🌍 Geo mode (SI): 2 local + 2 generic = 4 sites
+[18:32:11] [3d8516e0] [1/4] https://genially.com
+[18:32:11] [3d8516e0]    🔍 Navigating via Google Search...
+[18:32:11] [3d8516e0]    🔍 Searching Google for: genially
+[18:32:11] [2ef7cfcf] Country detected: Japan
+[18:32:11] [2ef7cfcf] Proxy: 194.53.188.168 (Japan)
+[18:32:11] [b83d537f] Media blocking enabled
+[18:32:11] [b83d537f] Notifications blocked
+[18:32:11] [b83d537f] Connected to Octo Browser
+[18:32:12] [b83d537f] Window minimized via CDP
+[18:32:12] [b83d537f] 🌍 Geo mode (US): 2 local + 2 generic = 4 sites
+[18:32:12] [b83d537f] [1/4] https://www.franceinfo.fr/
+[18:32:12] [b83d537f]    🔍 Navigating via Google Search...
+[18:32:12] [b83d537f]    🔍 Searching Google for: franceinfo
+[18:32:12] [f01d6572] Country detected: Australia
+[18:32:12] [f01d6572] Proxy: 58.105.194.94 (Australia)
+[18:32:12] [2ef7cfcf] Media blocking enabled
+[18:32:12] [2ef7cfcf] Notifications blocked
+[18:32:12] [2ef7cfcf] Connected to Octo Browser
+[18:32:13] [2ef7cfcf] Window minimized via CDP
+[18:32:13] [2ef7cfcf] ⚠️ No sites for geo JP, using generic sites
+[18:32:13] [2ef7cfcf] [1/1] https://reddit.com
+[18:32:13] [2ef7cfcf]    🔍 Navigating via Google Search...
+[18:32:13] [2ef7cfcf]    🔍 Searching Google for: reddit
+[18:32:13] [f01d6572] Media blocking enabled
+[18:32:13] [f01d6572] Notifications blocked
+[18:32:13] [f01d6572] Connected to Octo Browser
+[18:32:13] [f01d6572] Window minimized via CDP
+[18:32:13] [f01d6572] ⚠️ No sites for geo AU, using generic sites
+[18:32:13] [f01d6572] [1/2] https://www.forbes.com/newsletters
+[18:32:13] [f01d6572]    🔍 Navigating via Google Search...
+[18:32:13] [f01d6572]    🔍 Searching Google for: forbes
+[18:32:21] [3d8516e0]    ✓ Found genially.com, opening in new tab...
+[18:32:22] [b83d537f]    ✓ Found franceinfo.fr, opening in new tab...
+[18:32:24] [2ef7cfcf]    ✓ Found reddit.com, opening in new tab...
+[18:32:24] [3d8516e0]    ✓ Navigated via Google search
+[18:32:24] [3d8516e0] Cookies: OK
+[18:32:25] [3d8516e0]    Browsing for 16s...
+[18:32:25] [b83d537f]    ✓ Navigated via Google search
+[18:32:27] [f01d6572]    ✓ Found forbes.com, opening in new tab...
+[18:32:28] [b83d537f]    Browsing for 21s...
+[18:32:28] [2ef7cfcf]    ✓ Navigated via Google search
+[18:32:29] [2ef7cfcf]    Browsing for 18s...
+[18:32:32] [f01d6572]    ✓ Navigated via Google search
+[18:32:34] [f01d6572]    Browsing for 18s...
+[18:32:39] Stopping...
+[18:32:42] [2ef7cfcf] ✅ Session completed: 0 JP sites, 1 generic sites
+[18:32:42] [2ef7cfcf] 🧹 Closing 1 extra tab(s)...
+[18:32:42] [2ef7cfcf] ✅ Tabs cleaned up
+[18:32:42] [2ef7cfcf] Blocked 2 media requests
+[18:32:43] [Auto] ⏹ Stopped 3d8516e0...
+[18:32:44] [b83d537f] ✅ Session completed: 0 US sites, 1 generic sites
+[18:32:44] [b83d537f] 🧹 Closing 1 extra tab(s)...
+[18:32:45] [b83d537f] ✅ Tabs cleaned up
+[18:32:45] [b83d537f] Blocked 9 media requests
+[18:32:46] [2ef7cfcf] Done
+[18:32:46] [2ef7cfcf] Done (running: 3, pending: 0)
+[18:32:46] [f01d6572] ✅ Session completed: 0 AU sites, 1 generic sites
+[18:32:46] [f01d6572] Blocked 13 media requests
+[18:32:48] [Auto] ⏹ Stopped f01d6572...
+[18:32:48] [f01d6572] Done
+[18:32:48] [f01d6572] Done (running: 2, pending: 0)
+[18:32:49] [3d8516e0] ✅ Session completed: 0 SI sites, 1 generic sites
+[18:32:49] [3d8516e0] Blocked 11 media requests
+[18:32:50] [b83d537f] Done
+[18:32:50] [b83d537f] Done (running: 1, pending: 0)
+[18:32:50] [Auto] ⚠️ Failed to stop 2ef7cfcf...
+[18:32:51] [3d8516e0] Done
+[18:32:51] [3d8516e0] Done (running: 0, pending: 0)
+[18:32:51] All done
+[18:32:52] [Auto] ⚠️ Failed to stop b83d537f...
+[18:32:52] Stopped 4 profiles
+[18:32:55] Mode: GOOGLE
+[18:33:03] Mode: AUTO
+[18:33:07] Mode: GOOGLE
+[18:33:11] Queued 2 profiles (max parallel: 20)
+[18:33:11] [24298afd] Started (running: 1)
+[18:33:11] [84b19dec] Started (running: 2)
+[18:33:11] [24298afd] Starting (google)...
+[18:33:11] [84b19dec] Starting (google)...
+[18:33:15] [24298afd] Country detected: The Netherlands
+[18:33:15] [24298afd] Proxy: 185.168.250.53 (The Netherlands)
+[18:33:15] [84b19dec] Country detected: United Kingdom
+[18:33:15] [84b19dec] Proxy: 161.0.4.138 (United Kingdom)
+[18:33:16] [24298afd] Media blocking enabled
+[18:33:16] [24298afd] Notifications blocked
+[18:33:16] [24298afd] Connected to Octo Browser
+[18:33:16] [84b19dec] Media blocking enabled
+[18:33:17] [84b19dec] Notifications blocked
+[18:33:17] [84b19dec] Connected to Octo Browser
+[18:33:17] [24298afd] Window minimized via CDP
+[18:33:17] [24298afd] 🚀 Google Warm-up mode
+[18:33:17] [24298afd] 📺 YouTube activity enabled via checkbox (50% chance)
+[18:33:17] [24298afd] 🌍 Geo mode (NL): 2 local + 2 generic = 4 sites
+[18:33:17] [24298afd] 📋 Plan: 4 sites + YouTube activity + Gmail checks
+[18:33:17] [24298afd] 
+[1/4] https://www.abnamro.nl/
+[18:33:17] [24298afd]    🌐 Browsing only (no auth)
+[18:33:17] [84b19dec] Window minimized via CDP
+[18:33:17] [84b19dec] 🚀 Google Warm-up mode
+[18:33:17] [84b19dec] 📺 YouTube skipped this session (50% chance)
+[18:33:17] [84b19dec] 🌍 Geo mode (GB): 1 local + 1 generic = 2 sites
+[18:33:17] [84b19dec] 📋 Plan: 2 sites + Gmail checks
+[18:33:17] [84b19dec] 
+[1/2] https://moncompte.lexpress.fr/
+[18:33:17] [84b19dec]    🌐 Browsing only (no auth)
+[18:33:26] [84b19dec] Cookies: OK
+[18:33:27] [84b19dec]    Browsing for 22s...
+[18:33:27] [24298afd]    Browsing for 25s...
+[18:33:34] Stopping...
+[18:33:40] [Auto] ⏹ Stopped 24298afd...
+[18:33:45] [Auto] ⏹ Stopped 84b19dec...
+[18:33:45] Stopped 2 profiles
+[18:33:46] [24298afd] 
+✅ Google Warm-up complete! (1 NL sites, 0 generic)
+[18:33:46] [24298afd] Blocked 12 media requests
+[18:33:46] [84b19dec] 
+✅ Google Warm-up complete! (0 GB sites, 1 generic)
+[18:33:46] [84b19dec] Blocked 3 media requests
+[18:33:48] [24298afd] Done
+[18:33:48] [24298afd] Done (running: 1, pending: 0)
+[18:33:48] [84b19dec] Done
+[18:33:48] [84b19dec] Done (running: 0, pending: 0)
+[18:33:48] All done
+[18:33:49] Mode: AUTO

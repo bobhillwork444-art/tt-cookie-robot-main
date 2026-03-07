@@ -974,8 +974,16 @@ class BrowserAutomation:
                     await self.minimize_window()
                     self._should_minimize = False
                 
+                # Check if we've already exceeded target time
+                if (time.time() - start) >= time_on_site:
+                    break
+                
                 if human_behavior:
                     await HumanBehavior.random_mouse(self.page)
+                
+                # Check time again before potentially long operations
+                if (time.time() - start) >= time_on_site:
+                    break
                 
                 # Scroll with configurable probability and parameters
                 if scroll_enabled and random.randint(1, 100) <= scroll_percent:
@@ -987,7 +995,18 @@ class BrowserAutomation:
                         scroll_pause_min, scroll_pause_max
                     )
                 
-                await HumanBehavior.random_delay(2, 5)
+                # Check time before delay
+                remaining = time_on_site - (time.time() - start)
+                if remaining <= 0:
+                    break
+                # Adaptive delay: shorter if less time remaining
+                delay_max = min(5, max(1, int(remaining / 2)))
+                delay_min = min(2, max(0.5, delay_max / 2))
+                await HumanBehavior.random_delay(delay_min, delay_max)
+                
+                # Check time before click
+                if (time.time() - start) >= time_on_site:
+                    break
                 
                 # Click with configurable probability and max limit
                 if click_links and random.randint(1, 100) <= click_percent and links_clicked < max_clicks:
@@ -1458,8 +1477,16 @@ class BrowserAutomation:
                     await self.minimize_window()
                     self._should_minimize = False
                 
+                # Check if we've already exceeded target time
+                if (time.time() - start) >= time_on_site:
+                    break
+                
                 # Human behavior - mouse movement
                 await HumanBehavior.random_mouse(self.page)
+                
+                # Check time again before potentially long operations
+                if (time.time() - start) >= time_on_site:
+                    break
                 
                 # Scroll with configurable probability and parameters
                 if scroll_enabled and random.randint(1, 100) <= scroll_percent:
@@ -1471,7 +1498,18 @@ class BrowserAutomation:
                         scroll_pause_min, scroll_pause_max
                     )
                 
-                await HumanBehavior.random_delay(2, 5)
+                # Check time before delay
+                remaining = time_on_site - (time.time() - start)
+                if remaining <= 0:
+                    break
+                # Adaptive delay: shorter if less time remaining
+                delay_max = min(5, max(1, int(remaining / 2)))
+                delay_min = min(2, max(0.5, delay_max / 2))
+                await HumanBehavior.random_delay(delay_min, delay_max)
+                
+                # Check time before click
+                if (time.time() - start) >= time_on_site:
+                    break
                 
                 # Click with configurable probability and max limit
                 if click_links and random.randint(1, 100) <= click_percent and links_clicked < max_clicks:
