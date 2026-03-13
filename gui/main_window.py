@@ -2408,6 +2408,15 @@ class MainWindow(QMainWindow):
         self.auto_error_action.setStyleSheet(input_style)
         form_layout.addRow(tr("After max errors:"), self.auto_error_action)
         
+        # Session timeout (watchdog)
+        self.auto_session_timeout = QSpinBox()
+        self.auto_session_timeout.setRange(3, 30)  # 3-30 minutes
+        self.auto_session_timeout.setValue(self.config.get("auto_mode", {}).get("max_session_duration", 600) // 60)
+        self.auto_session_timeout.setSuffix(" " + tr("min"))
+        self.auto_session_timeout.setToolTip(tr("Max session duration before force stop (for hung profiles)"))
+        self.auto_session_timeout.setStyleSheet(input_style)
+        form_layout.addRow(tr("Session timeout:"), self.auto_session_timeout)
+        
         # --- Notifications Section ---
         notif_label = QLabel(tr("🔔 Notifications"))
         notif_label.setStyleSheet("font-weight: bold; font-size: 13px; margin-top: 10px;")
@@ -2682,6 +2691,7 @@ class MainWindow(QMainWindow):
             "cooldown_max": self.auto_cooldown_max.value(),
             "max_errors": self.auto_max_errors.value(),
             "error_action": error_actions[self.auto_error_action.currentIndex()],
+            "max_session_duration": self.auto_session_timeout.value() * 60,  # Convert minutes to seconds
             "notify_cycle_complete": self.auto_notify_cycle_complete.isChecked(),
             "notify_profile_errors": self.auto_notify_profile_errors.isChecked(),
             "notify_time_shortage": self.auto_notify_time_shortage.isChecked(),
@@ -2821,6 +2831,11 @@ class MainWindow(QMainWindow):
         self.auto_scheduler_timer = QTimer(self)
         self.auto_scheduler_timer.timeout.connect(self._auto_scheduler_tick)
         self.auto_scheduler_timer.start(30000)  # 30 seconds
+        
+        # Session timeout watchdog timer (every 60 seconds, async)
+        self.auto_watchdog_timer = QTimer(self)
+        self.auto_watchdog_timer.timeout.connect(self._async_check_session_timeouts)
+        self.auto_watchdog_timer.start(60000)  # 60 seconds
         
         # Immediate first tick
         self._auto_scheduler_tick()
@@ -2966,6 +2981,8 @@ class MainWindow(QMainWindow):
         # Check for day change - reset profiles if new day
         self._check_day_change_and_reset()
         
+        # NOTE: Session timeout watchdog runs separately via _async_check_session_timeouts
+        
         # NOTE: Geo refresh removed - it was blocking UI and didn't work anyway
         # (Octo API doesn't return actual proxy country until profile starts)
         # Real country detection happens in _on_auto_country_detected() after profile starts
@@ -2981,6 +2998,116 @@ class MainWindow(QMainWindow):
         for profile in to_start:
             logging.info(f"[AUTO_DEBUG] Starting profile from to_start: {profile.uuid[:8]}, mode={profile.mode}, country={profile.country}")
             self._start_auto_profile(profile.uuid, profile.mode)
+    
+    def _async_check_session_timeouts(self):
+        """Async wrapper for session timeout check - runs in background thread."""
+        if not self.auto_state.is_auto_running():
+            return
+        
+        # Don't start if already checking
+        if hasattr(self, '_watchdog_running') and self._watchdog_running:
+            return
+        
+        self._watchdog_running = True
+        
+        import threading
+        thread = threading.Thread(target=self._check_session_timeouts_thread, daemon=True)
+        thread.start()
+    
+    def _check_session_timeouts_thread(self):
+        """Background thread for session timeout checks."""
+        import time
+        
+        try:
+            if not hasattr(self, '_auto_worker_start_times'):
+                return
+            
+            # Max session duration in seconds (from config, default 10 minutes)
+            max_session_duration = self.config.get("auto_mode", {}).get("max_session_duration", 600)
+            
+            current_time = time.time()
+            timed_out_profiles = []
+            
+            for uuid, start_time in list(self._auto_worker_start_times.items()):
+                elapsed = current_time - start_time
+                
+                if elapsed > max_session_duration:
+                    timed_out_profiles.append((uuid, int(elapsed)))
+            
+            # Schedule UI updates on main thread
+            if timed_out_profiles:
+                from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+                for uuid, elapsed in timed_out_profiles:
+                    QMetaObject.invokeMethod(
+                        self,
+                        "_handle_session_timeout",
+                        Qt.QueuedConnection,
+                        Q_ARG(str, uuid),
+                        Q_ARG(int, elapsed)
+                    )
+        except Exception as e:
+            logging.error(f"[WATCHDOG] Error in timeout check: {e}")
+        finally:
+            self._watchdog_running = False
+    
+    @pyqtSlot(str, int)
+    def _handle_session_timeout(self, uuid: str, elapsed: int):
+        """Handle session timeout on main thread."""
+        max_duration = self.config.get("auto_mode", {}).get("max_session_duration", 600)
+        self.log(f"[Auto] ⏱️ {uuid[:8]}... session timeout ({elapsed}s > {max_duration}s)")
+        self._force_stop_hung_session(uuid)
+    
+    def _check_session_timeouts(self):
+        """Check for sessions that exceeded max duration and kill them."""
+        import time
+        
+        if not hasattr(self, '_auto_worker_start_times'):
+            return
+        
+        # Max session duration in seconds (default 10 minutes)
+        max_session_duration = self.config.get("auto_mode", {}).get("max_session_duration", 600)
+        
+        current_time = time.time()
+        timed_out_profiles = []
+        
+        for uuid, start_time in list(self._auto_worker_start_times.items()):
+            elapsed = current_time - start_time
+            
+            if elapsed > max_session_duration:
+                timed_out_profiles.append(uuid)
+                self.log(f"[Auto] ⏱️ {uuid[:8]}... session timeout ({int(elapsed)}s > {max_session_duration}s)")
+        
+        # Kill timed out sessions
+        for uuid in timed_out_profiles:
+            self._force_stop_hung_session(uuid)
+    
+    def _force_stop_hung_session(self, uuid: str):
+        """Force stop a hung/timed-out session."""
+        self.log(f"[Auto] 🔪 Force stopping hung session {uuid[:8]}...")
+        
+        # Stop worker thread
+        if uuid in self.auto_workers:
+            worker = self.auto_workers[uuid]
+            worker.stop()
+        
+        # Force stop browser profile
+        if self.api_manager:
+            self.api_manager.stop_profile_async(uuid, force=True)
+        elif self.octo_api:
+            self.octo_api.force_stop_profile(uuid)
+        
+        # Clean up tracking
+        if uuid in self.auto_workers:
+            del self.auto_workers[uuid]
+        
+        if hasattr(self, '_auto_worker_start_times') and uuid in self._auto_worker_start_times:
+            del self._auto_worker_start_times[uuid]
+        
+        # Mark as failed in scheduler
+        self.auto_scheduler.mark_profile_completed(uuid, False)
+        self.auto_state.increment_profile_error(uuid)
+        
+        self.log(f"[Auto] ⏹️ {uuid[:8]}... stopped due to session timeout")
     
     def _check_day_change_and_reset(self):
         """Check if day changed and reset scheduler profiles for new day."""
@@ -3126,6 +3253,12 @@ class MainWindow(QMainWindow):
         self.auto_workers[uuid] = worker
         self.auto_scheduler.mark_profile_started(uuid)
         
+        # Track start time for session timeout watchdog
+        import time
+        if not hasattr(self, '_auto_worker_start_times'):
+            self._auto_worker_start_times = {}
+        self._auto_worker_start_times[uuid] = time.time()
+        
         worker.start()
         self.log(f"[Auto] ▶ Started {uuid[:8]}... ({mode})")
     
@@ -3212,6 +3345,10 @@ class MainWindow(QMainWindow):
         if uuid in self.auto_workers:
             del self.auto_workers[uuid]
         
+        # Clean up start time tracking
+        if hasattr(self, '_auto_worker_start_times') and uuid in self._auto_worker_start_times:
+            del self._auto_worker_start_times[uuid]
+        
         # Update scheduler and state
         self.auto_scheduler.mark_profile_completed(uuid, success)
         
@@ -3267,6 +3404,11 @@ class MainWindow(QMainWindow):
         if self.auto_scheduler_timer:
             self.auto_scheduler_timer.stop()
             self.auto_scheduler_timer = None
+        
+        # Stop watchdog timer
+        if hasattr(self, 'auto_watchdog_timer') and self.auto_watchdog_timer:
+            self.auto_watchdog_timer.stop()
+            self.auto_watchdog_timer = None
         
         # Stop all worker threads (tell them to stop)
         for uuid, worker in list(self.auto_workers.items()):

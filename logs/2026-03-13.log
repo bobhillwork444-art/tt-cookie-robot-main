@@ -796,3 +796,5 @@ this page is useful
 [15:27:14] [24298afd] Profile opened successfully
 [15:27:41] [24298afd] Stopping manual profile...
 [15:27:46] [24298afd] Error stopping profile: argument of type 'bool' is not iterable
+[21:13:13] Mode: COOKIE
+[21:13:17] Mode: AUTO
