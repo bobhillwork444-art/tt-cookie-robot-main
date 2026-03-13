@@ -918,14 +918,21 @@ class BrowserAutomation:
             # Decide navigation method based on google_search_percent
             use_google_search = random.randint(1, 100) <= google_search_percent
             
+            nav_success = False
             if use_google_search:
                 self.log(f"   🔍 Navigating via Google Search...")
                 nav_success = await self._navigate_via_google_search(site)
                 if not nav_success:
                     self.log(f"   ⚠️ Google Search failed, trying direct...")
-                    await self._navigate_direct_in_new_tab(site)
+                    nav_success = await self._navigate_direct_in_new_tab(site)
             else:
-                await self._navigate_direct_in_new_tab(site)
+                nav_success = await self._navigate_direct_in_new_tab(site)
+            
+            # Skip browsing if navigation failed
+            if not nav_success:
+                self.log(f"   ❌ Navigation failed, skipping site and continuing...")
+                await asyncio.sleep(random.uniform(2, 4))
+                continue
             
             # Browse the site
             await self._browse_site(
@@ -934,6 +941,9 @@ class BrowserAutomation:
                 scroll_iter_min, scroll_iter_max, scroll_px_min, scroll_px_max,
                 scroll_pause_min, scroll_pause_max, scroll_down_percent
             )
+            
+            # Close site tab and return to search tab for next site
+            await self._close_site_tab_and_return_to_search()
             
             if i < len(sites):
                 # Use base delay from global settings + some variability
@@ -1458,7 +1468,11 @@ class BrowserAutomation:
         try:
             # Make sure we're on the site
             if 'accounts.google.com' in self.page.url:
-                await self.page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                try:
+                    await self.page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                except Exception as nav_err:
+                    self.log(f"   ⚠️ Navigation error: {str(nav_err)[:40]}")
+                    return  # Exit gracefully, don't hang
             
             await self.handle_popups()
             await self.mute_page()
@@ -2135,8 +2149,13 @@ class BrowserAutomation:
         read_time = random.randint(read_time_min, read_time_max)
         
         try:
-            await self.page.goto("https://mail.google.com/mail/u/0/#inbox", 
-                                 wait_until="domcontentloaded", timeout=30000)
+            try:
+                await self.page.goto("https://mail.google.com/mail/u/0/#inbox", 
+                                     wait_until="domcontentloaded", timeout=30000)
+            except Exception as nav_err:
+                self.log(f"   ⚠️ Gmail navigation error: {str(nav_err)[:40]}")
+                return
+            
             await HumanBehavior.random_delay(2, 3)
             await self.mute_page()
             
@@ -2166,7 +2185,11 @@ class BrowserAutomation:
             folder_url, folder_name = folders[folder_choice]
             
             if folder_choice != 'inbox':
-                await self.page.goto(folder_url, wait_until="domcontentloaded", timeout=15000)
+                try:
+                    await self.page.goto(folder_url, wait_until="domcontentloaded", timeout=15000)
+                except Exception as nav_err:
+                    self.log(f"   ⚠️ Folder navigation error: {str(nav_err)[:40]}")
+                    return
                 await HumanBehavior.random_delay(1, 2)
             
             self.log(f"   {folder_name} (read time: {read_time}s)")
@@ -2202,8 +2225,13 @@ class BrowserAutomation:
         
         try:
             # Navigate to Gmail inbox
-            await self.page.goto("https://mail.google.com/mail/u/0/#inbox", 
-                                 wait_until="domcontentloaded", timeout=30000)
+            try:
+                await self.page.goto("https://mail.google.com/mail/u/0/#inbox", 
+                                     wait_until="domcontentloaded", timeout=30000)
+            except Exception as nav_err:
+                self.log(f"   ⚠️ Gmail navigation error: {str(nav_err)[:40]}")
+                return
+            
             await HumanBehavior.random_delay(2, 4)
             await self.mute_page()
             
@@ -2246,7 +2274,12 @@ class BrowserAutomation:
                 self.log(f"\n{folder_name} - checking...")
                 
                 # Navigate directly via URL (safe, no menu clicking)
-                await self.page.goto(folder_url, wait_until="domcontentloaded", timeout=20000)
+                try:
+                    await self.page.goto(folder_url, wait_until="domcontentloaded", timeout=20000)
+                except Exception as nav_err:
+                    self.log(f"   ⚠️ Folder navigation error: {str(nav_err)[:40]}")
+                    continue
+                    
                 await HumanBehavior.random_delay(1.5, 3)
                 await self.mute_page()
                 

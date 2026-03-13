@@ -798,3 +798,6 @@ this page is useful
 [15:27:46] [24298afd] Error stopping profile: argument of type 'bool' is not iterable
 [21:13:13] Mode: COOKIE
 [21:13:17] Mode: AUTO
+[21:23:10] Mode: COOKIE
+[21:23:20] Mode: GOOGLE
+[21:23:24] Mode: AUTO
