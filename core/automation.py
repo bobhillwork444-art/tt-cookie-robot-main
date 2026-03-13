@@ -1061,8 +1061,9 @@ class BrowserAutomation:
         # Gmail read time: support min/max range or single value for backward compatibility
         gmail_read_time_min = settings.get("gmail_read_time_min", settings.get("gmail_read_time", 15))
         gmail_read_time_max = settings.get("gmail_read_time_max", settings.get("gmail_read_time", 45))
-        min_time = settings.get("min_time_on_site", 60)
-        max_time = settings.get("max_time_on_site", 180)
+        # Default time on site for Google mode: 10-30 sec (matches UI defaults)
+        min_time = settings.get("min_time_on_site", 10)
+        max_time = settings.get("max_time_on_site", 30)
         
         # Browsing behavior settings
         scroll_enabled = settings.get("scroll_enabled", True)

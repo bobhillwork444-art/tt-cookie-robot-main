@@ -2,7 +2,6 @@
   "api_url": "http://localhost:58888",
   "cookie_mode": {
     "profiles": [
-      "3d8516e091b1444788f5fd4f1724e73c",
       "f01d65725466469097a00ed23dbb336a",
       "2ef7cfcf123d4b1b9f059813c353aea0",
       "b83d537f9adb404b99c0348bd6061868"
@@ -195,22 +194,17 @@
       "human_behavior_enabled": true
     },
     "profile_info": {
-      "3d8516e091b1444788f5fd4f1724e73c": {
-        "country": "Slovenia",
-        "first_run": "2026-03-05T20:55:35.089440",
-        "google_authorized": false
-      },
       "2ef7cfcf123d4b1b9f059813c353aea0": {
         "country": "Japan",
-        "first_run": "2026-03-06T15:50:56.959966"
-      },
-      "f01d65725466469097a00ed23dbb336a": {
-        "country": "Australia",
-        "first_run": "2026-03-06T15:50:56.992072"
+        "first_run": "2026-03-13T15:03:06.520913"
       },
       "b83d537f9adb404b99c0348bd6061868": {
         "country": "United States",
-        "first_run": "2026-03-06T15:51:02.668618"
+        "first_run": "2026-03-13T15:03:06.579666"
+      },
+      "f01d65725466469097a00ed23dbb336a": {
+        "country": "Australia",
+        "first_run": "2026-03-13T15:03:07.586825"
       }
     }
   },

@@ -286,6 +286,11 @@ class AutoScheduler:
         Returns:
             True if profile is within working hours
         """
+        # UNKNOWN country - always awake (need to start to detect real country)
+        if country_code == "UNKNOWN" or not country_code:
+            logging.info(f"[SCHEDULER_DEBUG] is_profile_awake({country_code}) = True (UNKNOWN, needs detection)")
+            return True
+        
         local_time = self.get_local_time(country_code)
         hour = local_time.hour + local_time.minute / 60.0
         

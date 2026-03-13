@@ -112,6 +112,50 @@ class OctoAPI:
         except:
             return False
     
+    def get_active_profiles(self) -> Optional[list]:
+        """Get list of currently active (running) profiles"""
+        try:
+            response = requests.get(
+                f"{self.local_url}/api/profiles/active",
+                headers=self.headers,
+                timeout=5
+            )
+            if response.status_code == 200:
+                data = response.json()
+                # Octo API returns {"data": [...]} or just [...]
+                profiles = data.get("data", data) if isinstance(data, dict) else data
+                return profiles if isinstance(profiles, list) else []
+            return []
+        except:
+            return []
+    
+    def is_profile_running(self, profile_uuid: str) -> bool:
+        """Check if a specific profile is currently running"""
+        try:
+            # First check active profiles list
+            active = self.get_active_profiles()
+            if active:
+                for p in active:
+                    # Check various possible UUID field names
+                    uuid = p.get("uuid") or p.get("id") or p.get("profile_id") or ""
+                    if uuid == profile_uuid:
+                        return True
+            
+            # Fallback: try to get WS endpoint - if exists, profile is running
+            response = requests.get(
+                f"{self.local_url}/api/profiles/{profile_uuid}/ws",
+                headers=self.headers,
+                timeout=3
+            )
+            # If we get a valid response with ws_url, profile is running
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ws_url") or data.get("port"):
+                    return True
+            return False
+        except:
+            return False
+    
     def get_profile_info(self, profile_uuid: str) -> Optional[Dict[str, Any]]:
         """Get profile information including proxy settings"""
         try:

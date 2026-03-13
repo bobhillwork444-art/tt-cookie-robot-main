@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QFrame, QScrollArea, QSplitter, QApplication, QComboBox,
     QSizePolicy, QProgressDialog
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, pyqtSlot
 from PyQt5.QtGui import QFont, QPixmap
 
 from core.octo_api import OctoAPI
@@ -468,6 +468,49 @@ class ProfileItemWidget(QWidget):
         """)
         self.play_btn.clicked.connect(self._on_play)
         layout.addWidget(self.play_btn)
+        
+        # Track if profile is manually running
+        self._is_manually_running = False
+    
+    def set_manually_running(self, running: bool):
+        """Set the manual running state and update Play button appearance."""
+        self._is_manually_running = running
+        if running:
+            # Red color - profile is running
+            self.play_btn.setText("⏹")
+            self.play_btn.setStyleSheet("""
+                QPushButton {
+                    font-weight: bold;
+                    color: #f44336;
+                    border: 1px solid #f44336;
+                    border-radius: 4px;
+                    background: rgba(244, 67, 54, 0.1);
+                }
+                QPushButton:hover {
+                    background: rgba(244, 67, 54, 0.25);
+                }
+            """)
+            self.play_btn.setToolTip(tr("Profile is running (click to stop)"))
+        else:
+            # Green color - ready to start
+            self.play_btn.setText("▶")
+            self.play_btn.setStyleSheet("""
+                QPushButton {
+                    font-weight: bold;
+                    color: #4CAF50;
+                    border: 1px solid #4CAF50;
+                    border-radius: 4px;
+                    background: transparent;
+                }
+                QPushButton:hover {
+                    background: rgba(76, 175, 80, 0.15);
+                }
+            """)
+            self.play_btn.setToolTip(tr("Open profile manually"))
+    
+    def is_manually_running(self) -> bool:
+        """Check if profile is manually running."""
+        return self._is_manually_running
     
     def _update_google_btn_style(self):
         """Update Google button style based on authorization state."""
@@ -1043,6 +1086,8 @@ class MainWindow(QMainWindow):
         self.auto_scheduler = AutoScheduler(auto_state=self.auto_state)
         self.auto_workers = {}  # Workers running in auto mode {uuid: worker}
         self.auto_scheduler_timer = None
+        self._manually_running_profiles = set()  # Profiles opened manually via Play button
+        self._manual_profile_start_times = {}  # UUID -> start timestamp for grace period
         
         # Load language from config
         self.current_language = self.config.get("language", "English")
@@ -1055,11 +1100,19 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.apply_theme(self.current_theme)
         
+        # Set initial mode to update button text (START TEST / STOP TEST)
+        self.switch_mode("cookie")
+        
         # Start clock update timer (every 30 seconds)
         from PyQt5.QtCore import QTimer
         self.clock_timer = QTimer(self)
         self.clock_timer.timeout.connect(self._update_world_clock)
         self.clock_timer.start(30000)  # 30 seconds
+        
+        # Timer to check manually running profiles status (every 3 seconds)
+        self._manual_profile_check_timer = QTimer(self)
+        self._manual_profile_check_timer.timeout.connect(self._check_manual_profiles_status)
+        self._manual_profile_check_timer.start(3000)  # 3 seconds
         
     def init_ui(self):
         self.setWindowTitle("TT Cookie Robot")
@@ -2772,6 +2825,11 @@ class MainWindow(QMainWindow):
         # Immediate first tick
         self._auto_scheduler_tick()
         
+        # Disable Play buttons during Auto mode (after profiles are loaded)
+        # Use singleShot to ensure UI is fully rendered
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(100, lambda: self._set_play_buttons_enabled(False))
+        
         self.log("🤖 Auto mode STARTED")
         self.log(f"   📊 Profiles: {summary.get('cookie_profiles', 0)} Cookie + {summary.get('google_profiles', 0)} Google")
     
@@ -2788,7 +2846,11 @@ class MainWindow(QMainWindow):
         
         for uuid in cookie_profiles:
             info = cookie_info.get(uuid, {})
-            country = info.get("country", "US")
+            country = info.get("country", "")
+            
+            # If country is empty/unknown, mark as UNKNOWN to force detection
+            if not country or country == "Unknown":
+                country = "UNKNOWN"
             
             # Get state from auto_state
             sessions = self.auto_state.get_profile_sessions_today(uuid)
@@ -2817,7 +2879,11 @@ class MainWindow(QMainWindow):
         
         for uuid in google_profiles:
             info = google_info.get(uuid, {})
-            country = info.get("country", "US")
+            country = info.get("country", "")
+            
+            # If country is empty/unknown, mark as UNKNOWN to force detection
+            if not country or country == "Unknown":
+                country = "UNKNOWN"
             
             sessions = self.auto_state.get_profile_sessions_today(uuid)
             errors = self.auto_state.get_profile_errors_today(uuid)
@@ -2897,6 +2963,9 @@ class MainWindow(QMainWindow):
         if self.auto_state.is_auto_paused():
             return
         
+        # Check for day change - reset profiles if new day
+        self._check_day_change_and_reset()
+        
         # NOTE: Geo refresh removed - it was blocking UI and didn't work anyway
         # (Octo API doesn't return actual proxy country until profile starts)
         # Real country detection happens in _on_auto_country_detected() after profile starts
@@ -2912,6 +2981,53 @@ class MainWindow(QMainWindow):
         for profile in to_start:
             logging.info(f"[AUTO_DEBUG] Starting profile from to_start: {profile.uuid[:8]}, mode={profile.mode}, country={profile.country}")
             self._start_auto_profile(profile.uuid, profile.mode)
+    
+    def _check_day_change_and_reset(self):
+        """Check if day changed and reset scheduler profiles for new day."""
+        from datetime import datetime, timezone
+        
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        # Get stored date from auto_state
+        state_date = self.auto_state._state.get("date", "")
+        
+        if state_date and state_date != today:
+            # Day changed! Reset scheduler profiles
+            self.log(f"🌅 New day detected ({today}), resetting profiles...")
+            
+            # auto_state._check_day_reset() will reset session counters
+            # We need to reload profiles into scheduler with fresh data
+            self._reload_auto_profiles_for_new_day()
+    
+    def _reload_auto_profiles_for_new_day(self):
+        """Reload all profiles into scheduler with reset counters for new day."""
+        # Get current profiles from scheduler
+        old_profiles = self.auto_scheduler.get_all_profiles()
+        
+        # Clear scheduler
+        self.auto_scheduler.clear_profiles()
+        
+        # Re-add all profiles with reset counters
+        for p in old_profiles:
+            # auto_state will return 0 for sessions_today (new day)
+            sessions = self.auto_state.get_profile_sessions_today(p.uuid)
+            errors = self.auto_state.get_profile_errors_today(p.uuid)
+            target = self.auto_state.get_profile_target_sessions(p.uuid)  # Will be 0 for new day
+            last_session = self.auto_state.get_last_session_time(p.uuid)
+            
+            self.auto_scheduler.add_profile(
+                uuid=p.uuid,
+                mode=p.mode,
+                country=p.country,
+                sessions_today=sessions,
+                target_sessions=target,
+                errors_today=errors,
+                last_session_end=last_session
+            )
+            
+            self.log(f"[Auto]   {p.uuid[:8]}... country={p.country}, target={target}")
+        
+        self.log(f"🔄 Profiles reloaded for new day")
     
     def _update_auto_next_action(self):
         """Update the next action label."""
@@ -3004,7 +3120,8 @@ class MainWindow(QMainWindow):
         worker.finished_signal.connect(lambda u: self._on_auto_worker_finished(u, True))
         worker.error_signal.connect(lambda u, e: self._on_auto_worker_error(u, e))
         # CRITICAL: Connect country_detected to check timezone after REAL country is known
-        worker.country_detected.connect(lambda u, c: self._on_auto_country_detected(u, c, mode))
+        # Use default argument to capture mode value at connection time
+        worker.country_detected.connect(lambda u, c, m=mode: self._on_auto_country_detected(u, c, m))
         
         self.auto_workers[uuid] = worker
         self.auto_scheduler.mark_profile_started(uuid)
@@ -3029,6 +3146,22 @@ class MainWindow(QMainWindow):
         profile = self.auto_scheduler.get_profile(uuid)
         old_country = profile.country if profile else ""
         
+        # Always update config (even if country same - for first_run initialization)
+        cfg = self.get_mode_config(mode)
+        profile_info = cfg.setdefault("profile_info", {})
+        if uuid not in profile_info:
+            profile_info[uuid] = {}
+        
+        # Update country
+        profile_info[uuid]["country"] = real_country
+        
+        # Set first_run only if not already set (preserve original date)
+        if not profile_info[uuid].get("first_run"):
+            profile_info[uuid]["first_run"] = datetime.now().isoformat()
+            self.log(f"[Auto] 📅 {uuid[:8]}... first run recorded")
+        
+        self.set_mode_config(mode, cfg)
+        
         # Log country change if different
         if old_country != real_country:
             self.log(f"[Auto] 🌍 {uuid[:8]}... REAL country: {old_country} → {real_country}")
@@ -3036,17 +3169,10 @@ class MainWindow(QMainWindow):
             
             # Update scheduler with real country
             self.auto_scheduler.update_profile_country(uuid, real_country)
-            
-            # Update config for persistence
-            cfg = self.get_mode_config(mode)
-            profile_info = cfg.setdefault("profile_info", {})
-            if uuid not in profile_info:
-                profile_info[uuid] = {}
-            profile_info[uuid]["country"] = real_country
-            self.set_mode_config(mode, cfg)
-            
-            # Refresh UI to show new country flag
-            self.load_profiles_list(mode)
+        
+        # Refresh UI to show new country flag and age
+        self.log(f"[Auto] 🔄 Refreshing {mode} profiles list...")
+        self.load_profiles_list(mode)
         
         # CRITICAL: Check if profile should be sleeping based on REAL country
         is_awake = self.auto_scheduler.is_profile_awake(real_country)
@@ -3214,6 +3340,9 @@ class MainWindow(QMainWindow):
         self.auto_stop_btn.setEnabled(False)
         self.auto_status_label.setText(tr("Status: Stopped"))
         self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px; color: #f38ba8;")
+        
+        # Re-enable Play buttons
+        self._set_play_buttons_enabled(True)
         
         self.log("🤖 Auto mode STOPPED")
     
@@ -4066,6 +4195,19 @@ class MainWindow(QMainWindow):
             item.setSizeHint(widget.sizeHint())
             lst.addItem(item)
             lst.setItemWidget(item, widget)
+            
+            # Disable Play button if Auto mode is running
+            if self.auto_state.is_auto_running():
+                widget.play_btn.setEnabled(False)
+                widget.play_btn.setStyleSheet("""
+                    QPushButton {
+                        font-weight: bold;
+                        color: #666;
+                        border: 1px solid #444;
+                        border-radius: 4px;
+                        background: transparent;
+                    }
+                """)
     
     def add_profile(self, mode):
         inp = self.get_profile_input(mode)
@@ -4133,6 +4275,19 @@ class MainWindow(QMainWindow):
                 lst.addItem(item)
                 lst.setItemWidget(item, widget)
                 
+                # Disable Play button if Auto mode is running
+                if self.auto_state.is_auto_running():
+                    widget.play_btn.setEnabled(False)
+                    widget.play_btn.setStyleSheet("""
+                        QPushButton {
+                            font-weight: bold;
+                            color: #666;
+                            border: 1px solid #444;
+                            border-radius: 4px;
+                            background: transparent;
+                        }
+                    """)
+                
                 flag = COUNTRY_FLAGS.get(country.upper(), "🌐") if country else ""
                 self.log(f"[{mode}] Added: {flag} {uuid[:8]}...")
             inp.clear()
@@ -4187,8 +4342,9 @@ class MainWindow(QMainWindow):
     
     def _on_play_profile(self, uuid: str):
         """
-        Open profile manually without any bot logic.
-        Just starts the browser profile for manual operator interaction.
+        Toggle profile manual run state.
+        If not running - starts the browser profile for manual operator interaction.
+        If running - stops the profile.
         """
         if not self.octo_api:
             QMessageBox.warning(
@@ -4198,13 +4354,21 @@ class MainWindow(QMainWindow):
             )
             return
         
-        # Check if profile is already running
-        if uuid in self.workers:
+        # Find the widget for this profile to check/update its state
+        widget = self._find_profile_widget(uuid)
+        
+        # Check if profile is running in automation mode
+        if uuid in self.workers or uuid in self.auto_workers:
             QMessageBox.information(
                 self,
                 tr("Profile Running"),
-                tr("This profile is already running!")
+                tr("This profile is running in automation mode. Stop automation first.")
             )
+            return
+        
+        # Check if manually running - if so, stop it
+        if uuid in self._manually_running_profiles:
+            self._stop_manual_profile(uuid, widget)
             return
         
         # Start profile without minimized mode (normal window)
@@ -4215,6 +4379,13 @@ class MainWindow(QMainWindow):
             
             if result and "error" not in result:
                 self.log(f"[{uuid[:8]}] Profile opened successfully")
+                # Track as manually running with start time for grace period
+                import time
+                self._manually_running_profiles.add(uuid)
+                self._manual_profile_start_times[uuid] = time.time()
+                # Update widget appearance
+                if widget:
+                    widget.set_manually_running(True)
             else:
                 error_msg = result.get("error", "Unknown error") if result else "Failed to start"
                 self.log(f"[{uuid[:8]}] Failed to open: {error_msg}")
@@ -4230,6 +4401,145 @@ class MainWindow(QMainWindow):
                 tr("Error"),
                 tr("Error opening profile:") + f"\n{str(e)}"
             )
+    
+    def _stop_manual_profile(self, uuid: str, widget=None):
+        """Stop a manually running profile."""
+        self.log(f"[{uuid[:8]}] Stopping manual profile...")
+        
+        try:
+            result = self.octo_api.stop_profile(uuid)
+            
+            if result and "error" not in result:
+                self.log(f"[{uuid[:8]}] Profile stopped")
+            else:
+                # Even if API returns error, profile might already be closed
+                self.log(f"[{uuid[:8]}] Profile stop result: {result}")
+        except Exception as e:
+            self.log(f"[{uuid[:8]}] Error stopping profile: {e}")
+        
+        # Remove from tracking regardless of API result
+        self._manually_running_profiles.discard(uuid)
+        self._manual_profile_start_times.pop(uuid, None)  # Clean up start time
+        
+        # Update widget appearance
+        if widget:
+            widget.set_manually_running(False)
+    
+    def _find_profile_widget(self, uuid: str):
+        """Find ProfileItemWidget by UUID in both lists."""
+        for lst in [self.cookie_profiles_list, self.google_profiles_list]:
+            for i in range(lst.count()):
+                item = lst.item(i)
+                if item and item.data(Qt.UserRole) == uuid:
+                    return lst.itemWidget(item)
+        return None
+    
+    def _check_manual_profiles_status(self):
+        """
+        Periodically check if manually opened profiles are still running.
+        Updates Play button state when profile is closed externally.
+        Uses background thread to avoid UI freeze.
+        
+        Only runs when:
+        - Auto mode is NOT running
+        - At least one profile was manually opened via Play button
+        """
+        # Skip if auto mode is running
+        if self.auto_state.is_auto_running():
+            return
+        
+        # Skip if no manually running profiles
+        if not self._manually_running_profiles:
+            return
+        
+        # Skip if no API connection
+        if not self.octo_api:
+            return
+        
+        # Don't start another check if one is already running
+        if hasattr(self, '_profile_check_running') and self._profile_check_running:
+            return
+        
+        self._profile_check_running = True
+        
+        # Run in background thread
+        import threading
+        thread = threading.Thread(target=self._check_manual_profiles_thread, daemon=True)
+        thread.start()
+    
+    def _check_manual_profiles_thread(self):
+        """Background thread for checking profile status."""
+        import time
+        GRACE_PERIOD_SECONDS = 10  # Don't check profiles for first 10 seconds after start
+        
+        try:
+            current_time = time.time()
+            closed_profiles = set()
+            
+            # Copy to avoid modification during iteration
+            profiles_to_check = list(self._manually_running_profiles)
+            
+            for uuid in profiles_to_check:
+                # Skip if within grace period
+                start_time = self._manual_profile_start_times.get(uuid, 0)
+                if current_time - start_time < GRACE_PERIOD_SECONDS:
+                    continue  # Too soon to check this profile
+                
+                # Check if profile is still running using reliable method
+                if not self.octo_api.is_profile_running(uuid):
+                    closed_profiles.add(uuid)
+            
+            if closed_profiles:
+                # Schedule UI update on main thread
+                from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+                for uuid in closed_profiles:
+                    # Use invokeMethod to safely call from background thread
+                    QMetaObject.invokeMethod(
+                        self, 
+                        "_update_manual_profile_closed",
+                        Qt.QueuedConnection,
+                        Q_ARG(str, uuid)
+                    )
+        except Exception as e:
+            pass  # Silent fail
+        finally:
+            self._profile_check_running = False
+    
+    @pyqtSlot(str)
+    def _update_manual_profile_closed(self, uuid: str):
+        """Update UI when manually opened profile is closed. Called from main thread."""
+        widget = self._find_profile_widget(uuid)
+        if widget:
+            widget.set_manually_running(False)
+        self._manually_running_profiles.discard(uuid)
+        self._manual_profile_start_times.pop(uuid, None)  # Clean up start time
+    
+    def _set_play_buttons_enabled(self, enabled: bool):
+        """Enable or disable Play buttons on all profile widgets."""
+        for lst in [self.cookie_profiles_list, self.google_profiles_list]:
+            for i in range(lst.count()):
+                item = lst.item(i)
+                if item:
+                    widget = lst.itemWidget(item)
+                    if widget and hasattr(widget, 'play_btn'):
+                        widget.play_btn.setEnabled(enabled)
+                        if not enabled:
+                            # Gray out style when disabled
+                            widget.play_btn.setStyleSheet("""
+                                QPushButton {
+                                    font-weight: bold;
+                                    color: #666;
+                                    border: 1px solid #444;
+                                    border-radius: 4px;
+                                    background: transparent;
+                                }
+                            """)
+                        else:
+                            # Restore normal style based on running state
+                            if hasattr(widget, '_is_manually_running') and widget._is_manually_running:
+                                widget.set_manually_running(True)
+                            else:
+                                widget.set_manually_running(False)
     
     def _on_migrate_profile(self, uuid: str, age_days: int, google_authorized: bool):
         """Handle profile migration from Cookie to Google mode."""

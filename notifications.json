@@ -1,6 +1,54 @@
 {
   "notifications": [
     {
+      "id": "20260313132014431671",
+      "message": "Planned sessions: 10\nPossible today: 4\nDeficit: 6 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-13T13:20:14.431671+00:00",
+      "read": false
+    },
+    {
+      "id": "20260313125317596829",
+      "message": "Planned sessions: 10\nPossible today: 0\nDeficit: 10 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-13T12:53:17.596829+00:00",
+      "read": false
+    },
+    {
+      "id": "20260313123553677181",
+      "message": "Planned sessions: 10\nPossible today: 0\nDeficit: 10 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-13T12:35:53.677181+00:00",
+      "read": false
+    },
+    {
+      "id": "20260313122552044742",
+      "message": "Planned sessions: 14\nPossible today: 2\nDeficit: 12 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-13T12:25:52.044742+00:00",
+      "read": false
+    },
+    {
+      "id": "20260313092347810381",
+      "message": "Planned sessions: 14\nPossible today: 5\nDeficit: 9 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-13T09:23:47.810381+00:00",
+      "read": false
+    },
+    {
+      "id": "20260313091514143569",
+      "message": "Planned sessions: 14\nPossible today: 10\nDeficit: 4 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-03-13T09:15:14.143569+00:00",
+      "read": false
+    },
+    {
       "id": "20260307163038156398",
       "message": "Planned sessions: 12\nPossible today: 8\nDeficit: 4 sessions\n\nConsider reducing profiles or sessions per profile.",
       "title": "Schedule Overload",
