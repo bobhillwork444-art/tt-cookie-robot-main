@@ -4056,7 +4056,9 @@ class MainWindow(QMainWindow):
                     "sites": google_sites,
                     "browse_sites": browse_sites,
                     "onetap_sites": onetap_sites,
-                    "settings": google_settings
+                    "settings": google_settings,
+                    "youtube_enabled": google_settings.get("youtube_enabled", True),
+                    "services": google_settings.get("services", {})
                 }
             }
             
@@ -4146,7 +4148,12 @@ class MainWindow(QMainWindow):
             else:
                 print("[Config] ❌ Failed to save cookie mode settings")
             
-            if self.db.save_mode_settings("google", google_mode.get("settings", {})):
+            # Google mode settings include services and youtube_enabled
+            google_settings = google_mode.get("settings", {}).copy()
+            google_settings["youtube_enabled"] = google_mode.get("youtube_enabled", True)
+            google_settings["services"] = google_mode.get("services", {})
+            
+            if self.db.save_mode_settings("google", google_settings):
                 print("[Config] ✅ Saved google mode settings to DB")
             else:
                 print("[Config] ❌ Failed to save google mode settings")
