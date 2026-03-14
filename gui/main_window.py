@@ -3967,10 +3967,36 @@ class MainWindow(QMainWindow):
             google_settings = self.db.get_mode_settings("google")
             print(f"[Config] ✅ Loaded mode settings from DB")
             
-            # Load profiles (as UUIDs for compatibility with existing code)
-            cookie_profiles = self.db.get_profile_uuids("cookie")
-            google_profiles = self.db.get_profile_uuids("google")
+            # Load profiles with full info (country, first_run, etc.)
+            cookie_profiles_full = self.db.get_profiles("cookie")
+            google_profiles_full = self.db.get_profiles("google")
+            
+            # Extract UUIDs and profile_info separately for compatibility
+            cookie_profiles = [p.get("uuid", p.get("_id", "")) for p in cookie_profiles_full]
+            google_profiles = [p.get("uuid", p.get("_id", "")) for p in google_profiles_full]
+            
+            # Build profile_info dicts
+            cookie_profile_info = {}
+            for p in cookie_profiles_full:
+                uuid = p.get("uuid", p.get("_id", ""))
+                if uuid:
+                    info = {k: v for k, v in p.items() if k not in ("uuid", "_id", "mode", "updated_at")}
+                    if info:
+                        cookie_profile_info[uuid] = info
+            
+            google_profile_info = {}
+            for p in google_profiles_full:
+                uuid = p.get("uuid", p.get("_id", ""))
+                if uuid:
+                    info = {k: v for k, v in p.items() if k not in ("uuid", "_id", "mode", "updated_at")}
+                    if info:
+                        google_profile_info[uuid] = info
+            
             print(f"[Config] ✅ Loaded profiles: {len(cookie_profiles)} cookie, {len(google_profiles)} google")
+            if cookie_profile_info:
+                print(f"[Config] ✅ Loaded profile info for {len(cookie_profile_info)} cookie profiles")
+            if google_profile_info:
+                print(f"[Config] ✅ Loaded profile info for {len(google_profile_info)} google profiles")
             
             # Load sites
             cookie_sites = self.db.get_sites("cookie_sites")
@@ -4018,6 +4044,7 @@ class MainWindow(QMainWindow):
                 # Cookie mode
                 "cookie_mode": {
                     "profiles": cookie_profiles,
+                    "profile_info": cookie_profile_info,
                     "sites": cookie_sites,
                     "settings": cookie_settings
                 },
@@ -4025,6 +4052,7 @@ class MainWindow(QMainWindow):
                 # Google mode
                 "google_mode": {
                     "profiles": google_profiles,
+                    "profile_info": google_profile_info,
                     "sites": google_sites,
                     "browse_sites": browse_sites,
                     "onetap_sites": onetap_sites,
@@ -4123,17 +4151,34 @@ class MainWindow(QMainWindow):
             else:
                 print("[Config] ❌ Failed to save google mode settings")
             
-            # 3. Save profiles
-            cookie_profiles = cookie_mode.get("profiles", [])
-            google_profiles = google_mode.get("profiles", [])
+            # 3. Save profiles with their info (country, first_run, etc.)
+            cookie_profiles_raw = cookie_mode.get("profiles", [])
+            google_profiles_raw = google_mode.get("profiles", [])
+            cookie_info = cookie_mode.get("profile_info", {})
+            google_info = google_mode.get("profile_info", {})
             
-            if self.db.save_profiles(cookie_profiles, "cookie"):
-                print(f"[Config] ✅ Saved {len(cookie_profiles)} cookie profiles to DB")
+            # Build full profile objects with info
+            cookie_profiles_full = []
+            for uuid in cookie_profiles_raw:
+                profile_data = {"uuid": uuid}
+                if uuid in cookie_info:
+                    profile_data.update(cookie_info[uuid])
+                cookie_profiles_full.append(profile_data)
+            
+            google_profiles_full = []
+            for uuid in google_profiles_raw:
+                profile_data = {"uuid": uuid}
+                if uuid in google_info:
+                    profile_data.update(google_info[uuid])
+                google_profiles_full.append(profile_data)
+            
+            if self.db.save_profiles(cookie_profiles_full, "cookie"):
+                print(f"[Config] ✅ Saved {len(cookie_profiles_full)} cookie profiles to DB")
             else:
                 print("[Config] ❌ Failed to save cookie profiles")
             
-            if self.db.save_profiles(google_profiles, "google"):
-                print(f"[Config] ✅ Saved {len(google_profiles)} google profiles to DB")
+            if self.db.save_profiles(google_profiles_full, "google"):
+                print(f"[Config] ✅ Saved {len(google_profiles_full)} google profiles to DB")
             else:
                 print("[Config] ❌ Failed to save google profiles")
             
