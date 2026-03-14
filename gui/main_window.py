@@ -24,6 +24,7 @@ from core.translator import load_translation, tr
 from core.auto_state import AutoStateManager
 from core.notifications import NotificationManager, NotificationType
 from core.auto_scheduler import AutoScheduler, ProfileStatus
+from core.database import get_database, DatabaseManager
 
 
 # Country name to ISO code mapping (API returns full names)
@@ -3948,13 +3949,95 @@ class MainWindow(QMainWindow):
             """)
     
     def load_config(self):
+        """Load configuration from MongoDB Atlas."""
         try:
-            with open("config.json", "r", encoding="utf-8") as f:
-                config = json.load(f)
-                if "cookie_mode" not in config:
-                    config = self.migrate_config(config)
-                return config
-        except:
+            self.db = get_database()
+            if not self.db.connect():
+                print("[Config] ❌ Failed to connect to MongoDB, using defaults")
+                return self.get_default_config()
+            
+            print("[Config] ✅ Connected to MongoDB Atlas")
+            
+            # Load global settings
+            settings = self.db.get_settings()
+            print(f"[Config] ✅ Loaded global settings from DB")
+            
+            # Load mode settings
+            cookie_settings = self.db.get_mode_settings("cookie")
+            google_settings = self.db.get_mode_settings("google")
+            print(f"[Config] ✅ Loaded mode settings from DB")
+            
+            # Load profiles (as UUIDs for compatibility with existing code)
+            cookie_profiles = self.db.get_profile_uuids("cookie")
+            google_profiles = self.db.get_profile_uuids("google")
+            print(f"[Config] ✅ Loaded profiles: {len(cookie_profiles)} cookie, {len(google_profiles)} google")
+            
+            # Load sites
+            cookie_sites = self.db.get_sites("cookie_sites")
+            google_sites = self.db.get_sites("google_sites")
+            browse_sites = self.db.get_sites("browse_sites")
+            onetap_sites = self.db.get_sites("onetap_sites")
+            print(f"[Config] ✅ Loaded sites from DB")
+            
+            # Load YouTube queries
+            youtube_queries = self.db.get_youtube_queries()
+            print(f"[Config] ✅ Loaded {len(youtube_queries)} YouTube queries")
+            
+            # Build config dict (for compatibility with existing code)
+            config = {
+                # Global settings
+                "api_url": settings.get("api_url", "http://localhost:58888"),
+                "language": settings.get("language", "English"),
+                "theme": settings.get("theme", "Dark"),
+                "max_parallel_profiles": settings.get("max_parallel_profiles", 5),
+                "base_delay_min": settings.get("base_delay_min", 1),
+                "base_delay_max": settings.get("base_delay_max", 3),
+                "autosave_logs": settings.get("autosave_logs", False),
+                "sound_on_finish": settings.get("sound_on_finish", False),
+                "start_minimized": settings.get("start_minimized", False),
+                "geo_visiting_enabled": settings.get("geo_visiting_enabled", False),
+                "geo_visiting_percent": settings.get("geo_visiting_percent", 70),
+                "max_session_duration": settings.get("max_session_duration", 900),
+                
+                # Auto mode settings (map DB names to UI names)
+                "auto_mode": {
+                    "sessions_per_profile_min": settings.get("sessions_per_profile_min", 3),
+                    "sessions_per_profile_max": settings.get("sessions_per_profile_max", 4),
+                    "cooldown_min": settings.get("session_break_min", 60),  # DB uses session_break
+                    "cooldown_max": settings.get("session_break_max", 150),  # DB uses session_break
+                    "work_start_weekday": settings.get("work_hours_weekday_start", 7),
+                    "work_end_weekday": settings.get("work_hours_weekday_end", 23),
+                    "work_start_weekend": settings.get("work_hours_weekend_start", 9),
+                    "work_end_weekend": settings.get("work_hours_weekend_end", 23),
+                    "max_session_duration": settings.get("max_session_duration", 900),
+                },
+                
+                # YouTube queries (as comma-separated string for UI compatibility)
+                "youtube_queries": ", ".join(youtube_queries) if youtube_queries else "",
+                
+                # Cookie mode
+                "cookie_mode": {
+                    "profiles": cookie_profiles,
+                    "sites": cookie_sites,
+                    "settings": cookie_settings
+                },
+                
+                # Google mode
+                "google_mode": {
+                    "profiles": google_profiles,
+                    "sites": google_sites,
+                    "browse_sites": browse_sites,
+                    "onetap_sites": onetap_sites,
+                    "settings": google_settings
+                }
+            }
+            
+            return config
+            
+        except Exception as e:
+            print(f"[Config] ❌ Error loading config from DB: {e}")
+            import traceback
+            traceback.print_exc()
             return self.get_default_config()
     
     def migrate_config(self, old):
@@ -3985,8 +4068,99 @@ class MainWindow(QMainWindow):
         }
     
     def save_config(self):
-        with open("config.json", "w", encoding="utf-8") as f:
-            json.dump(self.config, f, indent=2, ensure_ascii=False)
+        """Save configuration to MongoDB Atlas."""
+        try:
+            if not hasattr(self, 'db') or not self.db or not self.db.is_connected():
+                print("[Config] ❌ DB not connected, cannot save")
+                return
+            
+            # 1. Save global settings
+            settings = {
+                "api_url": self.config.get("api_url", "http://localhost:58888"),
+                "language": self.config.get("language", "English"),
+                "theme": self.config.get("theme", "Dark"),
+                "max_parallel_profiles": self.config.get("max_parallel_profiles", 5),
+                "base_delay_min": self.config.get("base_delay_min", 1),
+                "base_delay_max": self.config.get("base_delay_max", 3),
+                "autosave_logs": self.config.get("autosave_logs", False),
+                "sound_on_finish": self.config.get("sound_on_finish", False),
+                "start_minimized": self.config.get("start_minimized", False),
+                "geo_visiting_enabled": self.config.get("geo_visiting_enabled", False),
+                "geo_visiting_percent": self.config.get("geo_visiting_percent", 70),
+                "max_session_duration": self.config.get("max_session_duration", 900),
+            }
+            
+            # Add auto mode settings
+            auto_mode = self.config.get("auto_mode", {})
+            settings.update({
+                "sessions_per_profile_min": auto_mode.get("sessions_per_profile_min", 3),
+                "sessions_per_profile_max": auto_mode.get("sessions_per_profile_max", 4),
+                "session_break_min": auto_mode.get("cooldown_min", 60),  # UI uses cooldown_min
+                "session_break_max": auto_mode.get("cooldown_max", 150),  # UI uses cooldown_max
+                "work_hours_weekday_start": auto_mode.get("work_start_weekday", 7),
+                "work_hours_weekday_end": auto_mode.get("work_end_weekday", 23),
+                "work_hours_weekend_start": auto_mode.get("work_start_weekend", 9),
+                "work_hours_weekend_end": auto_mode.get("work_end_weekend", 23),
+                "max_session_duration": auto_mode.get("max_session_duration", 900),
+            })
+            
+            if self.db.save_settings(settings):
+                print("[Config] ✅ Saved global settings to DB")
+            else:
+                print("[Config] ❌ Failed to save global settings")
+            
+            # 2. Save mode settings
+            cookie_mode = self.config.get("cookie_mode", {})
+            google_mode = self.config.get("google_mode", {})
+            
+            if self.db.save_mode_settings("cookie", cookie_mode.get("settings", {})):
+                print("[Config] ✅ Saved cookie mode settings to DB")
+            else:
+                print("[Config] ❌ Failed to save cookie mode settings")
+            
+            if self.db.save_mode_settings("google", google_mode.get("settings", {})):
+                print("[Config] ✅ Saved google mode settings to DB")
+            else:
+                print("[Config] ❌ Failed to save google mode settings")
+            
+            # 3. Save profiles
+            cookie_profiles = cookie_mode.get("profiles", [])
+            google_profiles = google_mode.get("profiles", [])
+            
+            if self.db.save_profiles(cookie_profiles, "cookie"):
+                print(f"[Config] ✅ Saved {len(cookie_profiles)} cookie profiles to DB")
+            else:
+                print("[Config] ❌ Failed to save cookie profiles")
+            
+            if self.db.save_profiles(google_profiles, "google"):
+                print(f"[Config] ✅ Saved {len(google_profiles)} google profiles to DB")
+            else:
+                print("[Config] ❌ Failed to save google profiles")
+            
+            # 4. Save sites
+            if self.db.save_sites("cookie_sites", cookie_mode.get("sites", [])):
+                print(f"[Config] ✅ Saved cookie sites to DB")
+            
+            if self.db.save_sites("google_sites", google_mode.get("sites", [])):
+                print(f"[Config] ✅ Saved google sites to DB")
+            
+            if self.db.save_sites("browse_sites", google_mode.get("browse_sites", [])):
+                print(f"[Config] ✅ Saved browse sites to DB")
+            
+            if self.db.save_sites("onetap_sites", google_mode.get("onetap_sites", [])):
+                print(f"[Config] ✅ Saved onetap sites to DB")
+            
+            # 5. Save YouTube queries
+            youtube_queries = self.config.get("youtube_queries", "")
+            if youtube_queries:
+                keywords = [q.strip() for q in youtube_queries.split(",") if q.strip()]
+                if self.db.save_youtube_queries(keywords):
+                    print(f"[Config] ✅ Saved {len(keywords)} YouTube queries to DB")
+            
+        except Exception as e:
+            print(f"[Config] ❌ Error saving config to DB: {e}")
+            import traceback
+            traceback.print_exc()
     
     def log(self, msg):
         """Log message to UI with throttling to prevent UI freeze."""

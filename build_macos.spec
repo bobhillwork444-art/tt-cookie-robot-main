@@ -14,7 +14,6 @@ a = Analysis(
     datas=[
         ('core', 'core'),
         ('gui', 'gui'),
-        ('config.json', '.'),
         ('translations', 'translations'),
         ('assets/flags', 'assets/flags'),
         ('assets/icon.png', 'assets'),
@@ -44,12 +43,20 @@ a = Analysis(
         'tldextract',
         'lxml',
         'lxml.etree',
+        # MongoDB
+        'pymongo',
+        'pymongo.mongo_client',
+        'pymongo.server_api',
+        'dns',
+        'dns.resolver',
         # Core modules
         'core.octo_api',
         'core.octo_api_async',
         'core.automation',
         'core.translator',
         'core.auto_state',
+        'core.auto_state_db',
+        'core.database',
         'core.auto_scheduler',
         'core.notifications',
         # GUI modules

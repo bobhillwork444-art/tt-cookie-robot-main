@@ -1,0 +1,116 @@
+[14:54:23] [global] Settings saved
+[14:54:33] [global] Settings saved
+[14:59:17] [global] Settings saved
+[14:59:45] [global] Settings saved
+[14:59:50] [global] Settings saved
+[15:00:06] [global] Settings saved
+[15:01:09] ✅ Auto mode settings saved
+[15:01:38] Mode: COOKIE
+[15:01:46] Mode: AUTO
+[15:01:53] ✅ Auto mode settings saved
+[15:02:16] ✅ Auto mode settings saved
+[15:02:40] ✅ Auto mode settings saved
+[15:08:00] Mode: COOKIE
+[15:08:32] [cookie] Settings saved
+[15:09:18] [cookie] Settings saved
+[15:09:47] [cookie] Settings saved
+[15:10:19] [cookie] Settings saved
+[15:10:36] [cookie] Settings saved
+[15:11:05] Mode: GOOGLE
+[15:13:13] [google] Settings saved
+[15:15:12] [google] Settings saved
+[15:15:41] [google] Settings saved
+[15:16:09] [google] Settings saved
+[15:17:25] [google] Added:  24298afd...
+[15:20:54] Mode: COOKIE
+[15:20:58] [cookie] Added: https://www.eufy.com/
+[15:21:08] [cookie] Bulk added 173 sites
+[15:21:24] [cookie] Added: https://www.asnbank.nl/
+[15:21:30] [cookie] Bulk added 96 sites
+[15:21:43] [cookie] Bulk added 67 sites
+[15:21:50] Mode: GOOGLE
+[15:21:56] [google] Bulk added 338 browse sites
+[15:22:07] [google] Bulk added 338 One Tap sites
+[15:22:11] [google] Sites configuration saved
+[15:22:14] Mode: COOKIE
+[15:25:19] Mode: GOOGLE
+[15:25:45] Mode: COOKIE
+[15:25:50] Mode: GOOGLE
+[15:25:54] [google] Added:  84b19dec...
+[15:26:10] Mode: COOKIE
+[15:26:14] [cookie] Added:  f01d6572...
+[15:36:22] Nothing to stop
+[15:37:00] Mode: COOKIE
+[15:37:08] Mode: GOOGLE
+[15:37:22] Mode: AUTO
+[15:38:02] ✅ Auto mode settings saved
+[15:38:10] Mode: COOKIE
+[15:38:19] Connected to Octo Browser
+[15:38:32] [cookie] Added:  f01d6572...
+[15:40:18] Mode: GOOGLE
+[15:40:22] Mode: COOKIE
+[15:40:25] [cookie] Removed 1 profiles
+[15:40:45] [cookie] Added:  f01d6572...
+[15:40:46] Mode: GOOGLE
+[15:41:05] [google] Added:  84b19dec...
+[15:41:50] Mode: AUTO
+[15:41:51] [Auto] Loading 1 cookie profiles to scheduler...
+[15:41:51] [Auto]   f01d6572... country=UNKNOWN, target=0
+[15:41:51] [Auto] Loading 1 google profiles to scheduler...
+[15:41:51] [Auto]   84b19dec... country=UNKNOWN, target=0
+[15:41:51] [Auto] 🕐 f01d6572... country=UNKNOWN, local=13:41, awake=True
+[15:41:51] [Auto] ▶ Started f01d6572... (cookie)
+[15:41:51] [Auto] 🕐 84b19dec... country=UNKNOWN, local=13:41, awake=True
+[15:41:51] [Auto] ▶ Started 84b19dec... (google)
+[15:41:51] 🤖 Auto mode STARTED
+[15:41:51]    📊 Profiles: 1 Cookie + 1 Google
+[15:41:51] [f01d6572] Starting (cookie)...
+[15:41:51] [84b19dec] Starting (google)...
+[15:41:58] [Auto] 📅 f01d6572... first run recorded
+[15:41:58] [Auto] 🌍 f01d6572... REAL country: UNKNOWN → Australia
+[15:41:58] [Auto] 🔄 Refreshing cookie profiles list...
+[15:41:58] [Auto] 🕐 f01d6572... (Australia) local=23:41, awake=False
+[15:41:58] [Auto] 😴 f01d6572... STOPPING - Australia is sleeping at 23:41
+[15:41:58] [Auto] ⏹️ f01d6572... stopped due to timezone
+[15:41:58] [f01d6572] Proxy: 67.219.103.77 (Australia)
+[15:41:58] [Auto] 📅 84b19dec... first run recorded
+[15:41:58] [Auto] 🌍 84b19dec... REAL country: UNKNOWN → United Kingdom
+[15:41:58] [Auto] 🔄 Refreshing google profiles list...
+[15:41:58] [Auto] 🕐 84b19dec... (United Kingdom) local=13:41, awake=True
+[15:41:58] [84b19dec] Proxy: 2a0f:e441:869e:460e:21f6:d667:eea9:9ec1 (United Kingdom)
+[15:42:09] [f01d6572] Connection failed: BrowserType.connect_over_cdp: WebSocket error: connect ECONNREFUSED 127.0.0.1:54065
+Call log:
+  - <ws connecting> ws://127.0.0.1:54065/devtools/browser/6cd6b6f5-905f-4125-9732-d92f2ae1428a
+  - <ws error> ws://127.0.0.1:54065/devtools/browser/6cd6b6f5-905f-4125-9732-d92f2ae1428a error connect ECONNREFUSED 127.0.0.1:54065
+  - <ws connect error> ws://127.0.0.1:54065/devtools/browser/6cd6b6f5-905f-4125-9732-d92f2ae1428a connect ECONNREFUSED 127.0.0.1:54065
+  - <ws disconnected> ws://127.0.0.1:54065/devtools/browser/6cd6b6f5-905f-4125-9732-d92f2ae1428a code=1006 reason=
+
+[15:42:09] [84b19dec] Media blocking enabled
+[15:42:09] [84b19dec] Notifications blocked
+[15:42:09] [84b19dec] Connected to Octo Browser
+[15:42:09] [84b19dec] Window minimized via CDP
+[15:42:09] [84b19dec] 🚀 Google Warm-up mode
+[15:42:09] [84b19dec] 📺 YouTube activity enabled via checkbox (100% chance)
+[15:42:09] [84b19dec] 📊 Sites limited to 6 for this session
+[15:42:09] [84b19dec] 📋 Plan: 6 sites + YouTube activity + Gmail checks
+[15:42:09] [84b19dec] 
+[1/6] https://vectornator.io
+[15:42:10] [84b19dec]    🔍 Searching Google for: vectornator
+[15:42:11] [f01d6572] Done
+[15:42:20] [84b19dec]    ⚠️ vectornator.io not found in organic results
+[15:42:20] [84b19dec]    Direct navigation fallback...
+[15:42:23] [84b19dec]    Closing cookie banner (link): 
+[15:42:27] [84b19dec]    Scanning for Google One Tap...
+[15:42:48] [84b19dec]    No One Tap found, trying Login button flow...
+[15:42:48] [84b19dec]    No Google One Tap found
+[15:42:50] [Auto] ⏹ Stopped 84b19dec...
+[15:42:50] [Auto] ⚠️ Stop operation cancelled by user
+[15:42:50] 🤖 Auto mode STOPPED
+[15:42:50] [Auto] Stopped 1/1 profiles
+[15:42:50] 🤖 Auto mode STOPPED
+[15:42:50] [84b19dec]    Browsing for 41s...
+[15:42:56] [84b19dec] 
+✅ Google Warm-up complete!
+[15:42:56] [84b19dec] Blocked 35 media requests
+[15:42:58] [84b19dec] Done
+[15:43:56] [global] Settings saved
