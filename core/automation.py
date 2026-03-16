@@ -749,7 +749,14 @@ class BrowserAutomation:
         try:
             self._blocked_count = 0
             self.log(f"Opening {url}")
-            await self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            try:
+                await self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            except Exception as nav_err:
+                error_str = str(nav_err).lower()
+                if 'net::err_' in error_str or 'err_connection' in error_str:
+                    self.log(f"   ❌ Navigation failed: {str(nav_err)[:50]}")
+                    return  # Exit gracefully
+                raise  # Re-raise other errors
             
             await self.mute_page()
             await HumanBehavior.random_delay(1, 2)
@@ -3260,7 +3267,11 @@ class BrowserAutomation:
             
             # Step 1: Setup Google search tab (first time or if needed)
             if not getattr(self, '_search_tab_initialized', False):
-                await self._search_tab.goto("https://www.google.com/", wait_until="domcontentloaded", timeout=15000)
+                try:
+                    await self._search_tab.goto("https://www.google.com/", wait_until="domcontentloaded", timeout=15000)
+                except Exception as google_err:
+                    self.log(f"   ⚠️ Cannot load Google: {str(google_err)[:30]}")
+                    return False
                 await asyncio.sleep(random.uniform(1, 2))
                 await self._handle_google_consent_on_page(self._search_tab)
                 self._search_tab_initialized = True
@@ -3334,12 +3345,18 @@ class BrowserAutomation:
             if getattr(self, '_should_minimize', False):
                 await self.minimize_window()
             
-            # Navigate to site in new tab
+            # Navigate to site in new tab with proper error handling
             try:
                 await site_tab.goto(href, wait_until="domcontentloaded", timeout=30000)
             except Exception as nav_err:
-                self.log(f"   ⚠️ Site navigation failed: {str(nav_err)[:30]}")
-                await site_tab.close()
+                error_str = str(nav_err).lower()
+                # Check for network errors
+                network_errors = ['net::err_', 'err_connection', 'err_socks', 'err_proxy', 'err_ssl', 'err_cert']
+                is_network_error = any(err in error_str for err in network_errors)
+                
+                self.log(f"   ❌ Navigation failed: {str(nav_err)[:50]}")
+                if site_tab and not site_tab.is_closed():
+                    await site_tab.close()
                 return False
             
             await asyncio.sleep(random.uniform(1, 2))
@@ -3393,6 +3410,7 @@ class BrowserAutomation:
         Returns:
             True if successful, False otherwise
         """
+        site_tab = None
         try:
             # Initialize search tab if needed (to have a base tab)
             if not hasattr(self, '_search_tab') or self._search_tab.is_closed():
@@ -3406,16 +3424,42 @@ class BrowserAutomation:
             if getattr(self, '_should_minimize', False):
                 await self.minimize_window()
             
-            # Navigate to site
+            # Navigate to site with proper error handling
             try:
                 await site_tab.goto(url, wait_until="domcontentloaded", timeout=30000)
-            except:
-                # Retry with shorter timeout
+            except Exception as first_error:
+                error_str = str(first_error).lower()
+                
+                # Check for network errors that shouldn't be retried
+                network_errors = [
+                    'net::err_connection_aborted',
+                    'net::err_connection_refused', 
+                    'net::err_connection_reset',
+                    'net::err_socks_connection_failed',
+                    'net::err_proxy_connection_failed',
+                    'net::err_name_not_resolved',
+                    'net::err_cert_',
+                    'net::err_ssl_',
+                    'net::err_timed_out',
+                    'net::err_internet_disconnected',
+                ]
+                
+                is_network_error = any(err in error_str for err in network_errors)
+                
+                if is_network_error:
+                    # Don't retry network errors - just fail fast
+                    self.log(f"   ❌ Navigation failed: {str(first_error)[:50]}")
+                    if site_tab and not site_tab.is_closed():
+                        await site_tab.close()
+                    return False
+                
+                # For other errors (timeout etc.), try once more with shorter timeout
                 try:
                     await site_tab.goto(url, wait_until="commit", timeout=15000)
-                except Exception as e:
-                    self.log(f"   ❌ Navigation failed: {str(e)[:40]}")
-                    await site_tab.close()
+                except Exception as retry_error:
+                    self.log(f"   ❌ Navigation failed: {str(retry_error)[:50]}")
+                    if site_tab and not site_tab.is_closed():
+                        await site_tab.close()
                     return False
             
             await asyncio.sleep(random.uniform(1, 2))
@@ -3427,7 +3471,12 @@ class BrowserAutomation:
             return True
             
         except Exception as e:
-            self.log(f"   ⚠️ Direct navigation failed: {str(e)[:40]}")
+            self.log(f"   ⚠️ Direct navigation failed: {str(e)[:50]}")
+            if site_tab and not site_tab.is_closed():
+                try:
+                    await site_tab.close()
+                except:
+                    pass
             return False
     
     async def _handle_google_consent_on_page(self, page):
