@@ -1062,5 +1062,15 @@
         <translation>Этот профиль существует в Cookie режиме.\n\nИспользуйте кнопку миграции (→) в Cookie режиме для переноса в Google режим.</translation>
     </message>
     
+    <!-- Pause/Play profile exclusion -->
+    <message>
+        <source>Profile paused (excluded from Auto mode). Click to resume.</source>
+        <translation>Профиль на паузе (исключён из Auto режима). Нажмите для возобновления.</translation>
+    </message>
+    <message>
+        <source>Profile active in Auto mode. Click to pause.</source>
+        <translation>Профиль активен в Auto режиме. Нажмите для паузы.</translation>
+    </message>
+    
 </context>
 </TS>

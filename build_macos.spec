@@ -38,6 +38,7 @@ a = Analysis(
         'json',
         'random',
         'datetime',
+        'socket',
         # External packages
         'requests',
         'tldextract',
@@ -49,6 +50,8 @@ a = Analysis(
         'pymongo.server_api',
         'dns',
         'dns.resolver',
+        # Proxy testing
+        'socks',
         # Core modules
         'core.octo_api',
         'core.octo_api_async',

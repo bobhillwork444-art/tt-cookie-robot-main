@@ -6,6 +6,7 @@ tldextract>=5.1.0
 lxml>=4.9.0
 pymongo>=4.6.0
 dnspython>=2.4.0
+PySocks>=1.7.1
 
 # Optional: for window minimization on Windows
 pywin32>=306; sys_platform == 'win32'

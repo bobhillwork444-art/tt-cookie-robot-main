@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QFrame, QScrollArea, QSplitter, QApplication, QComboBox,
     QSizePolicy, QProgressDialog
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, pyqtSlot
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, pyqtSlot, QTimer
 from PyQt5.QtGui import QFont, QPixmap
 
 from core.octo_api import OctoAPI
@@ -309,6 +309,9 @@ class ProfileItemWidget(QWidget):
     campaign_changed = pyqtSignal(str, bool)  # Ad campaign state
     ready_changed = pyqtSignal(str, bool)  # Profile ready state
     play_clicked = pyqtSignal(str)  # Emits UUID when play clicked for manual profile launch
+    proxy_check_clicked = pyqtSignal(str)  # Emits UUID when proxy check clicked
+    paused_changed = pyqtSignal(str, bool)  # Emits UUID and paused state for auto mode exclusion
+    proxy_status_changed = pyqtSignal(str, object)  # Emits UUID and proxy status (True/False/None)
     
     def __init__(self, uuid: str, country: str = "", first_run: str = "", mode: str = "cookie", 
                  google_authorized: bool = False, ads_registered: bool = False,
@@ -316,6 +319,7 @@ class ProfileItemWidget(QWidget):
                  profile_ready: bool = False,
                  ads_timestamp: str = "", payment_timestamp: str = "", 
                  campaign_timestamp: str = "", ready_timestamp: str = "",
+                 paused: bool = False, proxy_status: object = None,
                  parent=None):
         super().__init__(parent)
         self.uuid = uuid
@@ -334,6 +338,11 @@ class ProfileItemWidget(QWidget):
         self.country_code = normalize_country(country)
         self.first_run = first_run  # ISO date string
         self.age_days = self._get_age_days()
+        # Pause state for auto mode exclusion
+        self._paused = paused
+        # Proxy status: None = unchecked, True = ok, False = error (restored from DB)
+        self._proxy_status = proxy_status
+        self._proxy_checking = False
         
         layout = QHBoxLayout(self)
         layout.setContentsMargins(4, 2, 4, 2)
@@ -366,12 +375,20 @@ class ProfileItemWidget(QWidget):
         self.flag_label.setFixedWidth(28)
         layout.addWidget(self.flag_label)
         
-        # Country code label (e.g., "GB", "NL")
-        if self.country_code:
-            self.code_label = QLabel(f"({self.country_code})")
-            self.code_label.setStyleSheet("color: #888; font-size: 11px;")
-            self.code_label.setFixedWidth(32)
-            layout.addWidget(self.code_label)
+        # Country code label (e.g., "GB", "NL") - always create, hide if empty
+        self.code_label = QLabel(f"({self.country_code})" if self.country_code else "")
+        self.code_label.setStyleSheet("color: #888; font-size: 11px;")
+        self.code_label.setFixedWidth(32)
+        if not self.country_code:
+            self.code_label.hide()
+        layout.addWidget(self.code_label)
+        
+        # Pause/Play button for auto mode exclusion (between country code and UUID)
+        self.pause_btn = QPushButton("⏸" if not self._paused else "▶")
+        self.pause_btn.setFixedSize(32, 24)  # Fixed size for consistent look
+        self._update_pause_btn_style()
+        self.pause_btn.clicked.connect(self._on_pause_click)
+        layout.addWidget(self.pause_btn)
         
         # UUID label (truncated)
         self.uuid_label = QLabel(f"{uuid[:8]}...")
@@ -441,6 +458,26 @@ class ProfileItemWidget(QWidget):
         if self.first_run:
             self.age_label.setToolTip(f"First run: {self.first_run}")
         layout.addWidget(self.age_label)
+        
+        # Proxy check button
+        self.proxy_btn = QPushButton("⇄")
+        self.proxy_btn.setMinimumWidth(32)
+        self.proxy_btn.setMaximumWidth(40)
+        self.proxy_btn.setToolTip(tr("Check proxy"))
+        # Note: _proxy_status and _proxy_checking are initialized in __init__ above
+        self.proxy_btn.clicked.connect(self._on_proxy_check)
+        layout.addWidget(self.proxy_btn)
+        
+        # Proxy warning label (hidden by default) - must be created before _update_proxy_btn_style
+        self.proxy_warning = QLabel("⚠")
+        self.proxy_warning.setStyleSheet("color: #f44336; font-size: 14px; font-weight: bold;")
+        self.proxy_warning.setFixedWidth(16)
+        self.proxy_warning.setToolTip(tr("Proxy error"))
+        self.proxy_warning.hide()
+        layout.addWidget(self.proxy_warning)
+        
+        # Now update style (after proxy_warning is created)
+        self._update_proxy_btn_style()
         
         # Copy button
         self.copy_btn = QPushButton("⧉")
@@ -512,6 +549,151 @@ class ProfileItemWidget(QWidget):
     def is_manually_running(self) -> bool:
         """Check if profile is manually running."""
         return self._is_manually_running
+    
+    def _update_proxy_btn_style(self):
+        """Update proxy button style based on status."""
+        if self._proxy_checking:
+            # Checking - gray with animation hint
+            self.proxy_btn.setText("...")
+            self.proxy_btn.setStyleSheet("""
+                QPushButton {
+                    color: #888;
+                    border: 1px solid #888;
+                    border-radius: 4px;
+                    background: transparent;
+                }
+            """)
+            self.proxy_btn.setToolTip(tr("Checking proxy..."))
+            self.proxy_warning.hide()
+        elif self._proxy_status is None:
+            # Unchecked - neutral
+            self.proxy_btn.setText("⇄")
+            self.proxy_btn.setStyleSheet("""
+                QPushButton {
+                    color: #888;
+                    border: 1px solid #666;
+                    border-radius: 4px;
+                    background: transparent;
+                }
+                QPushButton:hover {
+                    background: rgba(136, 136, 136, 0.15);
+                }
+            """)
+            self.proxy_btn.setToolTip(tr("Check proxy"))
+            self.proxy_warning.hide()
+        elif self._proxy_status:
+            # OK - green
+            self.proxy_btn.setText("⇄")
+            self.proxy_btn.setStyleSheet("""
+                QPushButton {
+                    color: #4CAF50;
+                    border: 1px solid #4CAF50;
+                    border-radius: 4px;
+                    background: transparent;
+                }
+                QPushButton:hover {
+                    background: rgba(76, 175, 80, 0.15);
+                }
+            """)
+            self.proxy_btn.setToolTip(tr("Proxy OK (click to recheck)"))
+            self.proxy_warning.hide()
+        else:
+            # Error - red
+            self.proxy_btn.setText("⇄")
+            self.proxy_btn.setStyleSheet("""
+                QPushButton {
+                    color: #f44336;
+                    border: 1px solid #f44336;
+                    border-radius: 4px;
+                    background: rgba(244, 67, 54, 0.1);
+                }
+                QPushButton:hover {
+                    background: rgba(244, 67, 54, 0.25);
+                }
+            """)
+            self.proxy_btn.setToolTip(tr("Proxy error (click to recheck)"))
+            self.proxy_warning.show()
+    
+    def set_proxy_checking(self, checking: bool):
+        """Set proxy checking state."""
+        self._proxy_checking = checking
+        self._update_proxy_btn_style()
+    
+    def set_proxy_status(self, success: bool, message: str = ""):
+        """Set proxy check result and emit signal to persist state."""
+        self._proxy_checking = False
+        self._proxy_status = success
+        if message:
+            if success:
+                self.proxy_btn.setToolTip(f"Proxy OK: {message}")
+            else:
+                self.proxy_btn.setToolTip(f"Proxy error: {message}")
+                self.proxy_warning.setToolTip(f"Error: {message}")
+        self._update_proxy_btn_style()
+        # Emit signal to save state to database
+        self.proxy_status_changed.emit(self.uuid, success)
+    
+    def get_proxy_status(self):
+        """Get current proxy status."""
+        return self._proxy_status
+    
+    def _on_proxy_check(self):
+        """Handle proxy check button click."""
+        if not self._proxy_checking:
+            self.proxy_check_clicked.emit(self.uuid)
+    
+    # === Pause/Play button for Auto mode exclusion ===
+    def _update_pause_btn_style(self):
+        """Update pause button style based on paused state."""
+        if self._paused:
+            # Paused - orange/yellow, show play icon
+            self.pause_btn.setText("▶")
+            self.pause_btn.setStyleSheet("""
+                QPushButton {
+                    font-size: 12px;
+                    color: #ff9800;
+                    border: 1px solid #ff9800;
+                    border-radius: 4px;
+                    background: rgba(255, 152, 0, 0.1);
+                    padding: 2px;
+                }
+                QPushButton:hover {
+                    background: rgba(255, 152, 0, 0.25);
+                }
+            """)
+            self.pause_btn.setToolTip(tr("Profile paused (excluded from Auto mode). Click to resume."))
+        else:
+            # Active - gray/neutral, show pause icon
+            self.pause_btn.setText("⏸")
+            self.pause_btn.setStyleSheet("""
+                QPushButton {
+                    font-size: 12px;
+                    color: #888;
+                    border: 1px solid #666;
+                    border-radius: 4px;
+                    background: transparent;
+                    padding: 2px;
+                }
+                QPushButton:hover {
+                    background: rgba(136, 136, 136, 0.15);
+                }
+            """)
+            self.pause_btn.setToolTip(tr("Profile active in Auto mode. Click to pause."))
+    
+    def _on_pause_click(self):
+        """Handle pause button click - toggle paused state."""
+        self._paused = not self._paused
+        self._update_pause_btn_style()
+        self.paused_changed.emit(self.uuid, self._paused)
+    
+    def is_paused(self) -> bool:
+        """Check if profile is paused (excluded from Auto mode)."""
+        return self._paused
+    
+    def set_paused(self, paused: bool):
+        """Set paused state without emitting signal (for loading from DB)."""
+        self._paused = paused
+        self._update_pause_btn_style()
     
     def _update_google_btn_style(self):
         """Update Google button style based on authorization state."""
@@ -1115,6 +1297,12 @@ class MainWindow(QMainWindow):
         self._manual_profile_check_timer.timeout.connect(self._check_manual_profiles_status)
         self._manual_profile_check_timer.start(3000)  # 3 seconds
         
+        # Debounced save timer - prevents excessive DB writes
+        self._save_timer = QTimer(self)
+        self._save_timer.setSingleShot(True)
+        self._save_timer.timeout.connect(self._do_save_config)
+        self._save_pending = False
+        
     def init_ui(self):
         self.setWindowTitle("TT Cookie Robot")
         self.setMinimumSize(800, 600)
@@ -1128,6 +1316,14 @@ class MainWindow(QMainWindow):
         # === TOP BAR: Connection + Mode ===
         top_bar = QHBoxLayout()
         top_bar.setSpacing(10)
+        
+        # Refresh all proxies button (left of API URL)
+        self.refresh_all_btn = QPushButton("🔄")
+        self.refresh_all_btn.setFixedSize(36, 28)
+        self.refresh_all_btn.setStyleSheet("font-size: 14px;")
+        self.refresh_all_btn.setToolTip(tr("Refresh all proxies & update geo"))
+        self.refresh_all_btn.clicked.connect(self._refresh_all_proxies_and_geo)
+        top_bar.addWidget(self.refresh_all_btn)
         
         # Connection
         top_bar.addWidget(QLabel("API:"))
@@ -2794,13 +2990,17 @@ class MainWindow(QMainWindow):
         self._load_profiles_to_scheduler()
         
         # Check if there are profiles
-        if not self.auto_scheduler.get_all_profiles():
+        all_profiles = self.auto_scheduler.get_all_profiles()
+        if not all_profiles:
             QMessageBox.warning(
                 self, 
                 tr("No Profiles"),
                 tr("No profiles found in Cookie or Google modes.\nAdd profiles first.")
             )
             return
+        
+        # Check proxies before starting auto mode
+        self._check_proxies_before_start("auto", [p.uuid for p in all_profiles])
         
         # Update scheduler settings
         auto_cfg = self.config.get("auto_mode", {})
@@ -2858,10 +3058,20 @@ class MainWindow(QMainWindow):
         cookie_profiles = cookie_cfg.get("profiles", [])
         cookie_info = cookie_cfg.get("profile_info", {})
         
+        paused_count = 0
+        loaded_count = 0
+        
         self.log(f"[Auto] Loading {len(cookie_profiles)} cookie profiles to scheduler...")
         
         for uuid in cookie_profiles:
             info = cookie_info.get(uuid, {})
+            
+            # Skip paused profiles
+            if info.get("paused", False):
+                paused_count += 1
+                self.log(f"[Auto]   {uuid[:8]}... ⏸ PAUSED (skipped)")
+                continue
+            
             country = info.get("country", "")
             
             # If country is empty/unknown, mark as UNKNOWN to force detection
@@ -2885,6 +3095,7 @@ class MainWindow(QMainWindow):
                 target_sessions=target_sessions,
                 last_session_end=last_session
             )
+            loaded_count += 1
         
         # Load Google profiles
         google_cfg = self.get_mode_config("google")
@@ -2895,6 +3106,13 @@ class MainWindow(QMainWindow):
         
         for uuid in google_profiles:
             info = google_info.get(uuid, {})
+            
+            # Skip paused profiles
+            if info.get("paused", False):
+                paused_count += 1
+                self.log(f"[Auto]   {uuid[:8]}... ⏸ PAUSED (skipped)")
+                continue
+            
             country = info.get("country", "")
             
             # If country is empty/unknown, mark as UNKNOWN to force detection
@@ -2917,7 +3135,12 @@ class MainWindow(QMainWindow):
                 target_sessions=target_sessions,
                 last_session_end=last_session
             )
-    
+            loaded_count += 1
+        
+        # Log summary
+        if paused_count > 0:
+            self.log(f"[Auto] ⏸ {paused_count} profile(s) paused (excluded from queue)")
+
 
     def _refresh_all_auto_profiles_geo(self):
         """
@@ -3644,6 +3867,20 @@ class MainWindow(QMainWindow):
         self.global_api_url.setText(self.config.get("api_url", "http://localhost:58888"))
         form.addRow("Octo Browser API:", self.global_api_url)
         
+        # Octo API Token for Remote API (proxy checking)
+        self.global_api_token = QLineEdit()
+        self.global_api_token.setText(self.config.get("octo_api_token", ""))
+        self.global_api_token.setPlaceholderText(tr("Enter Octo API token for proxy check"))
+        self.global_api_token.setEchoMode(QLineEdit.Password)
+        form.addRow(tr("Octo API Token:"), self.global_api_token)
+        
+        # Show/hide token button
+        self.show_token_btn = QPushButton("👁")
+        self.show_token_btn.setFixedWidth(30)
+        self.show_token_btn.setCheckable(True)
+        self.show_token_btn.clicked.connect(self._toggle_token_visibility)
+        form.addRow("", self.show_token_btn)
+        
         # === INTERFACE ===
         iface_label = QLabel(tr("🎨 Interface"))
         iface_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
@@ -3747,6 +3984,7 @@ class MainWindow(QMainWindow):
     def _save_global_settings(self, dialog):
         """Save global settings"""
         self.config["api_url"] = self.global_api_url.text()
+        self.config["octo_api_token"] = self.global_api_token.text()
         self.config["language"] = self.global_language.currentText()
         self.config["theme"] = self.global_theme.currentText()
         self.config["max_parallel_profiles"] = self.global_max_parallel.value()
@@ -3762,6 +4000,10 @@ class MainWindow(QMainWindow):
         # Update API URL in top bar
         self.api_url_input.setText(self.config["api_url"])
         
+        # Update API token in manager if connected
+        if self.api_manager:
+            self.api_manager.set_api_token(self.config["octo_api_token"])
+        
         # Apply theme immediately
         self.current_theme = self.config["theme"]
         self.apply_theme(self.current_theme)
@@ -3774,6 +4016,15 @@ class MainWindow(QMainWindow):
         # Show message that restart is needed for language change
         QMessageBox.information(self, "OK", tr("Settings saved!") + "\n" + tr("Restart app for language change."))
         dialog.accept()
+    
+    def _toggle_token_visibility(self):
+        """Toggle API token visibility."""
+        if self.show_token_btn.isChecked():
+            self.global_api_token.setEchoMode(QLineEdit.Normal)
+            self.show_token_btn.setText("🔒")
+        else:
+            self.global_api_token.setEchoMode(QLineEdit.Password)
+            self.show_token_btn.setText("👁")
     
     def _toggle_geo_percent(self, state):
         """Enable/disable geo percent spinner based on checkbox."""
@@ -4013,6 +4264,7 @@ class MainWindow(QMainWindow):
             config = {
                 # Global settings
                 "api_url": settings.get("api_url", "http://localhost:58888"),
+                "octo_api_token": settings.get("octo_api_token", ""),
                 "language": settings.get("language", "English"),
                 "theme": settings.get("theme", "Dark"),
                 "max_parallel_profiles": settings.get("max_parallel_profiles", 5),
@@ -4098,7 +4350,21 @@ class MainWindow(QMainWindow):
         }
     
     def save_config(self):
-        """Save configuration to MongoDB Atlas."""
+        """
+        Schedule configuration save to MongoDB Atlas.
+        Uses debouncing to prevent excessive writes - actual save happens 500ms after last call.
+        """
+        if not self._save_pending:
+            self._save_pending = True
+        
+        # Reset timer - actual save will happen 500ms after last call
+        self._save_timer.stop()
+        self._save_timer.start(500)  # 500ms debounce
+    
+    def _do_save_config(self):
+        """Actually save configuration to MongoDB Atlas (called by debounce timer)."""
+        self._save_pending = False
+        
         try:
             if not hasattr(self, 'db') or not self.db or not self.db.is_connected():
                 print("[Config] ❌ DB not connected, cannot save")
@@ -4107,6 +4373,7 @@ class MainWindow(QMainWindow):
             # 1. Save global settings
             settings = {
                 "api_url": self.config.get("api_url", "http://localhost:58888"),
+                "octo_api_token": self.config.get("octo_api_token", ""),
                 "language": self.config.get("language", "English"),
                 "theme": self.config.get("theme", "Dark"),
                 "max_parallel_profiles": self.config.get("max_parallel_profiles", 5),
@@ -4268,6 +4535,9 @@ class MainWindow(QMainWindow):
             
             # Initialize async API manager
             self._init_api_manager()
+            
+            # Auto-check all proxies after connection
+            QTimer.singleShot(500, self._auto_check_all_proxies)
         else:
             self.connection_status.setStyleSheet("color: #f38ba8; font-size: 16px;")
             self.log("Connection failed")
@@ -4278,6 +4548,11 @@ class MainWindow(QMainWindow):
             self.api_manager.shutdown()
         
         self.api_manager = OctoApiManager(self.octo_api)
+        
+        # Set API token for remote API access
+        api_token = self.config.get("octo_api_token", "")
+        if api_token:
+            self.api_manager.set_api_token(api_token)
         
         # Connect signals for progress tracking
         self.api_manager.operation_progress.connect(self._on_api_progress)
@@ -4539,6 +4814,9 @@ class MainWindow(QMainWindow):
             payment_timestamp = info.get("payment_timestamp", "")
             campaign_timestamp = info.get("campaign_timestamp", "")
             ready_timestamp = info.get("ready_timestamp", "")
+            # Paused and proxy status (persisted across UI refreshes)
+            paused = info.get("paused", False)
+            proxy_status = info.get("proxy_status", None)  # True/False/None
             
             item = QListWidgetItem()
             item.setData(Qt.UserRole, uuid)  # Store UUID in item data
@@ -4547,10 +4825,14 @@ class MainWindow(QMainWindow):
             widget = ProfileItemWidget(
                 uuid, country, first_run, mode, 
                 google_authorized, ads_registered, payment_linked, campaign_launched,
-                profile_ready, ads_timestamp, payment_timestamp, campaign_timestamp, ready_timestamp
+                profile_ready, ads_timestamp, payment_timestamp, campaign_timestamp, ready_timestamp,
+                paused, proxy_status
             )
             widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
             widget.play_clicked.connect(self._on_play_profile)
+            widget.proxy_check_clicked.connect(self._on_proxy_check)
+            widget.paused_changed.connect(self._on_profile_paused_changed)
+            widget.proxy_status_changed.connect(self._on_proxy_status_changed)
             if mode == "cookie":
                 widget.migrate_clicked.connect(self._on_migrate_profile)
                 widget.google_auth_changed.connect(self._on_google_auth_changed)
@@ -4627,9 +4909,12 @@ class MainWindow(QMainWindow):
                 item = QListWidgetItem()
                 item.setData(Qt.UserRole, uuid)
                 
-                widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False, False)
+                widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False, False, "", "", "", "", False, None)
                 widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
                 widget.play_clicked.connect(self._on_play_profile)
+                widget.proxy_check_clicked.connect(self._on_proxy_check)
+                widget.paused_changed.connect(self._on_profile_paused_changed)
+                widget.proxy_status_changed.connect(self._on_proxy_status_changed)
                 if mode == "cookie":
                     widget.migrate_clicked.connect(self._on_migrate_profile)
                     widget.google_auth_changed.connect(self._on_google_auth_changed)
@@ -4801,6 +5086,418 @@ class MainWindow(QMainWindow):
                 if item and item.data(Qt.UserRole) == uuid:
                     return lst.itemWidget(item)
         return None
+    
+    def _on_proxy_check(self, uuid: str):
+        """Handle manual proxy check for a single profile."""
+        if not self.api_manager:
+            self.log(f"[{uuid[:8]}] Cannot check proxy - not connected")
+            return
+        
+        if not self.config.get("octo_api_token"):
+            self.log(f"[{uuid[:8]}] Cannot check proxy - API token not set (add in Settings)")
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                widget.set_proxy_status(False, "No API token")
+            return
+        
+        widget = self._find_profile_widget(uuid)
+        if widget:
+            widget.set_proxy_checking(True)
+        
+        self.log(f"[{uuid[:8]}] Checking proxy...")
+        
+        # Use async check
+        self.api_manager.check_proxy_async(
+            uuid,
+            callback=lambda result: self._on_proxy_check_result(uuid, result),
+            error_callback=lambda msg: self._on_proxy_check_error(uuid, msg)
+        )
+    
+    def _on_proxy_check_result(self, uuid: str, result: dict):
+        """Handle proxy check result for a single profile."""
+        actual_result = result.get("result", {})
+        success = actual_result.get("success", False)
+        message = actual_result.get("message", "")
+        ip = actual_result.get("ip", "")
+        country = actual_result.get("country", "")
+        
+        widget = self._find_profile_widget(uuid)
+        if widget:
+            if success and ip:
+                widget.set_proxy_status(True, f"IP: {ip}")
+            else:
+                widget.set_proxy_status(success, message)
+            
+            # Update geo if widget has no country and we got country from proxy check
+            if success and not widget.country_code:
+                if country:
+                    # Use country from proxy check result
+                    self._update_profile_geo_direct(uuid, widget, country)
+                else:
+                    # Fallback to API lookup
+                    self._update_profile_geo_from_api(uuid, widget)
+        
+        status = "✓ OK" if success else f"✗ {message}"
+        self.log(f"[{uuid[:8]}] Proxy: {status}")
+    
+    def _on_proxy_check_error(self, uuid: str, error: str):
+        """Handle proxy check error."""
+        widget = self._find_profile_widget(uuid)
+        if widget:
+            widget.set_proxy_status(False, error)
+        
+        self.log(f"[{uuid[:8]}] Proxy check error: {error}")
+    
+    def _auto_check_all_proxies(self):
+        """Auto-check all proxies after Octo connection."""
+        if not self.api_manager:
+            return
+        
+        # Check if API token is set
+        if not self.config.get("octo_api_token"):
+            self.log("Proxy check skipped - no API token (add in Settings)")
+            return
+        
+        # Collect all profile UUIDs
+        all_uuids = []
+        
+        cookie_cfg = self.get_mode_config("cookie")
+        google_cfg = self.get_mode_config("google")
+        
+        all_uuids.extend(cookie_cfg.get("profiles", []))
+        all_uuids.extend(google_cfg.get("profiles", []))
+        
+        if not all_uuids:
+            return
+        
+        self.log(f"Auto-checking proxies for {len(all_uuids)} profiles...")
+        
+        # Set all widgets to checking state
+        for uuid in all_uuids:
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                widget.set_proxy_checking(True)
+        
+        # Store task ID for batch operation
+        self._proxy_check_task_id = self.api_manager.check_proxies_batch_async(
+            all_uuids,
+            callback=self._on_batch_proxy_check_done
+        )
+    
+    def _on_batch_proxy_check_done(self, result: dict):
+        """Handle batch proxy check completion (auto-check on connect)."""
+        results = result.get("results", {})
+        
+        ok_count = 0
+        fail_count = 0
+        geo_updated = 0
+        
+        for uuid, check_result in results.items():
+            success = check_result.get("success", False)
+            message = check_result.get("message", "")
+            ip = check_result.get("ip", "")
+            country = check_result.get("country", "")
+            
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                if success and ip:
+                    widget.set_proxy_status(True, f"IP: {ip}")
+                else:
+                    widget.set_proxy_status(success, message)
+                
+                # Update geo if widget has no country and we got country from check
+                if success and not widget.country_code and country:
+                    if self._update_profile_geo_direct(uuid, widget, country):
+                        geo_updated += 1
+            
+            if success:
+                ok_count += 1
+            else:
+                fail_count += 1
+        
+        msg = f"Proxy check complete: {ok_count} OK, {fail_count} failed"
+        if geo_updated > 0:
+            msg += f", {geo_updated} geo updated"
+        self.log(msg)
+    
+    def _refresh_all_proxies_and_geo(self):
+        """
+        Refresh all proxies and update geo for profiles without country.
+        Called by the refresh button (🔄) near API URL.
+        """
+        if not self.api_manager:
+            QMessageBox.warning(self, "Error", tr("Not connected to Octo Browser"))
+            return
+        
+        if not self.config.get("octo_api_token"):
+            QMessageBox.warning(self, "Error", tr("API token not set (add in Settings)"))
+            return
+        
+        # Collect all profile UUIDs from both modes
+        all_uuids = []
+        cookie_cfg = self.get_mode_config("cookie")
+        google_cfg = self.get_mode_config("google")
+        
+        all_uuids.extend(cookie_cfg.get("profiles", []))
+        all_uuids.extend(google_cfg.get("profiles", []))
+        
+        if not all_uuids:
+            self.log("No profiles to check")
+            return
+        
+        self.log(f"🔄 Refreshing proxies & geo for {len(all_uuids)} profiles...")
+        
+        # Set all widgets to checking state
+        for uuid in all_uuids:
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                widget.set_proxy_checking(True)
+        
+        # Run batch proxy check with geo update
+        self.api_manager.check_proxies_batch_async(
+            all_uuids,
+            callback=self._on_refresh_proxies_and_geo_done
+        )
+    
+    def _on_refresh_proxies_and_geo_done(self, result: dict):
+        """Handle batch proxy check + geo update completion."""
+        results = result.get("results", {})
+        
+        ok_count = 0
+        fail_count = 0
+        geo_updated = 0
+        
+        for uuid, check_result in results.items():
+            success = check_result.get("success", False)
+            message = check_result.get("message", "")
+            ip = check_result.get("ip", "")
+            country = check_result.get("country", "")
+            
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                if success and ip:
+                    widget.set_proxy_status(True, f"IP: {ip}")
+                else:
+                    widget.set_proxy_status(success, message)
+            
+            if success:
+                ok_count += 1
+                # Try to update geo if widget has no country
+                if widget and not widget.country_code:
+                    if country:
+                        # Use country from proxy check result (ip-api.com geolocation)
+                        if self._update_profile_geo_direct(uuid, widget, country):
+                            geo_updated += 1
+                    else:
+                        # Fallback to API lookup
+                        if self._update_profile_geo_from_api(uuid, widget):
+                            geo_updated += 1
+            else:
+                fail_count += 1
+        
+        msg = f"🔄 Proxy check complete: {ok_count} OK, {fail_count} failed"
+        if geo_updated > 0:
+            msg += f", {geo_updated} geo updated"
+        self.log(msg)
+    
+    def _update_profile_geo_direct(self, uuid: str, widget, country_code: str) -> bool:
+        """
+        Update profile geo directly with provided country code.
+        Returns True if geo was updated.
+        """
+        try:
+            new_code = country_code.upper() if country_code else ""
+            if not new_code or len(new_code) != 2:
+                return False
+            
+            # Find which mode this profile belongs to
+            mode = None
+            for m in ["cookie", "google"]:
+                cfg = self.get_mode_config(m)
+                if uuid in cfg.get("profiles", []):
+                    mode = m
+                    break
+            
+            if not mode:
+                return False
+            
+            # Update config
+            cfg = self.get_mode_config(mode)
+            profile_info = cfg.setdefault("profile_info", {})
+            if uuid not in profile_info:
+                profile_info[uuid] = {}
+            profile_info[uuid]["country"] = new_code
+            self.set_mode_config(mode, cfg)
+            
+            # Update widget
+            widget.country_code = new_code
+            
+            # Update flag label
+            app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            flag_path = os.path.join(app_dir, "assets", "flags", f"{new_code.lower()}.png")
+            if os.path.exists(flag_path):
+                pixmap = QPixmap(flag_path)
+                if not pixmap.isNull():
+                    widget.flag_label.setPixmap(pixmap.scaled(24, 16, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            else:
+                flag_emoji = COUNTRY_FLAGS.get(new_code, "🌐")
+                widget.flag_label.setText(flag_emoji)
+            
+            # Update country code label and show it
+            widget.code_label.setText(f"({new_code})")
+            widget.code_label.show()
+            
+            self.log(f"[{uuid[:8]}] 🌍 Geo: {new_code}")
+            return True
+            
+        except Exception as e:
+            print(f"[Geo] Error updating geo for {uuid[:8]}: {e}")
+            return False
+    
+    def _update_profile_geo_from_api(self, uuid: str, widget) -> bool:
+        """
+        Fetch profile geo from Octo API and update widget + config.
+        Tries Remote API first (works even if profile never started), then Local API.
+        Returns True if geo was updated.
+        """
+        if not self.octo_api:
+            return False
+        
+        try:
+            new_country = ""
+            
+            # Try Remote API first (works even if profile never started)
+            if self.octo_api.api_token:
+                new_country = self.octo_api.get_profile_country_from_remote_api(uuid)
+            
+            # Fallback to Local API
+            if not new_country:
+                info = self.octo_api.get_profile_info(uuid)
+                if info:
+                    new_country = info.get("country", "")
+            
+            if not new_country:
+                print(f"[Geo] No country found for {uuid[:8]}")
+                return False
+            
+            # Normalize country code
+            new_code = normalize_country(new_country)
+            if not new_code:
+                # If not in mapping, try using as-is if it's 2 chars
+                if len(new_country) == 2 and new_country.isalpha():
+                    new_code = new_country.upper()
+                else:
+                    print(f"[Geo] Cannot normalize country '{new_country}' for {uuid[:8]}")
+                    return False
+            
+            # Find which mode this profile belongs to
+            mode = None
+            for m in ["cookie", "google"]:
+                cfg = self.get_mode_config(m)
+                if uuid in cfg.get("profiles", []):
+                    mode = m
+                    break
+            
+            if not mode:
+                return False
+            
+            # Update config
+            cfg = self.get_mode_config(mode)
+            profile_info = cfg.setdefault("profile_info", {})
+            if uuid not in profile_info:
+                profile_info[uuid] = {}
+            profile_info[uuid]["country"] = new_code
+            self.set_mode_config(mode, cfg)
+            
+            # Update widget
+            widget.country_code = new_code
+            
+            # Update flag label
+            app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            flag_path = os.path.join(app_dir, "assets", "flags", f"{new_code.lower()}.png")
+            if os.path.exists(flag_path):
+                pixmap = QPixmap(flag_path)
+                if not pixmap.isNull():
+                    widget.flag_label.setPixmap(pixmap.scaled(24, 16, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            else:
+                flag_emoji = COUNTRY_FLAGS.get(new_code, "🌐")
+                widget.flag_label.setText(flag_emoji)
+            
+            # Update country code label and show it
+            widget.code_label.setText(f"({new_code})")
+            widget.code_label.show()
+            
+            self.log(f"[{uuid[:8]}] 🌍 Geo: {new_code}")
+            return True
+            
+        except Exception as e:
+            print(f"[Geo] Error updating geo for {uuid[:8]}: {e}")
+            return False
+    
+    def _check_proxies_before_start(self, mode: str, profile_uuids: list):
+        """
+        Check proxies before starting work (auto mode or test mode).
+        This runs asynchronously and updates UI with results.
+        
+        Args:
+            mode: "auto", "cookie", or "google"
+            profile_uuids: List of profile UUIDs to check
+        """
+        if not self.api_manager:
+            self.log(f"[Proxy] Cannot check - API manager not initialized")
+            return
+        
+        if not self.config.get("octo_api_token"):
+            self.log(f"[Proxy] Cannot check - API token not set (add in Settings)")
+            return
+        
+        if not profile_uuids:
+            return
+        
+        self.log(f"[Proxy] Checking {len(profile_uuids)} profiles ({mode} mode)...")
+        
+        # Set all widgets to checking state
+        for uuid in profile_uuids:
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                widget.set_proxy_checking(True)
+        
+        # Run async check
+        self.api_manager.check_proxies_batch_async(
+            profile_uuids,
+            callback=lambda result: self._on_proxies_checked(mode, result)
+        )
+    
+    def _on_proxies_checked(self, mode: str, result: dict):
+        """Handle proxy check results for batch operation."""
+        results = result.get("results", {})
+        
+        ok_count = 0
+        fail_count = 0
+        failed_profiles = []
+        
+        for uuid, check_result in results.items():
+            success = check_result.get("success", False)
+            message = check_result.get("message", "")
+            ip = check_result.get("ip", "")
+            
+            widget = self._find_profile_widget(uuid)
+            if widget:
+                if success and ip:
+                    widget.set_proxy_status(True, f"IP: {ip}")
+                else:
+                    widget.set_proxy_status(success, message)
+            
+            if success:
+                ok_count += 1
+            else:
+                fail_count += 1
+                failed_profiles.append(uuid[:8])
+        
+        self.log(f"[Proxy] Check complete ({mode}): {ok_count} OK, {fail_count} failed")
+        
+        if fail_count > 0:
+            self.log(f"[Proxy] Failed: {', '.join(failed_profiles)}")
     
     def _check_manual_profiles_status(self):
         """
@@ -5039,6 +5736,54 @@ class MainWindow(QMainWindow):
         
         status = "✓" if ready else "✗"
         self.log(f"[{uuid[:8]}] Ready: {status}")
+    
+    def _on_profile_paused_changed(self, uuid: str, paused: bool):
+        """Save profile paused state (async to database)."""
+        # Find which mode this profile belongs to
+        mode = None
+        for m in ["cookie", "google"]:
+            cfg = self.get_mode_config(m)
+            if uuid in cfg.get("profiles", []):
+                mode = m
+                break
+        
+        if not mode:
+            return
+        
+        cfg = self.get_mode_config(mode)
+        profile_info = cfg.setdefault("profile_info", {})
+        
+        if uuid not in profile_info:
+            profile_info[uuid] = {}
+        
+        profile_info[uuid]["paused"] = paused
+        self.set_mode_config(mode, cfg)
+        
+        status = "⏸ PAUSED" if paused else "▶ RESUMED"
+        self.log(f"[{uuid[:8]}] {status}")
+    
+    def _on_proxy_status_changed(self, uuid: str, status: object):
+        """Save proxy status to database for persistence across UI refreshes."""
+        # Find which mode this profile belongs to
+        mode = None
+        for m in ["cookie", "google"]:
+            cfg = self.get_mode_config(m)
+            if uuid in cfg.get("profiles", []):
+                mode = m
+                break
+        
+        if not mode:
+            return
+        
+        cfg = self.get_mode_config(mode)
+        profile_info = cfg.setdefault("profile_info", {})
+        
+        if uuid not in profile_info:
+            profile_info[uuid] = {}
+        
+        # Save proxy status (True/False/None)
+        profile_info[uuid]["proxy_status"] = status
+        self.set_mode_config(mode, cfg)
     
     def _migrate_profile_to_google(self, uuid: str):
         """Move profile from Cookie mode to Google mode."""
@@ -5531,6 +6276,9 @@ class MainWindow(QMainWindow):
         if not cfg.get("sites") and mode == "cookie":
             QMessageBox.warning(self, "Error", "No sites")
             return
+        
+        # Check proxies before starting test
+        self._check_proxies_before_start(mode, selected)
         
         # Check if any selected profile is running in Auto mode
         for uuid in selected:

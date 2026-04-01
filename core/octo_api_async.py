@@ -22,6 +22,8 @@ class TaskType(Enum):
     FORCE_STOP_PROFILE = "force_stop_profile"
     GET_PROFILE_INFO = "get_profile_info"
     GET_PROFILES_INFO_BATCH = "get_profiles_info_batch"
+    CHECK_PROXY = "check_proxy"
+    CHECK_PROXIES_BATCH = "check_proxies_batch"
 
 
 @dataclass
@@ -105,6 +107,14 @@ class OctoApiWorker(QThread):
             elif task.task_type == TaskType.GET_PROFILES_INFO_BATCH:
                 self._process_batch_get_info(task)
             
+            elif task.task_type == TaskType.CHECK_PROXY:
+                uuid = task.params.get("uuid")
+                result = self.octo_api.check_proxy(uuid)
+                self.task_finished.emit(task.task_id, {"uuid": uuid, "result": result})
+            
+            elif task.task_type == TaskType.CHECK_PROXIES_BATCH:
+                self._process_batch_check_proxies(task)
+            
         except Exception as e:
             logger.error(f"[OctoApiWorker] Task error: {e}")
             self.task_error.emit(task.task_id, str(e))
@@ -164,6 +174,32 @@ class OctoApiWorker(QThread):
         
         self.task_finished.emit(task.task_id, {"results": results, "cancelled": self.current_task_cancelled})
     
+    def _process_batch_check_proxies(self, task: ApiTask):
+        """Process batch proxy check task."""
+        uuids = task.params.get("uuids", [])
+        total = len(uuids)
+        results = {}
+        
+        for i, uuid in enumerate(uuids):
+            # Check if cancelled
+            with QMutexLocker(self._cancel_lock):
+                if self.current_task_cancelled:
+                    logger.info(f"[OctoApiWorker] Batch proxy check cancelled at {i}/{total}")
+                    break
+            
+            try:
+                result = self.octo_api.check_proxy(uuid)
+                results[uuid] = result
+                # Don't emit batch_item_done here - it's connected to stop handler
+            except Exception as e:
+                results[uuid] = {"success": False, "message": str(e), "ip": ""}
+                logger.error(f"[OctoApiWorker] Check proxy error for {uuid}: {e}")
+            
+            # Emit progress
+            self.task_progress.emit(task.task_id, i + 1, total)
+        
+        self.task_finished.emit(task.task_id, {"results": results, "cancelled": self.current_task_cancelled})
+    
     def add_task(self, task: ApiTask):
         """Add task to queue."""
         self.task_queue.put(task)
@@ -197,6 +233,7 @@ class OctoApiManager(QObject):
     # Specific signals for batch operations
     profile_stopped = pyqtSignal(str, bool)  # uuid, success
     profile_info_received = pyqtSignal(str, object)  # uuid, info
+    proxy_checked = pyqtSignal(str, bool, str)  # uuid, success, message
     
     def __init__(self, octo_api):
         super().__init__()
@@ -207,6 +244,10 @@ class OctoApiManager(QObject):
         self._pending_callbacks = {}  # task_id -> (success_cb, error_cb)
         
         self._start_worker()
+    
+    def set_api_token(self, token: str):
+        """Set Octo API token for remote API access."""
+        self.octo_api.set_api_token(token)
     
     def _start_worker(self):
         """Start the background worker thread."""
@@ -344,6 +385,40 @@ class OctoApiManager(QObject):
             self._pending_callbacks[task_id] = (callback, error_callback)
         
         self.operation_started.emit(task_id, f"Getting info for {len(uuids)} profiles...")
+        self.worker.add_task(task)
+        return task_id
+    
+    def check_proxy_async(self, uuid: str,
+                          callback: Callable = None, error_callback: Callable = None) -> str:
+        """Check proxy for a single profile asynchronously."""
+        task_id = self._generate_task_id()
+        task = ApiTask(
+            task_id=task_id,
+            task_type=TaskType.CHECK_PROXY,
+            params={"uuid": uuid}
+        )
+        
+        if callback or error_callback:
+            self._pending_callbacks[task_id] = (callback, error_callback)
+        
+        self.operation_started.emit(task_id, f"Checking proxy for {uuid[:8]}...")
+        self.worker.add_task(task)
+        return task_id
+    
+    def check_proxies_batch_async(self, uuids: List[str],
+                                   callback: Callable = None, error_callback: Callable = None) -> str:
+        """Check proxies for multiple profiles asynchronously."""
+        task_id = self._generate_task_id()
+        task = ApiTask(
+            task_id=task_id,
+            task_type=TaskType.CHECK_PROXIES_BATCH,
+            params={"uuids": uuids}
+        )
+        
+        if callback or error_callback:
+            self._pending_callbacks[task_id] = (callback, error_callback)
+        
+        self.operation_started.emit(task_id, f"Checking proxies for {len(uuids)} profiles...")
         self.worker.add_task(task)
         return task_id
     

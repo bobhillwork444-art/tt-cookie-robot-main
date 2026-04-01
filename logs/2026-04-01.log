@@ -1,0 +1,813 @@
+[14:17:31] Mode: COOKIE
+[14:19:44] Mode: GOOGLE
+[14:21:15] Mode: AUTO
+[14:21:16] Mode: GOOGLE
+[14:21:17] Mode: COOKIE
+[14:21:47] Mode: AUTO
+[14:21:53] Connected to Octo Browser
+[14:21:54] Proxy check skipped - no API token (add in Settings)
+[14:22:04] Connected to Octo Browser
+[14:22:04] Proxy check skipped - no API token (add in Settings)
+[14:22:48] [global] Settings saved
+[14:22:56] Connected to Octo Browser
+[14:22:56] Auto-checking proxies for 6 profiles...
+[14:23:00] Proxy check complete: 6 OK, 0 failed
+[14:23:03] Mode: GOOGLE
+[14:23:07] [944f1d73] Checking proxy...
+[14:23:08] [944f1d73] Proxy: ✓ OK
+[14:23:10] [61b3c345] Checking proxy...
+[14:23:11] [61b3c345] Proxy: ✓ OK
+[14:24:21] [944f1d73] Checking proxy...
+[14:24:22] [944f1d73] Proxy: ✗ Socket error: 0x02: Connection
+[14:24:34] Connected to Octo Browser
+[14:24:34] Auto-checking proxies for 6 profiles...
+[14:24:38] Proxy check complete: 5 OK, 1 failed
+[14:24:55] [944f1d73] Checking proxy...
+[14:24:56] [944f1d73] Proxy: ✓ OK
+[14:25:24] [Proxy] Checking 6 profiles (google mode)...
+[14:25:24] Queued 6 profiles (max parallel: 20)
+[14:25:24] [944f1d73] Started (running: 1)
+[14:25:24] [61b3c345] Started (running: 2)
+[14:25:24] [3fbb4f35] Started (running: 3)
+[14:25:24] [9417d8fe] Started (running: 4)
+[14:25:24] [b4deca73] Started (running: 5)
+[14:25:24] [5170ba81] Started (running: 6)
+[14:25:24] [944f1d73] Starting (google)...
+[14:25:24] [61b3c345] Starting (google)...
+[14:25:24] [3fbb4f35] Starting (google)...
+[14:25:24] [9417d8fe] Starting (google)...
+[14:25:24] [5170ba81] Starting (google)...
+[14:25:24] [b4deca73] Starting (google)...
+[14:25:27] [Proxy] Check complete (google): 6 OK, 0 failed
+[14:25:30] [b4deca73] Country detected: Austria
+[14:25:30] [b4deca73] Proxy: 170.168.108.145 (Austria)
+[14:25:30] [9417d8fe] Country detected: Austria
+[14:25:31] [9417d8fe] Proxy: 170.168.157.54 (Austria)
+[14:25:31] [5170ba81] Country detected: Austria
+[14:25:31] [5170ba81] Proxy: 170.168.56.103 (Austria)
+[14:25:31] [61b3c345] Country detected: Austria
+[14:25:31] [61b3c345] Proxy: 135.106.100.117 (Austria)
+[14:25:32] [944f1d73] Country detected: Italy
+[14:25:32] [944f1d73] Proxy: 136.234.137.151 (Italy)
+[14:25:34] [3fbb4f35] Country detected: Austria
+[14:25:34] [3fbb4f35] Proxy: 170.168.247.185 (Austria)
+[14:25:40] [944f1d73] Media blocking enabled
+[14:25:40] [9417d8fe] Media blocking enabled
+[14:25:40] [61b3c345] Media blocking enabled
+[14:25:40] [5170ba81] Media blocking enabled
+[14:25:40] [944f1d73] Notifications blocked
+[14:25:40] [61b3c345] Notifications blocked
+[14:25:40] [5170ba81] Notifications blocked
+[14:25:40] [9417d8fe] Notifications blocked
+[14:25:40] [3fbb4f35] Media blocking enabled
+[14:25:40] [9417d8fe] Connected to Octo Browser
+[14:25:40] [944f1d73] Connected to Octo Browser
+[14:25:40] [5170ba81] Connected to Octo Browser
+[14:25:40] [b4deca73] Media blocking enabled
+[14:25:40] [61b3c345] Connected to Octo Browser
+[14:25:40] [3fbb4f35] Notifications blocked
+[14:25:40] [b4deca73] Notifications blocked
+[14:25:40] [b4deca73] Connected to Octo Browser
+[14:25:40] [3fbb4f35] Connected to Octo Browser
+[14:25:40] [61b3c345] Window minimized via CDP
+[14:25:40] [61b3c345] 🚀 Google Warm-up mode
+[14:25:40] [5170ba81] Window minimized via CDP
+[14:25:40] [944f1d73] Window minimized via CDP
+[14:25:40] [9417d8fe] Window minimized via CDP
+[14:25:40] [61b3c345] 📺 YouTube skipped this session (40% chance)
+[14:25:40] [944f1d73] 🚀 Google Warm-up mode
+[14:25:40] [9417d8fe] 🚀 Google Warm-up mode
+[14:25:40] [5170ba81] 🚀 Google Warm-up mode
+[14:25:40] [61b3c345] 🌍 Geo mode (AT): 2 local + 2 generic = 4 sites
+[14:25:40] [944f1d73] 📺 YouTube skipped this session (40% chance)
+[14:25:40] [9417d8fe] 📺 YouTube skipped this session (40% chance)
+[14:25:40] [5170ba81] 📺 YouTube skipped this session (40% chance)
+[14:25:40] [61b3c345] 📋 Plan: 4 sites + Gmail checks
+[14:25:40] [944f1d73] 🌍 Geo mode (IT): 2 local + 2 generic = 4 sites
+[14:25:40] [9417d8fe] 🌍 Geo mode (AT): 4 local + 4 generic = 8 sites
+[14:25:40] [5170ba81] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[14:25:40] [944f1d73] 📋 Plan: 4 sites + Gmail checks
+[14:25:40] [9417d8fe] 📋 Plan: 8 sites + Gmail checks
+[14:25:40] [5170ba81] 📋 Plan: 5 sites + Gmail checks
+[14:25:40] [61b3c345] 
+[1/4] https://theage.com.au
+[14:25:40] [61b3c345]    🌐 Browsing only (no auth)
+[14:25:40] [b4deca73] Window minimized via CDP
+[14:25:40] [9417d8fe] 
+[1/8] https://tripadvisor.com
+[14:25:40] [944f1d73] 
+[1/4] https://welcomehomes.com/
+[14:25:40] [3fbb4f35] Window minimized via CDP
+[14:25:40] [b4deca73] 🚀 Google Warm-up mode
+[14:25:40] [5170ba81] 
+[1/5] https://www.wko.at/
+[14:25:40] [944f1d73]    🌐 Browsing only (no auth)
+[14:25:40] [3fbb4f35] 🚀 Google Warm-up mode
+[14:25:40] [b4deca73] 📺 YouTube skipped this session (40% chance)
+[14:25:40] [5170ba81]    🌐 Browsing only (no auth)
+[14:25:40] [3fbb4f35] 📺 YouTube activity enabled via checkbox (40% chance)
+[14:25:40] [b4deca73] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[14:25:40] [3fbb4f35] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[14:25:40] [9417d8fe]    🔍 Searching Google for: tripadvisor
+[14:25:40] [b4deca73] 📋 Plan: 5 sites + Gmail checks
+[14:25:41] [3fbb4f35] 📋 Plan: 5 sites + YouTube activity + Gmail checks
+[14:25:41] [b4deca73] 
+[1/5] https://www.iubenda.com/
+[14:25:41] [3fbb4f35] 
+[1/5] https://pinterest.com
+[14:25:41] [b4deca73]    🌐 Browsing only (no auth)
+[14:25:41] [3fbb4f35]    🔍 Searching Google for: pinterest
+[14:25:46] [b4deca73]    Browsing for 54s...
+[14:25:47] [5170ba81]    Browsing for 40s...
+[14:25:48] [61b3c345] Cookies: OK
+[14:25:48] [944f1d73]    Browsing for 39s...
+[14:25:49] Stopping...
+[14:25:51] [9417d8fe]    ✓ Found tripadvisor.com, opening in new tab...
+[14:25:51] [3fbb4f35]    ✓ Found pinterest.com, opening in new tab...
+[14:25:53] [9417d8fe]    ✓ Navigated via Google search
+[14:25:54] [3fbb4f35]    ✓ Navigated via Google search
+[14:25:54] [9417d8fe]    Closing cookie banner: Cookie consent
+[14:25:54] [3fbb4f35]    Closing cookie banner: Alle akzeptieren
+[14:25:55] [Auto] ⏹ Stopped 944f1d73...
+[14:25:57] [9417d8fe]    Scanning for Google One Tap...
+[14:25:57] [61b3c345]    Browsing for 44s...
+[14:25:57] [9417d8fe]    ✓ Found One Tap: 391x271 at (1097,172)
+[14:25:57] [9417d8fe]    ⚠️ Overlay detected: DIV
+[14:25:57] [9417d8fe]    Closing overlay via selector
+[14:25:58] [3fbb4f35]    Scanning for Google One Tap...
+[14:25:58] [3fbb4f35]    ✓ Found One Tap: 391x271 at (1106,20)
+[14:25:59] [9417d8fe]    Closed overlay blocking One Tap
+[14:25:59] [3fbb4f35]    Click center: (1302, 155)
+[14:25:59] [Auto] ⏹ Stopped 61b3c345...
+[14:26:00] [3fbb4f35]    Click button: (1302, 251)
+[14:26:00] [3fbb4f35]    Click account: (1302, 75)
+[14:26:02] [61b3c345] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[14:26:02] [61b3c345] Blocked 24 media requests
+[14:26:02] [944f1d73] 
+✅ Google Warm-up complete! (0 IT sites, 1 generic)
+[14:26:02] [944f1d73] Blocked 6 media requests
+[14:26:03] [Auto] ⏹ Stopped 3fbb4f35...
+[14:26:04] [61b3c345] Done
+[14:26:04] [61b3c345] Done (running: 5, pending: 0)
+[14:26:04] [61b3c345] Returned to Auto queue
+[14:26:04] [944f1d73] Done
+[14:26:04] [944f1d73] Done (running: 4, pending: 0)
+[14:26:04] [944f1d73] Returned to Auto queue
+[14:26:04] [5170ba81] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[14:26:04] [5170ba81] Blocked 14 media requests
+[14:26:05] [b4deca73] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[14:26:05] [b4deca73] 🧹 Closing 1 extra tab(s)...
+[14:26:06] [b4deca73] ✅ Tabs cleaned up
+[14:26:08] [Auto] ⏹ Stopped 9417d8fe...
+[14:26:09] [5170ba81] Done
+[14:26:09] [5170ba81] Done (running: 3, pending: 0)
+[14:26:09] [5170ba81] Returned to Auto queue
+[14:26:10] [b4deca73] Done
+[14:26:10] [Auto] ⏹ Stopped b4deca73...
+[14:26:10] [b4deca73] Done (running: 2, pending: 0)
+[14:26:10] [b4deca73] Returned to Auto queue
+[14:26:12] [Auto] ⚠️ Failed to stop 5170ba81...
+[14:26:12] Stopped 6 profiles
+[14:26:18] [9417d8fe]    No One Tap found, trying Login button flow...
+[14:26:18] [9417d8fe]    No Google One Tap found
+[14:26:19] [3fbb4f35]    ⚠️ Clicked but not confirmed
+[14:26:20] [9417d8fe]    Browsing for 48s...
+[14:26:20] [3fbb4f35]    Browsing for 41s...
+[14:26:24] [9417d8fe] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[14:26:24] [9417d8fe] Blocked 16 media requests
+[14:26:25] [3fbb4f35] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[14:26:25] [3fbb4f35] Blocked 3 media requests
+[14:26:26] [9417d8fe] Done
+[14:26:26] [9417d8fe] Done (running: 1, pending: 0)
+[14:26:26] [9417d8fe] Returned to Auto queue
+[14:26:27] [3fbb4f35] Done
+[14:26:27] [3fbb4f35] Done (running: 0, pending: 0)
+[14:26:27] [3fbb4f35] Returned to Auto queue
+[14:26:27] All done
+[14:26:38] [944f1d73] Checking proxy...
+[14:26:38] [944f1d73] Proxy: ✓ OK
+[14:26:57] Connected to Octo Browser
+[14:26:58] Auto-checking proxies for 6 profiles...
+[14:27:02] Proxy check complete: 6 OK, 0 failed
+[14:28:16] Mode: COOKIE
+[14:28:21] [cookie] Added:  5c1f885d...
+[14:28:26] [5c1f885d] Checking proxy...
+[14:28:27] [5c1f885d] Proxy: ✓ OK
+[14:28:37] Connected to Octo Browser
+[14:28:37] Auto-checking proxies for 7 profiles...
+[14:28:42] Proxy check complete: 7 OK, 0 failed
+[14:28:45] Mode: GOOGLE
+[14:28:49] Mode: AUTO
+[14:28:57] [Auto] Loading 1 cookie profiles to scheduler...
+[14:28:57] [Auto]   5c1f885d... country=UNKNOWN, target=0
+[14:28:57] [Auto] Loading 6 google profiles to scheduler...
+[14:28:57] [Auto]   944f1d73... country=Italy, target=6
+[14:28:57] [Auto]   61b3c345... country=Austria, target=7
+[14:28:57] [Auto]   3fbb4f35... country=Austria, target=3
+[14:28:57] [Auto]   9417d8fe... country=Austria, target=3
+[14:28:57] [Auto]   b4deca73... country=Austria, target=5
+[14:28:57] [Auto]   5170ba81... country=Austria, target=3
+[14:28:57] [Proxy] Checking 7 profiles (auto mode)...
+[14:28:57] [Auto] 🕐 5c1f885d... country=UNKNOWN, local=11:28, awake=True
+[14:28:57] [Auto] ▶ Started 5c1f885d... (cookie)
+[14:28:57] 🤖 Auto mode STARTED
+[14:28:57]    📊 Profiles: 1 Cookie + 6 Google
+[14:28:57] [5c1f885d] Starting (cookie)...
+[14:29:00] [Auto] 📅 5c1f885d... first run recorded
+[14:29:01] [Auto] 🌍 5c1f885d... REAL country: UNKNOWN → Italy
+[14:29:01] [Auto] 🔄 Refreshing cookie profiles list...
+[14:29:01] [Auto] 🕐 5c1f885d... (Italy) local=12:29, awake=True
+[14:29:01] [5c1f885d] Proxy: 185.76.78.229 (Italy)
+[14:29:01] [Proxy] Check complete (auto): 7 OK, 0 failed
+[14:29:01] [5c1f885d] Media blocking enabled
+[14:29:01] [5c1f885d] Notifications blocked
+[14:29:01] [5c1f885d] Connected to Octo Browser
+[14:29:02] [5c1f885d] Window minimized via CDP
+[14:29:02] [5c1f885d] Session: 9 sites (limit: 8-12)
+[14:29:02] [5c1f885d] [1/9] https://designstripe.com
+[14:29:02] [5c1f885d]    🔍 Navigating via Google Search...
+[14:29:02] [5c1f885d]    🔍 Searching Google for: designstripe
+[14:29:14] [5c1f885d]    ✓ Found designstripe.com, opening in new tab...
+[14:29:17] [5c1f885d]    ⚠️ Wrong site: https://visual.app/assets/illustrations
+[14:29:17] [5c1f885d]    ⚠️ Google Search failed, trying direct...
+[14:29:27] [Auto] 🕐 b4deca73... country=Austria, local=12:29, awake=True
+[14:29:27] [Auto] ▶ Started b4deca73... (google)
+[14:29:27] [b4deca73] Starting (google)...
+[14:29:32] [Auto] 🔄 Refreshing google profiles list...
+[14:29:32] [Auto] 🕐 b4deca73... (Austria) local=12:29, awake=True
+[14:29:32] [b4deca73] Proxy: 170.168.108.145 (Austria)
+[14:29:33] [b4deca73] Media blocking enabled
+[14:29:33] [b4deca73] Notifications blocked
+[14:29:33] [b4deca73] Connected to Octo Browser
+[14:29:33] [b4deca73] Window minimized via CDP
+[14:29:33] [b4deca73] 🚀 Google Warm-up mode
+[14:29:33] [b4deca73] 📺 YouTube skipped this session (40% chance)
+[14:29:33] [b4deca73] 🌍 Geo mode (AT): 2 local + 2 generic = 4 sites
+[14:29:33] [b4deca73] 📋 Plan: 4 sites + Gmail checks
+[14:29:33] [b4deca73] 
+[1/4] https://cemoh.com/
+[14:29:33] [b4deca73]    Opening site directly...
+[14:29:40] [b4deca73]    Scanning for Google One Tap...
+[14:29:40] [5c1f885d]    Browsing for 67s...
+[14:29:42] [Auto] ⏹ Stopped 5c1f885d...
+[14:29:46] [Auto] ⏹ Stopped b4deca73...
+[14:29:46] [Auto] ⚠️ Stop operation cancelled by user
+[14:29:46] 🤖 Auto mode STOPPED
+[14:29:46] [Auto] Stopped 2/2 profiles
+[14:29:46] 🤖 Auto mode STOPPED
+[14:29:46] [5c1f885d] ✅ Session completed
+[14:29:46] [5c1f885d] Blocked 2 media requests
+[14:29:48] [5c1f885d] Done
+[14:29:50] Mode: GOOGLE
+[14:29:56] Mode: AUTO
+[14:29:59] Mode: GOOGLE
+[14:29:59] Mode: COOKIE
+[14:30:01] [b4deca73]    No One Tap found, trying Login button flow...
+[14:30:01] [b4deca73]    No Google One Tap found
+[14:30:03] [b4deca73]    Browsing for 49s...
+[14:30:06] [b4deca73] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[14:30:06] [b4deca73] Blocked 2 media requests
+[14:30:08] [b4deca73] Done
+[14:36:10] Mode: GOOGLE
+[14:36:16] Connected to Octo Browser
+[14:36:16] Auto-checking proxies for 7 profiles...
+[14:36:20] Proxy check complete: 7 OK, 0 failed
+[14:37:41] Mode: COOKIE
+[14:37:42] Mode: GOOGLE
+[14:39:02] Mode: AUTO
+[14:39:03] Mode: GOOGLE
+[14:39:05] Mode: COOKIE
+[14:39:06] Mode: GOOGLE
+[14:39:18] Copied: 944f1d73476a4ef2a2563bebaed55261
+[14:39:29] Mode: COOKIE
+[14:40:39] Mode: GOOGLE
+[17:38:07] Nothing to stop
+[17:38:42] Mode: COOKIE
+[17:39:10] Mode: GOOGLE
+[17:39:17] Mode: COOKIE
+[17:41:53] Mode: COOKIE
+[17:42:05] Connected to Octo Browser
+[17:42:06] Auto-checking proxies for 7 profiles...
+[17:42:12] Proxy check complete: 7 OK, 0 failed
+[17:42:22] Mode: GOOGLE
+[17:42:29] Mode: COOKIE
+[17:42:30] [5c1f885d] ⏸ PAUSED
+[17:42:42] [5c1f885d] ▶ RESUMED
+[17:42:43] [5c1f885d] ⏸ PAUSED
+[17:42:49] Mode: AUTO
+[17:44:16] Mode: GOOGLE
+[17:44:19] Mode: AUTO
+[17:44:21] [Auto] Loading 1 cookie profiles to scheduler...
+[17:44:21] [Auto]   5c1f885d... ⏸ PAUSED (skipped)
+[17:44:21] [Auto] Loading 6 google profiles to scheduler...
+[17:44:21] [Auto]   944f1d73... country=Italy, target=6
+[17:44:21] [Auto]   61b3c345... country=Austria, target=7
+[17:44:21] [Auto]   3fbb4f35... country=Austria, target=3
+[17:44:21] [Auto]   9417d8fe... country=Austria, target=3
+[17:44:21] [Auto]   b4deca73... country=Austria, target=5
+[17:44:21] [Auto]   5170ba81... country=Austria, target=3
+[17:44:21] [Auto] ⏸ 1 profile(s) paused (excluded from queue)
+[17:44:21] [Proxy] Checking 6 profiles (auto mode)...
+[17:44:21] [Auto] 🕐 61b3c345... country=Austria, local=15:44, awake=True
+[17:44:21] [Auto] ▶ Started 61b3c345... (google)
+[17:44:21] [Auto] 🕐 944f1d73... country=Italy, local=15:44, awake=True
+[17:44:21] [Auto] ▶ Started 944f1d73... (google)
+[17:44:21] 🤖 Auto mode STARTED
+[17:44:21]    📊 Profiles: 0 Cookie + 6 Google
+[17:44:21] [61b3c345] Starting (google)...
+[17:44:21] [944f1d73] Starting (google)...
+[17:44:26] [Proxy] Check complete (auto): 6 OK, 0 failed
+[17:44:26] [Auto] 🔄 Refreshing google profiles list...
+[17:44:27] [Auto] 🕐 61b3c345... (Austria) local=15:44, awake=True
+[17:44:27] [61b3c345] Proxy: 135.106.100.117 (Austria)
+[17:44:27] [Auto] 🔄 Refreshing google profiles list...
+[17:44:27] [Auto] 🕐 944f1d73... (Italy) local=15:44, awake=True
+[17:44:27] [944f1d73] Proxy: 136.234.137.151 (Italy)
+[17:44:27] [61b3c345] Media blocking enabled
+[17:44:27] [61b3c345] Notifications blocked
+[17:44:27] [61b3c345] Connected to Octo Browser
+[17:44:27] [61b3c345] Window minimized via CDP
+[17:44:27] [61b3c345] 🚀 Google Warm-up mode
+[17:44:27] [61b3c345] 📺 YouTube skipped this session (40% chance)
+[17:44:27] [61b3c345] 🌍 Geo mode (AT): 4 local + 4 generic = 8 sites
+[17:44:27] [61b3c345] 📋 Plan: 8 sites + Gmail checks
+[17:44:27] [61b3c345] 
+[1/8] https://www.bonusvorsorge.at/
+[17:44:27] [61b3c345]    🔍 Searching Google for: bonusvorsorge
+[17:44:27] [944f1d73] Media blocking enabled
+[17:44:27] [944f1d73] Notifications blocked
+[17:44:27] [944f1d73] Connected to Octo Browser
+[17:44:28] [944f1d73] Window minimized via CDP
+[17:44:28] [944f1d73] 🚀 Google Warm-up mode
+[17:44:28] [944f1d73] 📺 YouTube skipped this session (40% chance)
+[17:44:28] [944f1d73] 🌍 Geo mode (IT): 3 local + 3 generic = 6 sites
+[17:44:28] [944f1d73] 📋 Plan: 6 sites + Gmail checks
+[17:44:28] [944f1d73] 
+[1/6] https://www.connexionfrance.com/
+[17:44:28] [944f1d73]    🔍 Searching Google for: connexionfrance
+[17:44:38] [61b3c345]    ✓ Found bonusvorsorge.at, opening in new tab...
+[17:44:39] [944f1d73]    ✓ Found connexionfrance.com, opening in new tab...
+[17:44:42] [944f1d73]    ✓ Navigated via Google search
+[17:44:42] [61b3c345]    ✓ Navigated via Google search
+[17:44:44] [61b3c345]    Scanning for Google One Tap...
+[17:44:44] [944f1d73]    Scanning for Google One Tap...
+[17:44:51] [Auto] 🕐 b4deca73... country=Austria, local=15:44, awake=True
+[17:44:51] [Auto] ▶ Started b4deca73... (google)
+[17:44:51] [b4deca73] Starting (google)...
+[17:44:55] [Auto] 🔄 Refreshing google profiles list...
+[17:44:55] [Auto] 🕐 b4deca73... (Austria) local=15:44, awake=True
+[17:44:55] [b4deca73] Proxy: 170.168.108.145 (Austria)
+[17:44:56] [b4deca73] Media blocking enabled
+[17:44:56] [b4deca73] Notifications blocked
+[17:44:56] [b4deca73] Connected to Octo Browser
+[17:44:57] [b4deca73] Window minimized via CDP
+[17:44:57] [b4deca73] 🚀 Google Warm-up mode
+[17:44:57] [b4deca73] 📺 YouTube activity enabled via checkbox (40% chance)
+[17:44:57] [b4deca73] 🌍 Geo mode (AT): 4 local + 3 generic = 7 sites
+[17:44:57] [b4deca73] 📋 Plan: 7 sites + YouTube activity + Gmail checks
+[17:44:57] [b4deca73] 
+[1/7] https://vigorant.com/
+[17:44:57] [b4deca73]    🔍 Searching Google for: vigorant
+[17:45:04] [944f1d73]    No One Tap found, trying Login button flow...
+[17:45:05] [944f1d73]    No Google One Tap found
+[17:45:05] [61b3c345]    No One Tap found, trying Login button flow...
+[17:45:05] [61b3c345]    No Google One Tap found
+[17:45:06] [b4deca73]    ✓ Found vigorant.com, opening in new tab...
+[17:45:07] [61b3c345]    Browsing for 48s...
+[17:45:07] [944f1d73]    Browsing for 51s...
+[17:45:08] [b4deca73]    ✓ Navigated via Google search
+[17:45:11] [b4deca73]    Scanning for Google One Tap...
+[17:45:26] [Auto] ⏹ Stopped 61b3c345...
+[17:45:31] [b4deca73]    No One Tap found, trying Login button flow...
+[17:45:31] [61b3c345] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:45:31] [61b3c345] Blocked 7 media requests
+[17:45:31] [b4deca73]    No Google One Tap found
+[17:45:32] [944f1d73] 
+✅ Google Warm-up complete! (0 IT sites, 1 generic)
+[17:45:32] [944f1d73] Blocked 6 media requests
+[17:45:33] [Auto] ⏹ Stopped 944f1d73...
+[17:45:33] [61b3c345] Done
+[17:45:34] [b4deca73]    Browsing for 26s...
+[17:45:34] [944f1d73] Done
+[17:45:40] [b4deca73] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[17:45:40] [b4deca73] Blocked 10 media requests
+[17:45:42] [Auto] ⏹ Stopped b4deca73...
+[17:45:42] [Auto] ⚠️ Stop operation cancelled by user
+[17:45:42] 🤖 Auto mode STOPPED
+[17:45:42] [Auto] Stopped 3/3 profiles
+[17:45:42] 🤖 Auto mode STOPPED
+[17:45:42] [b4deca73] Done
+[17:45:47] 🔄 Auto mode progress reset
+[17:45:48] Mode: GOOGLE
+[17:45:51] [944f1d73] ⏸ PAUSED
+[17:45:52] [61b3c345] ⏸ PAUSED
+[17:45:58] [3fbb4f35] ⏸ PAUSED
+[17:46:02] Mode: AUTO
+[17:46:08] [Auto] Loading 1 cookie profiles to scheduler...
+[17:46:08] [Auto]   5c1f885d... ⏸ PAUSED (skipped)
+[17:46:08] [Auto] Loading 6 google profiles to scheduler...
+[17:46:08] [Auto]   944f1d73... ⏸ PAUSED (skipped)
+[17:46:08] [Auto]   61b3c345... ⏸ PAUSED (skipped)
+[17:46:08] [Auto]   3fbb4f35... ⏸ PAUSED (skipped)
+[17:46:08] [Auto]   9417d8fe... country=Austria, target=0
+[17:46:08] [Auto]   b4deca73... country=Austria, target=0
+[17:46:08] [Auto]   5170ba81... country=Austria, target=0
+[17:46:08] [Auto] ⏸ 4 profile(s) paused (excluded from queue)
+[17:46:08] [Proxy] Checking 3 profiles (auto mode)...
+[17:46:08] [Auto] 🕐 9417d8fe... country=Austria, local=15:46, awake=True
+[17:46:08] [Auto] ▶ Started 9417d8fe... (google)
+[17:46:08] [Auto] 🕐 b4deca73... country=Austria, local=15:46, awake=True
+[17:46:08] [Auto] ▶ Started b4deca73... (google)
+[17:46:08] [Auto] 🕐 5170ba81... country=Austria, local=15:46, awake=True
+[17:46:08] [Auto] ▶ Started 5170ba81... (google)
+[17:46:08] 🤖 Auto mode STARTED
+[17:46:08]    📊 Profiles: 0 Cookie + 3 Google
+[17:46:08] [9417d8fe] Starting (google)...
+[17:46:08] [b4deca73] Starting (google)...
+[17:46:08] [5170ba81] Starting (google)...
+[17:46:10] [Proxy] Check complete (auto): 3 OK, 0 failed
+[17:46:12] [Auto] 🔄 Refreshing google profiles list...
+[17:46:12] [Auto] 🕐 b4deca73... (Austria) local=15:46, awake=True
+[17:46:12] [b4deca73] Proxy: 170.168.108.145 (Austria)
+[17:46:12] [Auto] 🔄 Refreshing google profiles list...
+[17:46:12] [Auto] 🕐 5170ba81... (Austria) local=15:46, awake=True
+[17:46:12] [5170ba81] Proxy: 170.168.56.103 (Austria)
+[17:46:13] [Auto] 🔄 Refreshing google profiles list...
+[17:46:13] [Auto] 🕐 9417d8fe... (Austria) local=15:46, awake=True
+[17:46:13] [9417d8fe] Proxy: 170.168.157.54 (Austria)
+[17:46:13] [b4deca73] Media blocking enabled
+[17:46:13] [b4deca73] Notifications blocked
+[17:46:13] [b4deca73] Connected to Octo Browser
+[17:46:13] [5170ba81] Media blocking enabled
+[17:46:13] [5170ba81] Notifications blocked
+[17:46:13] [5170ba81] Connected to Octo Browser
+[17:46:14] [b4deca73] Window minimized via CDP
+[17:46:14] [b4deca73] 🚀 Google Warm-up mode
+[17:46:14] [b4deca73] 📺 YouTube skipped this session (40% chance)
+[17:46:14] [b4deca73] 🌍 Geo mode (AT): 4 local + 4 generic = 8 sites
+[17:46:14] [b4deca73] 📋 Plan: 8 sites + Gmail checks
+[17:46:14] [b4deca73] 
+[1/8] https://www.meineoegk.at/
+[17:46:14] [b4deca73]    🔍 Searching Google for: meineoegk
+[17:46:14] [5170ba81] Window minimized via CDP
+[17:46:14] [5170ba81] 🚀 Google Warm-up mode
+[17:46:14] [5170ba81] 📺 YouTube skipped this session (40% chance)
+[17:46:14] [5170ba81] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[17:46:14] [5170ba81] 📋 Plan: 5 sites + Gmail checks
+[17:46:14] [5170ba81] 
+[1/5] https://www.bonusvorsorge.at/
+[17:46:14] [5170ba81]    🔍 Searching Google for: bonusvorsorge
+[17:46:14] [9417d8fe] Media blocking enabled
+[17:46:14] [9417d8fe] Notifications blocked
+[17:46:14] [9417d8fe] Connected to Octo Browser
+[17:46:14] [9417d8fe] Window minimized via CDP
+[17:46:14] [9417d8fe] 🚀 Google Warm-up mode
+[17:46:14] [9417d8fe] 📺 YouTube skipped this session (40% chance)
+[17:46:14] [9417d8fe] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[17:46:14] [9417d8fe] 📋 Plan: 5 sites + Gmail checks
+[17:46:14] [9417d8fe] 
+[1/5] https://storyboardthat.com
+[17:46:14] [9417d8fe]    🔍 Searching Google for: storyboardthat
+[17:46:23] [b4deca73]    ✓ Found meineoegk.at, opening in new tab...
+[17:46:25] [9417d8fe]    ✓ Found storyboardthat.com, opening in new tab...
+[17:46:26] [5170ba81]    ✓ Found bonusvorsorge.at, opening in new tab...
+[17:46:26] [b4deca73]    ✓ Navigated via Google search
+[17:46:26] [b4deca73]    Closing cookie banner: Alle Cookies akzeptieren
+[17:46:28] [9417d8fe]    ✓ Navigated via Google search
+[17:46:28] [9417d8fe]    Closing cookie banner: Allow all
+[17:46:30] [b4deca73]    Scanning for Google One Tap...
+[17:46:30] [5170ba81]    ✓ Navigated via Google search
+[17:46:32] [9417d8fe]    Scanning for Google One Tap...
+[17:46:32] [5170ba81]    Scanning for Google One Tap...
+[17:46:51] [b4deca73]    No One Tap found, trying Login button flow...
+[17:46:51] [b4deca73]    Found Login link: Login
+[17:46:53] [9417d8fe]    No One Tap found, trying Login button flow...
+[17:46:53] [9417d8fe]    No Google One Tap found
+[17:46:53] [5170ba81]    No One Tap found, trying Login button flow...
+[17:46:53] [5170ba81]    No Google One Tap found
+[17:46:53] [Auto] ⏹ Stopped 9417d8fe...
+[17:46:54] [b4deca73]    No Google One Tap found
+[17:46:55] [9417d8fe]    Browsing for 33s...
+[17:46:56] [5170ba81]    Browsing for 52s...
+[17:46:57] [b4deca73]    Browsing for 55s...
+[17:46:58] [9417d8fe] 
+✅ Google Warm-up complete! (0 AT sites, 1 generic)
+[17:46:58] [9417d8fe] Blocked 35 media requests
+[17:46:59] [5170ba81] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:46:59] [5170ba81] Blocked 2 media requests
+[17:47:00] [9417d8fe] Done
+[17:47:00] [Auto] ⏹ Stopped b4deca73...
+[17:47:01] [b4deca73] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:47:01] [b4deca73] Blocked 2 media requests
+[17:47:03] [b4deca73] Done
+[17:47:04] [Auto] ⏹ Stopped 5170ba81...
+[17:47:04] [5170ba81] Done
+[17:47:04] [Auto] ⚠️ Stop operation cancelled by user
+[17:47:04] 🤖 Auto mode STOPPED
+[17:47:04] [Auto] Stopped 3/3 profiles
+[17:47:04] 🤖 Auto mode STOPPED
+[17:47:12] Mode: GOOGLE
+[17:47:13] [3fbb4f35] ▶ RESUMED
+[17:47:14] [61b3c345] ▶ RESUMED
+[17:47:15] [944f1d73] ▶ RESUMED
+[17:47:21] Mode: COOKIE
+[17:47:22] [5c1f885d] ▶ RESUMED
+[17:47:27] Mode: AUTO
+[17:47:29] Mode: GOOGLE
+[17:47:31] [944f1d73] Checking proxy...
+[17:47:31] [944f1d73] Proxy: ✓ OK
+[17:47:38] Mode: AUTO
+[17:47:41] 🔄 Auto mode progress reset
+[17:47:42] [Auto] Loading 1 cookie profiles to scheduler...
+[17:47:42] [Auto]   5c1f885d... country=Italy, target=0
+[17:47:42] [Auto] Loading 6 google profiles to scheduler...
+[17:47:42] [Auto]   944f1d73... country=Italy, target=0
+[17:47:42] [Auto]   61b3c345... country=Austria, target=0
+[17:47:42] [Auto]   3fbb4f35... country=Austria, target=0
+[17:47:42] [Auto]   9417d8fe... country=Austria, target=0
+[17:47:42] [Auto]   b4deca73... country=Austria, target=0
+[17:47:42] [Auto]   5170ba81... country=Austria, target=0
+[17:47:42] [Proxy] Checking 7 profiles (auto mode)...
+[17:47:42] [Auto] 🕐 5c1f885d... country=Italy, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started 5c1f885d... (cookie)
+[17:47:42] [Auto] 🕐 944f1d73... country=Italy, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started 944f1d73... (google)
+[17:47:42] [Auto] 🕐 61b3c345... country=Austria, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started 61b3c345... (google)
+[17:47:42] [Auto] 🕐 3fbb4f35... country=Austria, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started 3fbb4f35... (google)
+[17:47:42] [Auto] 🕐 9417d8fe... country=Austria, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started 9417d8fe... (google)
+[17:47:42] [Auto] 🕐 b4deca73... country=Austria, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started b4deca73... (google)
+[17:47:42] [Auto] 🕐 5170ba81... country=Austria, local=15:47, awake=True
+[17:47:42] [Auto] ▶ Started 5170ba81... (google)
+[17:47:42] 🤖 Auto mode STARTED
+[17:47:42]    📊 Profiles: 1 Cookie + 6 Google
+[17:47:42] [5c1f885d] Starting (cookie)...
+[17:47:42] [944f1d73] Starting (google)...
+[17:47:42] [61b3c345] Starting (google)...
+[17:47:42] [3fbb4f35] Starting (google)...
+[17:47:42] [9417d8fe] Starting (google)...
+[17:47:42] [b4deca73] Starting (google)...
+[17:47:42] [5170ba81] Starting (google)...
+[17:47:48] [Proxy] Check complete (auto): 7 OK, 0 failed
+[17:47:49] [Auto] 🔄 Refreshing cookie profiles list...
+[17:47:49] [Auto] 🕐 5c1f885d... (Italy) local=15:47, awake=True
+[17:47:49] [5c1f885d] Proxy: 185.76.78.229 (Italy)
+[17:47:49] [Auto] 🔄 Refreshing google profiles list...
+[17:47:49] [Auto] 🕐 3fbb4f35... (Austria) local=15:47, awake=True
+[17:47:49] [3fbb4f35] Proxy: 170.168.247.185 (Austria)
+[17:47:50] [Auto] 🔄 Refreshing google profiles list...
+[17:47:50] [Auto] 🕐 9417d8fe... (Austria) local=15:47, awake=True
+[17:47:50] [9417d8fe] Proxy: 170.168.157.54 (Austria)
+[17:47:50] [Auto] 🔄 Refreshing google profiles list...
+[17:47:50] [Auto] 🕐 5170ba81... (Austria) local=15:47, awake=True
+[17:47:50] [5170ba81] Proxy: 170.168.56.103 (Austria)
+[17:47:50] [Auto] 🔄 Refreshing google profiles list...
+[17:47:50] [Auto] 🕐 61b3c345... (Austria) local=15:47, awake=True
+[17:47:50] [61b3c345] Proxy: 135.106.100.117 (Austria)
+[17:47:51] [Auto] 🔄 Refreshing google profiles list...
+[17:47:51] [Auto] 🕐 944f1d73... (Italy) local=15:47, awake=True
+[17:47:51] [944f1d73] Proxy: 136.234.137.151 (Italy)
+[17:47:51] [Auto] 🔄 Refreshing google profiles list...
+[17:47:51] [Auto] 🕐 b4deca73... (Austria) local=15:47, awake=True
+[17:47:51] [b4deca73] Proxy: 170.168.108.145 (Austria)
+[17:47:55] [5170ba81] Media blocking enabled
+[17:47:55] [5170ba81] Notifications blocked
+[17:47:55] [5170ba81] Connected to Octo Browser
+[17:47:55] [5c1f885d] Media blocking enabled
+[17:47:55] [5c1f885d] Notifications blocked
+[17:47:55] [5c1f885d] Connected to Octo Browser
+[17:47:55] [944f1d73] Media blocking enabled
+[17:47:55] [944f1d73] Notifications blocked
+[17:47:55] [5170ba81] Window minimized via CDP
+[17:47:55] [5170ba81] 🚀 Google Warm-up mode
+[17:47:55] [5170ba81] 📺 YouTube skipped this session (40% chance)
+[17:47:55] [5170ba81] 🌍 Geo mode (AT): 4 local + 4 generic = 8 sites
+[17:47:55] [5170ba81] 📋 Plan: 8 sites + Gmail checks
+[17:47:55] [5170ba81] 
+[1/8] https://www.bonusvorsorge.at/
+[17:47:55] [5170ba81]    🔍 Searching Google for: bonusvorsorge
+[17:47:55] [944f1d73] Connected to Octo Browser
+[17:47:55] [5c1f885d] Window minimized via CDP
+[17:47:55] [5c1f885d] 🌍 Geo mode (IT): 6 local + 5 generic = 11 sites
+[17:47:55] [5c1f885d] [1/11] https://enel.it
+[17:47:55] [5c1f885d]    🔍 Navigating via Google Search...
+[17:47:55] [5c1f885d]    🔍 Searching Google for: enel
+[17:47:56] [944f1d73] Window minimized via CDP
+[17:47:56] [944f1d73] 🚀 Google Warm-up mode
+[17:47:56] [944f1d73] 📺 YouTube activity enabled via checkbox (40% chance)
+[17:47:56] [944f1d73] 🌍 Geo mode (IT): 2 local + 2 generic = 4 sites
+[17:47:56] [944f1d73] 📋 Plan: 4 sites + YouTube activity + Gmail checks
+[17:47:56] [944f1d73] 
+[1/4] https://toyota.co.jp
+[17:47:56] [944f1d73]    🔍 Searching Google for: toyota
+[17:47:57] [9417d8fe] Media blocking enabled
+[17:47:57] [3fbb4f35] Media blocking enabled
+[17:47:57] [9417d8fe] Notifications blocked
+[17:47:57] [3fbb4f35] Notifications blocked
+[17:47:57] [9417d8fe] Connected to Octo Browser
+[17:47:57] [b4deca73] Media blocking enabled
+[17:47:57] [b4deca73] Notifications blocked
+[17:47:57] [b4deca73] Connected to Octo Browser
+[17:47:57] [61b3c345] Media blocking enabled
+[17:47:57] [61b3c345] Notifications blocked
+[17:47:58] [9417d8fe] Window minimized via CDP
+[17:47:58] [9417d8fe] 🚀 Google Warm-up mode
+[17:47:58] [9417d8fe] 📺 YouTube skipped this session (40% chance)
+[17:47:58] [9417d8fe] 🌍 Geo mode (AT): 4 local + 3 generic = 7 sites
+[17:47:58] [9417d8fe] 📋 Plan: 7 sites + Gmail checks
+[17:47:58] [61b3c345] Connected to Octo Browser
+[17:47:58] [9417d8fe] 
+[1/7] https://burgenlandenergie.at
+[17:47:58] [9417d8fe]    🔍 Searching Google for: burgenlandenergie
+[17:47:58] [3fbb4f35] Connected to Octo Browser
+[17:47:58] [b4deca73] Window minimized via CDP
+[17:47:58] [b4deca73] 🚀 Google Warm-up mode
+[17:47:58] [b4deca73] 📺 YouTube activity enabled via checkbox (40% chance)
+[17:47:58] [b4deca73] 🌍 Geo mode (AT): 3 local + 3 generic = 6 sites
+[17:47:58] [b4deca73] 📋 Plan: 6 sites + YouTube activity + Gmail checks
+[17:47:58] [b4deca73] 
+[1/6] https://www.wienenergie.at/
+[17:47:58] [b4deca73]    🔍 Searching Google for: wienenergie
+[17:47:58] [61b3c345] Window minimized via CDP
+[17:47:58] [61b3c345] 🚀 Google Warm-up mode
+[17:47:58] [61b3c345] 📺 YouTube skipped this session (40% chance)
+[17:47:58] [61b3c345] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[17:47:58] [61b3c345] 📋 Plan: 5 sites + Gmail checks
+[17:47:58] [61b3c345] 
+[1/5] https://www.wko.at/
+[17:47:58] [61b3c345]    🔍 Searching Google for: wko
+[17:47:58] [3fbb4f35] Window minimized via CDP
+[17:47:58] [3fbb4f35] 🚀 Google Warm-up mode
+[17:47:58] [3fbb4f35] 📺 YouTube skipped this session (40% chance)
+[17:47:58] [3fbb4f35] 🌍 Geo mode (AT): 2 local + 1 generic = 3 sites
+[17:47:58] [3fbb4f35] 📋 Plan: 3 sites + Gmail checks
+[17:47:58] [3fbb4f35] 
+[1/3] https://www.bonusvorsorge.at/
+[17:47:58] [3fbb4f35]    Opening site directly...
+[17:48:03] [3fbb4f35]    Closing cookie banner (link): Klimarisiken im Foku
+[17:48:06] [5c1f885d]    ✓ Found enel.it, opening in new tab...
+[17:48:07] [944f1d73]    ⚠️ toyota.co.jp not found in organic results
+[17:48:07] [944f1d73]    Direct navigation fallback...
+[17:48:07] [5170ba81]    ✓ Found bonusvorsorge.at, opening in new tab...
+[17:48:07] [61b3c345]    ✓ Found wko.at, opening in new tab...
+[17:48:07] [944f1d73]    ❌ Navigation failed: Page.goto: net::ERR_CONNECTION_ABORTED at https://
+[17:48:08] [944f1d73]    Skipping due to page error
+[17:48:08] [3fbb4f35]    Scanning for Google One Tap...
+[17:48:09] [b4deca73]    ✓ Found wienenergie.at, opening in new tab...
+[17:48:09] [5c1f885d]    ✓ Navigated via Google search
+[17:48:10] [944f1d73] 
+[2/4] https://vimeo.com
+[17:48:10] [944f1d73]    🔍 Searching Google for: vimeo
+[17:48:11] [b4deca73]    ✓ Navigated via Google search
+[17:48:11] [5170ba81]    ✓ Navigated via Google search
+[17:48:11] [9417d8fe]    ✓ Found burgenlandenergie.at, opening in new tab...
+[17:48:12] [61b3c345]    ✓ Navigated via Google search
+[17:48:12] [61b3c345]    Closing cookie banner (link): Der hohe Preis der B
+[17:48:14] [5170ba81]    Scanning for Google One Tap...
+[17:48:15] [9417d8fe]    ✓ Navigated via Google search
+[17:48:15] [9417d8fe]    Closing cookie banner: Alle Cookies zulassen
+[17:48:15] [b4deca73]    Scanning for Google One Tap...
+[17:48:15] [5c1f885d]    Browsing for 47s...
+[17:48:16] [Auto] ⏹ Stopped 5c1f885d...
+[17:48:17] [944f1d73]    ✓ Found vimeo.com, opening in new tab...
+[17:48:17] [61b3c345]    Scanning for Google One Tap...
+[17:48:18] [944f1d73]    ❌ Navigation failed: Page.goto: Target page, context or browser has bee
+[17:48:18] [944f1d73]    Direct navigation fallback...
+[17:48:18] [944f1d73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Protocol error (Target.cr
+[17:48:18] [944f1d73]    Skipping due to page error
+[17:48:19] [9417d8fe]    Scanning for Google One Tap...
+[17:48:22] [Auto] ⏹ Stopped 944f1d73...
+[17:48:22] [5c1f885d] ✅ Session completed: 1 IT sites, 0 generic sites
+[17:48:22] [5c1f885d] Blocked 8 media requests
+[17:48:22] [944f1d73] 
+✅ Google Warm-up complete! (0 IT sites, 2 generic)
+[17:48:22] [944f1d73] Blocked 6 media requests
+[17:48:24] [5c1f885d] Done
+[17:48:24] [944f1d73] Done
+[17:48:26] [Auto] ⏹ Stopped 61b3c345...
+[17:48:28] [3fbb4f35]    No One Tap found, trying Login button flow...
+[17:48:29] [3fbb4f35]    No Google One Tap found
+[17:48:31] [Auto] ⏹ Stopped 3fbb4f35...
+[17:48:31] [3fbb4f35]    Browsing for 36s...
+[17:48:35] [3fbb4f35] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:48:35] [3fbb4f35] Blocked 16 media requests
+[17:48:35] [5170ba81]    No One Tap found, trying Login button flow...
+[17:48:35] [b4deca73]    No One Tap found, trying Login button flow...
+[17:48:35] [b4deca73]    Found Login link: Login
+[17:48:35] [5170ba81]    No Google One Tap found
+[17:48:35] [Auto] ⏹ Stopped 9417d8fe...
+[17:48:37] [3fbb4f35] Done
+[17:48:38] [5170ba81]    Browsing for 15s...
+[17:48:38] [61b3c345]    No One Tap found, trying Login button flow...
+[17:48:38] [61b3c345]    No Google One Tap found
+[17:48:39] [b4deca73]    No Google One Tap found
+[17:48:40] [9417d8fe]    No One Tap found, trying Login button flow...
+[17:48:40] [9417d8fe]    No Google One Tap found
+[17:48:40] [Auto] ⏹ Stopped b4deca73...
+[17:48:41] [61b3c345]    Browsing for 40s...
+[17:48:41] [b4deca73]    Browsing for 51s...
+[17:48:42] [9417d8fe]    Browsing for 40s...
+[17:48:45] [5170ba81] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:48:45] [5170ba81] Blocked 2 media requests
+[17:48:47] [b4deca73] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:48:47] [b4deca73] Blocked 9 media requests
+[17:48:48] [9417d8fe] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:48:48] [9417d8fe] Blocked 37 media requests
+[17:48:48] [61b3c345] 
+✅ Google Warm-up complete! (1 AT sites, 0 generic)
+[17:48:48] [61b3c345] Blocked 32 media requests
+[17:48:48] [Auto] ⏹ Stopped 5170ba81...
+[17:48:48] [5170ba81] Done
+[17:48:48] [Auto] ⚠️ Stop operation cancelled by user
+[17:48:48] 🤖 Auto mode STOPPED
+[17:48:48] [Auto] Stopped 7/7 profiles
+[17:48:48] 🤖 Auto mode STOPPED
+[17:48:49] [b4deca73] Done
+[17:48:50] [9417d8fe] Done
+[17:48:50] [61b3c345] Done
+[17:48:54] 🔄 Auto mode progress reset
+[17:48:56] Mode: GOOGLE
+[17:48:57] Mode: COOKIE
+[17:53:15] [cookie] Removed 1 profiles
+[17:53:30] [cookie] Added:  5c1f885d...
+[17:55:03] Mode: COOKIE
+[17:55:10] Connected to Octo Browser
+[17:55:10] Auto-checking proxies for 7 profiles...
+[17:55:17] Proxy check complete: 7 OK, 0 failed
+[17:55:30] 🔄 Refreshing proxies & geo for 7 profiles...
+[17:55:38] 🔄 Proxy check complete: 7 OK, 0 failed
+[17:55:41] [5c1f885d] Checking proxy...
+[17:55:44] [5c1f885d] Proxy: ✓ OK
+[18:03:35] Mode: COOKIE
+[18:03:36] Nothing to stop
+[18:04:19] Mode: COOKIE
+[18:04:32] Connected to Octo Browser
+[18:04:32] Auto-checking proxies for 7 profiles...
+[18:04:39] Proxy check complete: 7 OK, 0 failed
+[18:04:45] 🔄 Refreshing proxies & geo for 7 profiles...
+[18:04:54] 🔄 Proxy check complete: 7 OK, 0 failed
+[18:05:00] [5c1f885d] Checking proxy...
+[18:05:03] [5c1f885d] Proxy: ✓ OK
+[18:05:16] Nothing to stop
+[18:05:26] Mode: COOKIE
+[18:05:31] Connected to Octo Browser
+[18:05:31] Auto-checking proxies for 7 profiles...
+[18:05:37] Proxy check complete: 7 OK, 0 failed
+[18:05:57] 🔄 Refreshing proxies & geo for 7 profiles...
+[18:06:05] 🔄 Proxy check complete: 7 OK, 0 failed
+[18:06:10] [5c1f885d] Checking proxy...
+[18:06:13] [5c1f885d] Proxy: ✓ OK
+[18:16:31] Mode: COOKIE
+[18:16:37] Connected to Octo Browser
+[18:16:38] Auto-checking proxies for 7 profiles...
+[18:16:44] [5c1f885d] 🌍 Geo: IT
+[18:16:46] Proxy check complete: 7 OK, 0 failed, 1 geo updated
+[18:16:54] Mode: GOOGLE
+[18:16:58] Mode: COOKIE
+[18:17:32] [cookie] Removed 1 profiles
+[18:17:53] [cookie] Added:  5c1f885d...
+[18:17:57] 🔄 Refreshing proxies & geo for 7 profiles...
+[18:18:04] [5c1f885d] 🌍 Geo: IT
+[18:18:05] 🔄 Proxy check complete: 7 OK, 0 failed, 1 geo updated
+[18:18:10] [cookie] Removed 1 profiles
+[18:18:18] [cookie] Added:  5c1f885d...
+[18:18:26] [5c1f885d] Checking proxy...
+[18:18:27] [5c1f885d] 🌍 Geo: IT
+[18:18:27] [5c1f885d] Proxy: ✓ OK
+[18:23:51] Mode: COOKIE
+[18:23:55] Copied: 5c1f885d69904e5b9a4443c38f90e465
+[18:24:01] Connected to Octo Browser
+[18:24:02] Auto-checking proxies for 7 profiles...
+[18:24:08] Proxy check complete: 7 OK, 0 failed
+[18:24:09] [cookie] Removed 1 profiles
+[18:24:15] [cookie] Added:  5c1f885d...
+[18:24:32] 🔄 Refreshing proxies & geo for 7 profiles...
+[18:24:39] [5c1f885d] 🌍 Geo: IT
+[18:24:39] 🔄 Proxy check complete: 7 OK, 0 failed, 1 geo updated
+[18:24:47] Copied: 5c1f885d69904e5b9a4443c38f90e465
+[18:24:52] [cookie] Removed 1 profiles
+[18:24:58] [cookie] Added:  5c1f885d...
+[18:25:06] [5c1f885d] Checking proxy...
+[18:25:07] [5c1f885d] 🌍 Geo: IT
+[18:25:07] [5c1f885d] Proxy: ✓ OK
+[18:25:18] Mode: GOOGLE
+[18:25:20] [3fbb4f35] Checking proxy...
+[18:25:20] [3fbb4f35] Proxy: ✓ OK
+[18:25:48] Mode: COOKIE
