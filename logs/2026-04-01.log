@@ -811,3 +811,108 @@
 [18:25:20] [3fbb4f35] Checking proxy...
 [18:25:20] [3fbb4f35] Proxy: ✓ OK
 [18:25:48] Mode: COOKIE
+[19:36:51] Mode: COOKIE
+[19:37:02] Connected to Octo Browser
+[19:37:03] Auto-checking proxies for 7 profiles...
+[19:37:05] Mode: GOOGLE
+[19:37:09] Proxy check complete: 7 OK, 0 failed
+[19:37:17] Mode: AUTO
+[19:37:27] Mode: GOOGLE
+[19:37:59] Mode: COOKIE
+[19:38:13] Mode: GOOGLE
+[19:38:50] [Auto] Loading 1 cookie profiles to scheduler...
+[19:38:50] [Auto]   5c1f885d... country=IT, target=0
+[19:38:50] [Auto] Loading 6 google profiles to scheduler...
+[19:38:50] [Auto]   944f1d73... country=Italy, target=0
+[19:38:50] [Auto]   61b3c345... country=Austria, target=0
+[19:38:50] [Auto]   3fbb4f35... country=Austria, target=0
+[19:38:50] [Auto]   9417d8fe... country=Austria, target=0
+[19:38:50] [Auto]   b4deca73... country=Austria, target=0
+[19:38:50] [Auto]   5170ba81... country=Austria, target=0
+[19:38:50] [google] Refreshed 0/6 profiles
+[19:39:06] Mode: COOKIE
+[19:39:08] Copied: 5c1f885d69904e5b9a4443c38f90e465
+[19:39:11] [cookie] Removed 1 profiles
+[19:39:15] [cookie] Added:  5c1f885d...
+[19:39:19] [Auto] Loading 1 cookie profiles to scheduler...
+[19:39:19] [Auto]   5c1f885d... country=UNKNOWN, target=2
+[19:39:19] [Auto] Loading 6 google profiles to scheduler...
+[19:39:19] [Auto]   944f1d73... country=Italy, target=3
+[19:39:19] [Auto]   61b3c345... country=Austria, target=3
+[19:39:19] [Auto]   3fbb4f35... country=Austria, target=3
+[19:39:19] [Auto]   9417d8fe... country=Austria, target=4
+[19:39:19] [Auto]   b4deca73... country=Austria, target=4
+[19:39:19] [Auto]   5170ba81... country=Austria, target=3
+[19:39:19] [cookie] Refreshed 0/1 profiles
+[19:39:24] 🔄 Refreshing proxies & geo for 7 profiles...
+[19:39:30] [5c1f885d] 🌍 Geo: IT
+[19:39:30] 🔄 Proxy check complete: 7 OK, 0 failed, 1 geo updated
+[19:39:34] Mode: GOOGLE
+[19:59:43] [Auto] Loading 1 cookie profiles to scheduler...
+[19:59:43] [Auto]   5c1f885d... country=IT, target=2
+[19:59:43] [Auto] Loading 6 google profiles to scheduler...
+[19:59:43] [Auto]   944f1d73... country=Italy, target=3
+[19:59:43] [Auto]   61b3c345... country=Austria, target=3
+[19:59:43] [Auto]   3fbb4f35... country=Austria, target=3
+[19:59:43] [Auto]   9417d8fe... country=Austria, target=4
+[19:59:43] [Auto]   b4deca73... country=Austria, target=4
+[19:59:43] [Auto]   5170ba81... country=Austria, target=3
+[19:59:43] [google] Refreshed 0/6 profiles
+[20:01:41] Mode: COOKIE
+[20:01:50] Mode: GOOGLE
+[20:01:57] Mode: COOKIE
+[20:22:18] Mode: COOKIE
+[20:22:40] Connected to Octo Browser
+[20:22:40] Auto-checking proxies for 7 profiles...
+[20:22:48] Proxy check complete: 7 OK, 0 failed
+[20:22:49] Mode: GOOGLE
+[20:23:03] Mode: AUTO
+[20:25:17] Mode: GOOGLE
+[20:32:29] Mode: COOKIE
+[20:32:50] Mode: GOOGLE
+[20:33:13] [9417d8fe] ⏸ PAUSED
+[20:33:18] [9417d8fe] ▶ RESUMED
+[20:35:33] Mode: COOKIE
+[20:35:52] Mode: GOOGLE
+[20:36:15] Mode: AUTO
+[20:38:50] Mode: GOOGLE
+[20:39:05] Mode: COOKIE
+[20:41:24] Mode: GOOGLE
+[20:43:34] Mode: COOKIE
+[20:43:56] Mode: GOOGLE
+[20:44:00] Mode: COOKIE
+[20:44:03] Copied: 5c1f885d69904e5b9a4443c38f90e465
+[20:44:07] Mode: GOOGLE
+[20:44:11] [61b3c345] Google Ads: ✓
+[20:44:19] [61b3c345] Google Ads: ✗
+[20:44:32] Copied: 5170ba818de74a43a693729192088d51
+[20:44:41] [google] Removed 1 profiles
+[20:44:43] [google] Added:  5170ba81...
+[20:44:46] Mode: COOKIE
+[20:44:50] Copied: 5c1f885d69904e5b9a4443c38f90e465
+[20:44:52] [cookie] Removed 1 profiles
+[20:44:55] [cookie] Added:  5c1f885d...
+[20:45:00] Connected to Octo Browser
+[20:45:01] Auto-checking proxies for 7 profiles...
+[20:45:01] Mode: GOOGLE
+[20:45:07] [5c1f885d] 🌍 Geo: IT
+[20:45:07] [5170ba81] 🌍 Geo: AT
+[20:45:07] Proxy check complete: 7 OK, 0 failed, 2 geo updated
+[20:45:11] Mode: COOKIE
+[20:45:15] Mode: GOOGLE
+[20:45:43] Mode: COOKIE
+[20:45:45] Mode: GOOGLE
+[20:45:58] Mode: AUTO
+[20:46:50] Mode: COOKIE
+[20:46:51] Mode: AUTO
+[20:50:28] Mode: COOKIE
+[20:50:29] Mode: AUTO
+[20:50:31] Mode: COOKIE
+[20:50:41] Mode: GOOGLE
+[20:50:44] Mode: AUTO
+[20:54:54] Mode: COOKIE
+[20:54:57] Mode: GOOGLE
+[20:55:00] Mode: AUTO
+[20:56:20] Mode: COOKIE
+[20:57:31] Mode: GOOGLE
+[20:57:32] Mode: AUTO

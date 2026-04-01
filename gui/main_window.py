@@ -191,6 +191,59 @@ def normalize_country(country_raw: str) -> str:
     return COUNTRY_NAME_TO_CODE.get(country_upper, "")
 
 
+# === CATPPUCCIN MOCHA THEME ===
+CATPPUCCIN = {
+    # Backgrounds
+    "base":      "#1E1E2E",  # Main background
+    "mantle":    "#181825",  # Darker (sidebar, header)
+    "crust":     "#11111B",  # Darkest (borders)
+    "surface0":  "#313244",  # Cards, inputs
+    "surface1":  "#45475A",  # Hover states
+    "surface2":  "#585B70",  # Active elements
+    
+    # Text
+    "text":      "#CDD6F4",  # Primary text
+    "subtext1":  "#BAC2DE",  # Secondary text
+    "subtext0":  "#A6ADC8",  # Muted text
+    "overlay0":  "#6C7086",  # Placeholders, disabled
+    
+    # Accents
+    "lavender":  "#B4BEFE",  # Primary accent
+    "blue":      "#89B4FA",  # Links, info
+    "sapphire":  "#74C7EC",  # Secondary accent
+    "sky":       "#89DCEB",  # Hover on accents
+    "teal":      "#94E2D5",  # Alt success
+    "green":     "#A6E3A1",  # Success (proxy OK)
+    "yellow":    "#F9E2AF",  # Warning
+    "peach":     "#FAB387",  # Pause, pending
+    "maroon":    "#EBA0AC",  # Soft error
+    "red":       "#F38BA8",  # Error
+    "mauve":     "#CBA6F7",  # Special accent
+    "pink":      "#F5C2E7",  # Decorative
+    "flamingo":  "#F2CDCD",  # Decorative
+    "rosewater": "#F5E0DC",  # Decorative
+}
+
+# === UI SIZE CONSTANTS (1.5x window, 1.35x elements) ===
+UI_SCALE = 1.35
+WINDOW_MIN_WIDTH = 1200
+WINDOW_MIN_HEIGHT = 900
+FONT_SIZE_BASE = 16
+FONT_SIZE_SMALL = 14
+FONT_SIZE_LARGE = 19
+FONT_SIZE_TITLE = 22
+ICON_SIZE = 19
+BUTTON_HEIGHT = 38
+BUTTON_MIN_WIDTH = 90
+INPUT_HEIGHT = 32
+SPACING = 12
+MARGIN = 14
+BORDER_RADIUS = 6
+PROFILE_ROW_HEIGHT = 44
+FLAG_WIDTH = 32
+FLAG_HEIGHT = 22
+
+
 # === GEO DOMAIN CONSTANTS ===
 # EU member states TLDs (27 countries)
 EU_TLDS = {
@@ -344,9 +397,12 @@ class ProfileItemWidget(QWidget):
         self._proxy_status = proxy_status
         self._proxy_checking = False
         
+        # Use theme colors
+        c = CATPPUCCIN
+        
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(4, 2, 4, 2)
-        layout.setSpacing(6)
+        layout.setContentsMargins(6, 2, 6, 2)
+        layout.setSpacing(8)
         
         # Checkbox for selection
         self.checkbox = QCheckBox()
@@ -364,42 +420,46 @@ class ProfileItemWidget(QWidget):
             if os.path.exists(flag_path):
                 pixmap = QPixmap(flag_path)
                 if not pixmap.isNull():
-                    self.flag_label.setPixmap(pixmap.scaled(24, 16, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                    self.flag_label.setPixmap(pixmap.scaled(FLAG_WIDTH, FLAG_HEIGHT, Qt.KeepAspectRatio, Qt.SmoothTransformation))
                     flag_loaded = True
         
         if not flag_loaded:
             # Fallback to emoji (may not render on Windows)
             flag_emoji = COUNTRY_FLAGS.get(self.country_code, "🌐") if self.country_code else "🌐"
             self.flag_label.setText(flag_emoji)
+            self.flag_label.setStyleSheet(f"font-size: {FONT_SIZE_LARGE}px;")
         
-        self.flag_label.setFixedWidth(28)
+        self.flag_label.setFixedWidth(FLAG_WIDTH + 4)
         layout.addWidget(self.flag_label)
         
         # Country code label (e.g., "GB", "NL") - always create, hide if empty
         self.code_label = QLabel(f"({self.country_code})" if self.country_code else "")
-        self.code_label.setStyleSheet("color: #888; font-size: 11px;")
-        self.code_label.setFixedWidth(32)
+        self.code_label.setStyleSheet(f"color: {c['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
+        self.code_label.setFixedWidth(40)
         if not self.country_code:
             self.code_label.hide()
         layout.addWidget(self.code_label)
         
         # Pause/Play button for auto mode exclusion (between country code and UUID)
         self.pause_btn = QPushButton("⏸" if not self._paused else "▶")
-        self.pause_btn.setFixedSize(32, 24)  # Fixed size for consistent look
+        self.pause_btn.setFixedSize(32, 28)
         self._update_pause_btn_style()
         self.pause_btn.clicked.connect(self._on_pause_click)
         layout.addWidget(self.pause_btn)
         
         # UUID label (truncated)
         self.uuid_label = QLabel(f"{uuid[:8]}...")
+        self.uuid_label.setStyleSheet(f"font-size: {FONT_SIZE_BASE}px; font-family: 'Cascadia Code', 'Consolas', monospace;")
         self.uuid_label.setToolTip(uuid)
         layout.addWidget(self.uuid_label, 1)
+        
+        # Button dimensions for profile row - compact
+        btn_w, btn_h = 36, 28
         
         # Google authorization button (only for cookie mode)
         if mode == "cookie":
             self.google_btn = QPushButton("G")
-            self.google_btn.setMinimumWidth(32)
-            self.google_btn.setMaximumWidth(40)
+            self.google_btn.setFixedSize(btn_w, btn_h)
             self.google_btn.setToolTip(tr("Google authorization status"))
             self._update_google_btn_style()
             self.google_btn.clicked.connect(self._on_google_click)
@@ -409,32 +469,28 @@ class ProfileItemWidget(QWidget):
         if mode == "google":
             # Google Ads registration button
             self.ads_btn = QPushButton("Ads")
-            self.ads_btn.setMinimumWidth(40)
-            self.ads_btn.setMaximumWidth(50)
+            self.ads_btn.setFixedSize(50, btn_h)
             self._update_ads_btn_style()
             self.ads_btn.clicked.connect(self._on_ads_click)
             layout.addWidget(self.ads_btn)
             
             # Payment method button
             self.payment_btn = QPushButton("💳")
-            self.payment_btn.setMinimumWidth(36)
-            self.payment_btn.setMaximumWidth(44)
+            self.payment_btn.setFixedSize(btn_w, btn_h)
             self._update_payment_btn_style()
             self.payment_btn.clicked.connect(self._on_payment_click)
             layout.addWidget(self.payment_btn)
             
             # Ad campaign button (РК = Рекламная Кампания in Russian)
             self.campaign_btn = QPushButton(tr("Ad"))
-            self.campaign_btn.setMinimumWidth(36)
-            self.campaign_btn.setMaximumWidth(44)
+            self.campaign_btn.setFixedSize(btn_w, btn_h)
             self._update_campaign_btn_style()
             self.campaign_btn.clicked.connect(self._on_campaign_click)
             layout.addWidget(self.campaign_btn)
             
             # Profile ready button (profile warmed up and ready)
             self.ready_btn = QPushButton("✓")
-            self.ready_btn.setMinimumWidth(36)
-            self.ready_btn.setMaximumWidth(44)
+            self.ready_btn.setFixedSize(btn_w, btn_h)
             self._update_ready_btn_style()
             self.ready_btn.clicked.connect(self._on_ready_click)
             layout.addWidget(self.ready_btn)
@@ -442,18 +498,17 @@ class ProfileItemWidget(QWidget):
         # Migration button (only for cookie mode) - arrow pointing right
         if mode == "cookie":
             self.migrate_btn = QPushButton("→")
-            self.migrate_btn.setMinimumWidth(32)
-            self.migrate_btn.setMaximumWidth(40)
+            self.migrate_btn.setFixedSize(btn_w, btn_h)
             self.migrate_btn.setToolTip(tr("Migrate to Google mode"))
-            self.migrate_btn.setStyleSheet("font-weight: bold;")
+            self.migrate_btn.setStyleSheet(f"font-size: 16px; padding: 0px;")
             self.migrate_btn.clicked.connect(self._on_migrate)
             layout.addWidget(self.migrate_btn)
         
         # Profile age in days (from first run)
         age_text = self._calculate_age()
         self.age_label = QLabel(age_text)
-        self.age_label.setStyleSheet("color: #666; font-size: 11px;")
-        self.age_label.setFixedWidth(50)
+        self.age_label.setStyleSheet(f"color: {c['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
+        self.age_label.setFixedWidth(60)
         self.age_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         if self.first_run:
             self.age_label.setToolTip(f"First run: {self.first_run}")
@@ -461,8 +516,7 @@ class ProfileItemWidget(QWidget):
         
         # Proxy check button
         self.proxy_btn = QPushButton("⇄")
-        self.proxy_btn.setMinimumWidth(32)
-        self.proxy_btn.setMaximumWidth(40)
+        self.proxy_btn.setFixedSize(btn_w, btn_h)
         self.proxy_btn.setToolTip(tr("Check proxy"))
         # Note: _proxy_status and _proxy_checking are initialized in __init__ above
         self.proxy_btn.clicked.connect(self._on_proxy_check)
@@ -470,8 +524,8 @@ class ProfileItemWidget(QWidget):
         
         # Proxy warning label (hidden by default) - must be created before _update_proxy_btn_style
         self.proxy_warning = QLabel("⚠")
-        self.proxy_warning.setStyleSheet("color: #f44336; font-size: 14px; font-weight: bold;")
-        self.proxy_warning.setFixedWidth(16)
+        self.proxy_warning.setStyleSheet(f"color: {c['red']}; font-size: {FONT_SIZE_BASE}px; font-weight: bold;")
+        self.proxy_warning.setFixedWidth(20)
         self.proxy_warning.setToolTip(tr("Proxy error"))
         self.proxy_warning.hide()
         layout.addWidget(self.proxy_warning)
@@ -481,28 +535,29 @@ class ProfileItemWidget(QWidget):
         
         # Copy button
         self.copy_btn = QPushButton("⧉")
-        self.copy_btn.setMinimumWidth(36)
-        self.copy_btn.setMaximumWidth(44)
+        self.copy_btn.setFixedSize(btn_w, btn_h)
         self.copy_btn.setToolTip(tr("Copy UUID"))
+        self.copy_btn.setStyleSheet(f"font-size: 16px; padding: 0px;")
         self.copy_btn.clicked.connect(self._on_copy)
         layout.addWidget(self.copy_btn)
         
         # Play button - manual profile launch without bot logic
         self.play_btn = QPushButton("▶")
-        self.play_btn.setMinimumWidth(32)
-        self.play_btn.setMaximumWidth(40)
+        self.play_btn.setFixedSize(btn_w, btn_h)
         self.play_btn.setToolTip(tr("Open profile manually"))
-        self.play_btn.setStyleSheet("""
-            QPushButton {
-                font-weight: bold;
-                color: #4CAF50;
-                border: 1px solid #4CAF50;
+        c = CATPPUCCIN
+        self.play_btn.setStyleSheet(f"""
+            QPushButton {{
+                font-size: 14px;
+                color: {c['green']};
+                border: 1px solid {c['green']};
                 border-radius: 4px;
                 background: transparent;
-            }
-            QPushButton:hover {
-                background: rgba(76, 175, 80, 0.15);
-            }
+                padding: 0px;
+            }}
+            QPushButton:hover {{
+                background: rgba(166, 227, 161, 0.15);
+            }}
         """)
         self.play_btn.clicked.connect(self._on_play)
         layout.addWidget(self.play_btn)
@@ -513,36 +568,39 @@ class ProfileItemWidget(QWidget):
     def set_manually_running(self, running: bool):
         """Set the manual running state and update Play button appearance."""
         self._is_manually_running = running
+        c = CATPPUCCIN
         if running:
             # Red color - profile is running
             self.play_btn.setText("⏹")
-            self.play_btn.setStyleSheet("""
-                QPushButton {
-                    font-weight: bold;
-                    color: #f44336;
-                    border: 1px solid #f44336;
+            self.play_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 14px;
+                    color: {c['red']};
+                    border: 1px solid {c['red']};
                     border-radius: 4px;
-                    background: rgba(244, 67, 54, 0.1);
-                }
-                QPushButton:hover {
-                    background: rgba(244, 67, 54, 0.25);
-                }
+                    background: rgba(243, 139, 168, 0.1);
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(243, 139, 168, 0.25);
+                }}
             """)
             self.play_btn.setToolTip(tr("Profile is running (click to stop)"))
         else:
             # Green color - ready to start
             self.play_btn.setText("▶")
-            self.play_btn.setStyleSheet("""
-                QPushButton {
-                    font-weight: bold;
-                    color: #4CAF50;
-                    border: 1px solid #4CAF50;
+            self.play_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 14px;
+                    color: {c['green']};
+                    border: 1px solid {c['green']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover {
-                    background: rgba(76, 175, 80, 0.15);
-                }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(166, 227, 161, 0.15);
+                }}
             """)
             self.play_btn.setToolTip(tr("Open profile manually"))
     
@@ -552,64 +610,69 @@ class ProfileItemWidget(QWidget):
     
     def _update_proxy_btn_style(self):
         """Update proxy button style based on status."""
+        c = CATPPUCCIN
         if self._proxy_checking:
-            # Checking - gray with animation hint
             self.proxy_btn.setText("...")
-            self.proxy_btn.setStyleSheet("""
-                QPushButton {
-                    color: #888;
-                    border: 1px solid #888;
+            self.proxy_btn.setStyleSheet(f"""
+                QPushButton {{
+                    color: {c['overlay0']};
+                    border: 1px solid {c['overlay0']};
                     border-radius: 4px;
                     background: transparent;
-                }
+                    font-size: 12px;
+                    padding: 0px;
+                }}
             """)
             self.proxy_btn.setToolTip(tr("Checking proxy..."))
             self.proxy_warning.hide()
         elif self._proxy_status is None:
-            # Unchecked - neutral
             self.proxy_btn.setText("⇄")
-            self.proxy_btn.setStyleSheet("""
-                QPushButton {
-                    color: #888;
-                    border: 1px solid #666;
+            self.proxy_btn.setStyleSheet(f"""
+                QPushButton {{
+                    color: {c['overlay0']};
+                    border: 1px solid {c['surface2']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover {
-                    background: rgba(136, 136, 136, 0.15);
-                }
+                    font-size: 14px;
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(108, 112, 134, 0.15);
+                }}
             """)
             self.proxy_btn.setToolTip(tr("Check proxy"))
             self.proxy_warning.hide()
         elif self._proxy_status:
-            # OK - green
             self.proxy_btn.setText("⇄")
-            self.proxy_btn.setStyleSheet("""
-                QPushButton {
-                    color: #4CAF50;
-                    border: 1px solid #4CAF50;
+            self.proxy_btn.setStyleSheet(f"""
+                QPushButton {{
+                    color: {c['green']};
+                    border: 1px solid {c['green']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover {
-                    background: rgba(76, 175, 80, 0.15);
-                }
+                    font-size: 14px;
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(166, 227, 161, 0.15);
+                }}
             """)
             self.proxy_btn.setToolTip(tr("Proxy OK (click to recheck)"))
             self.proxy_warning.hide()
         else:
-            # Error - red
             self.proxy_btn.setText("⇄")
-            self.proxy_btn.setStyleSheet("""
-                QPushButton {
-                    color: #f44336;
-                    border: 1px solid #f44336;
+            self.proxy_btn.setStyleSheet(f"""
+                QPushButton {{
+                    color: {c['red']};
+                    border: 1px solid {c['red']};
                     border-radius: 4px;
-                    background: rgba(244, 67, 54, 0.1);
-                }
-                QPushButton:hover {
-                    background: rgba(244, 67, 54, 0.25);
-                }
+                    background: rgba(243, 139, 168, 0.1);
+                    font-size: 14px;
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(243, 139, 168, 0.25);
+                }}
             """)
             self.proxy_btn.setToolTip(tr("Proxy error (click to recheck)"))
             self.proxy_warning.show()
@@ -645,38 +708,37 @@ class ProfileItemWidget(QWidget):
     # === Pause/Play button for Auto mode exclusion ===
     def _update_pause_btn_style(self):
         """Update pause button style based on paused state."""
+        c = CATPPUCCIN
         if self._paused:
-            # Paused - orange/yellow, show play icon
             self.pause_btn.setText("▶")
-            self.pause_btn.setStyleSheet("""
-                QPushButton {
-                    font-size: 12px;
-                    color: #ff9800;
-                    border: 1px solid #ff9800;
+            self.pause_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 14px;
+                    color: {c['peach']};
+                    border: 1px solid {c['peach']};
                     border-radius: 4px;
-                    background: rgba(255, 152, 0, 0.1);
-                    padding: 2px;
-                }
-                QPushButton:hover {
-                    background: rgba(255, 152, 0, 0.25);
-                }
+                    background: rgba(250, 179, 135, 0.1);
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(250, 179, 135, 0.25);
+                }}
             """)
             self.pause_btn.setToolTip(tr("Profile paused (excluded from Auto mode). Click to resume."))
         else:
-            # Active - gray/neutral, show pause icon
             self.pause_btn.setText("⏸")
-            self.pause_btn.setStyleSheet("""
-                QPushButton {
-                    font-size: 12px;
-                    color: #888;
-                    border: 1px solid #666;
+            self.pause_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 14px;
+                    color: {c['overlay0']};
+                    border: 1px solid {c['surface2']};
                     border-radius: 4px;
                     background: transparent;
-                    padding: 2px;
-                }
-                QPushButton:hover {
-                    background: rgba(136, 136, 136, 0.15);
-                }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(108, 112, 134, 0.15);
+                }}
             """)
             self.pause_btn.setToolTip(tr("Profile active in Auto mode. Click to pause."))
     
@@ -697,34 +759,37 @@ class ProfileItemWidget(QWidget):
     
     def _update_google_btn_style(self):
         """Update Google button style based on authorization state."""
+        c = CATPPUCCIN
         if self.google_authorized:
-            # Colored - Google colors
-            self.google_btn.setStyleSheet("""
-                QPushButton {
+            self.google_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 13px;
                     font-weight: bold;
-                    color: #4285f4;
-                    border: 2px solid #4285f4;
+                    color: {c['blue']};
+                    border: 2px solid {c['blue']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover {
-                    background: rgba(66, 133, 244, 0.1);
-                }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(137, 180, 250, 0.15);
+                }}
             """)
             self.google_btn.setToolTip(tr("Google authorized") + " ✓")
         else:
-            # Grayed out
-            self.google_btn.setStyleSheet("""
-                QPushButton {
+            self.google_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 13px;
                     font-weight: bold;
-                    color: #666;
-                    border: 2px solid #444;
+                    color: {c['overlay0']};
+                    border: 2px solid {c['surface1']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover {
-                    background: rgba(100, 100, 100, 0.1);
-                }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{
+                    background: rgba(108, 112, 134, 0.1);
+                }}
             """)
             self.google_btn.setToolTip(tr("Google not authorized"))
     
@@ -797,119 +862,131 @@ class ProfileItemWidget(QWidget):
     
     def _update_ads_btn_style(self):
         """Update Google Ads button style based on registration state."""
+        c = CATPPUCCIN
         if self.ads_registered:
-            self.ads_btn.setStyleSheet("""
-                QPushButton {
+            self.ads_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 11px;
                     font-weight: bold;
-                    font-size: 10px;
-                    color: #fbbc04;
-                    border: 2px solid #fbbc04;
+                    color: {c['yellow']};
+                    border: 2px solid {c['yellow']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(251, 188, 4, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(249, 226, 175, 0.15); }}
             """)
             time_ago = self._format_time_ago(self.ads_timestamp)
             self.ads_btn.setToolTip(tr("Google Ads registered") + f" ✓{time_ago}")
         else:
-            self.ads_btn.setStyleSheet("""
-                QPushButton {
+            self.ads_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 11px;
                     font-weight: bold;
-                    font-size: 10px;
-                    color: #666;
-                    border: 2px solid #444;
+                    color: {c['overlay0']};
+                    border: 2px solid {c['surface1']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(100, 100, 100, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
             """)
             self.ads_btn.setToolTip(tr("Google Ads not registered"))
     
     def _update_payment_btn_style(self):
         """Update payment button style based on link state."""
+        c = CATPPUCCIN
         if self.payment_linked:
-            self.payment_btn.setStyleSheet("""
-                QPushButton {
+            self.payment_btn.setStyleSheet(f"""
+                QPushButton {{
                     font-size: 14px;
-                    color: #34a853;
-                    border: 2px solid #34a853;
+                    color: {c['green']};
+                    border: 2px solid {c['green']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(52, 168, 83, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(166, 227, 161, 0.15); }}
             """)
             time_ago = self._format_time_ago(self.payment_timestamp)
             self.payment_btn.setToolTip(tr("Payment method linked") + f" ✓{time_ago}")
         else:
-            self.payment_btn.setStyleSheet("""
-                QPushButton {
+            self.payment_btn.setStyleSheet(f"""
+                QPushButton {{
                     font-size: 14px;
-                    color: #666;
-                    border: 2px solid #444;
+                    color: {c['overlay0']};
+                    border: 2px solid {c['surface1']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(100, 100, 100, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
             """)
             self.payment_btn.setToolTip(tr("Payment method not linked"))
     
     def _update_campaign_btn_style(self):
         """Update campaign button style based on launch state."""
+        c = CATPPUCCIN
         if self.campaign_launched:
-            self.campaign_btn.setStyleSheet("""
-                QPushButton {
+            self.campaign_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 11px;
                     font-weight: bold;
-                    font-size: 10px;
-                    color: #ea4335;
-                    border: 2px solid #ea4335;
+                    color: {c['red']};
+                    border: 2px solid {c['red']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(234, 67, 53, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(243, 139, 168, 0.15); }}
             """)
             time_ago = self._format_time_ago(self.campaign_timestamp)
             self.campaign_btn.setToolTip(tr("Ad campaign launched") + f" ✓{time_ago}")
         else:
-            self.campaign_btn.setStyleSheet("""
-                QPushButton {
+            self.campaign_btn.setStyleSheet(f"""
+                QPushButton {{
+                    font-size: 11px;
                     font-weight: bold;
-                    font-size: 10px;
-                    color: #666;
-                    border: 2px solid #444;
+                    color: {c['overlay0']};
+                    border: 2px solid {c['surface1']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(100, 100, 100, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
             """)
             self.campaign_btn.setToolTip(tr("Ad campaign not launched"))
     
     def _update_ready_btn_style(self):
         """Update ready button style based on profile ready state."""
+        c = CATPPUCCIN
         if self.profile_ready:
-            self.ready_btn.setStyleSheet("""
-                QPushButton {
-                    font-weight: bold;
+            self.ready_btn.setStyleSheet(f"""
+                QPushButton {{
                     font-size: 14px;
-                    color: #00c853;
-                    border: 2px solid #00c853;
+                    font-weight: bold;
+                    color: {c['teal']};
+                    border: 2px solid {c['teal']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(0, 200, 83, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(148, 226, 213, 0.15); }}
             """)
             time_ago = self._format_time_ago(self.ready_timestamp)
             self.ready_btn.setToolTip(tr("Profile warmed up and ready") + f" ✓{time_ago}")
         else:
-            self.ready_btn.setStyleSheet("""
-                QPushButton {
-                    font-weight: bold;
+            self.ready_btn.setStyleSheet(f"""
+                QPushButton {{
                     font-size: 14px;
-                    color: #666;
-                    border: 2px solid #444;
+                    font-weight: bold;
+                    color: {c['overlay0']};
+                    border: 2px solid {c['surface1']};
                     border-radius: 4px;
                     background: transparent;
-                }
-                QPushButton:hover { background: rgba(100, 100, 100, 0.1); }
+                    padding: 0px;
+                }}
+                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
             """)
             self.ready_btn.setToolTip(tr("Profile not ready"))
     
@@ -1305,81 +1382,91 @@ class MainWindow(QMainWindow):
         
     def init_ui(self):
         self.setWindowTitle("TT Cookie Robot")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
+        self.resize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
         
         central = QWidget()
         self.setCentralWidget(central)
         main_layout = QVBoxLayout(central)
-        main_layout.setSpacing(8)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(SPACING)
+        main_layout.setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN)
         
         # === TOP BAR: Connection + Mode ===
         top_bar = QHBoxLayout()
-        top_bar.setSpacing(10)
+        top_bar.setSpacing(SPACING)
         
         # Refresh all proxies button (left of API URL)
         self.refresh_all_btn = QPushButton("🔄")
-        self.refresh_all_btn.setFixedSize(36, 28)
-        self.refresh_all_btn.setStyleSheet("font-size: 14px;")
+        self.refresh_all_btn.setFixedSize(44, 40)
+        self.refresh_all_btn.setStyleSheet(f"font-size: 18px; padding: 2px;")
         self.refresh_all_btn.setToolTip(tr("Refresh all proxies & update geo"))
         self.refresh_all_btn.clicked.connect(self._refresh_all_proxies_and_geo)
         top_bar.addWidget(self.refresh_all_btn)
         
         # Connection
-        top_bar.addWidget(QLabel("API:"))
+        api_label = QLabel("API:")
+        api_label.setStyleSheet(f"font-size: {FONT_SIZE_BASE}px; font-weight: 600;")
+        top_bar.addWidget(api_label)
         self.api_url_input = QLineEdit()
         self.api_url_input.setText(self.config.get("api_url", "http://localhost:58888"))
-        self.api_url_input.setFixedWidth(180)
+        self.api_url_input.setFixedWidth(220)
+        self.api_url_input.setFixedHeight(INPUT_HEIGHT)
         top_bar.addWidget(self.api_url_input)
         
         self.connect_btn = QPushButton(tr("Connect"))
-        self.connect_btn.setMinimumWidth(80)
+        self.connect_btn.setMinimumWidth(BUTTON_MIN_WIDTH)
+        self.connect_btn.setFixedHeight(BUTTON_HEIGHT)
         self.connect_btn.clicked.connect(self.connect_to_octo)
         top_bar.addWidget(self.connect_btn)
         
         self.connection_status = QLabel("●")
-        self.connection_status.setStyleSheet("color: #f38ba8; font-size: 16px;")
-        self.connection_status.setFixedWidth(20)
+        self.connection_status.setStyleSheet(f"color: {CATPPUCCIN['red']}; font-size: {FONT_SIZE_LARGE}px;")
+        self.connection_status.setFixedWidth(24)
         top_bar.addWidget(self.connection_status)
         
         top_bar.addStretch()
         
         # Mode buttons
         self.mode_label = QLabel(tr("Mode:"))
+        self.mode_label.setStyleSheet(f"font-size: {FONT_SIZE_BASE}px; font-weight: 600;")
         top_bar.addWidget(self.mode_label)
         
         self.cookie_mode_btn = QPushButton("🍪 Cookie")
         self.cookie_mode_btn.setCheckable(True)
         self.cookie_mode_btn.setChecked(True)
-        self.cookie_mode_btn.setMinimumWidth(100)
+        self.cookie_mode_btn.setMinimumWidth(120)
+        self.cookie_mode_btn.setFixedHeight(BUTTON_HEIGHT)
         self.cookie_mode_btn.clicked.connect(lambda: self.switch_mode("cookie"))
         top_bar.addWidget(self.cookie_mode_btn)
         
         self.google_mode_btn = QPushButton("📧 Google")
         self.google_mode_btn.setCheckable(True)
-        self.google_mode_btn.setMinimumWidth(100)
+        self.google_mode_btn.setMinimumWidth(120)
+        self.google_mode_btn.setFixedHeight(BUTTON_HEIGHT)
         self.google_mode_btn.clicked.connect(lambda: self.switch_mode("google"))
         top_bar.addWidget(self.google_mode_btn)
         
         self.auto_mode_btn = QPushButton("🤖 Auto")
         self.auto_mode_btn.setCheckable(True)
-        self.auto_mode_btn.setMinimumWidth(100)
+        self.auto_mode_btn.setMinimumWidth(120)
+        self.auto_mode_btn.setFixedHeight(BUTTON_HEIGHT)
         self.auto_mode_btn.clicked.connect(lambda: self.switch_mode("auto"))
         top_bar.addWidget(self.auto_mode_btn)
         
         # Global settings button
         self.global_settings_btn = QPushButton("⚙️")
-        self.global_settings_btn.setFixedWidth(40)
+        self.global_settings_btn.setFixedSize(44, 40)
+        self.global_settings_btn.setStyleSheet(f"font-size: 18px; padding: 2px;")
         self.global_settings_btn.setToolTip(tr("Global Settings"))
         self.global_settings_btn.clicked.connect(self.show_global_settings)
         top_bar.addWidget(self.global_settings_btn)
         
         # Notifications button with badge
         self.notifications_btn = QPushButton("🔔")
-        self.notifications_btn.setFixedWidth(50)
+        self.notifications_btn.setFixedSize(50, 40)
         self.notifications_btn.setToolTip(tr("Notifications"))
         self.notifications_btn.clicked.connect(self.show_notifications)
-        self.notifications_btn.setStyleSheet("font-size: 16px;")
+        self.notifications_btn.setStyleSheet("font-size: 22px; padding: 0px; border: none;")
         top_bar.addWidget(self.notifications_btn)
         self._update_notification_badge()
         
@@ -1394,26 +1481,40 @@ class MainWindow(QMainWindow):
         
         # === CONTROL BUTTONS ===
         control_layout = QHBoxLayout()
+        control_layout.setSpacing(SPACING)
         
+        c = CATPPUCCIN
         self.start_btn = QPushButton("▶ " + tr("START"))
-        self.start_btn.setMinimumHeight(40)
+        self.start_btn.setMinimumHeight(50)
         self.start_btn.setEnabled(False)
         self.start_btn.clicked.connect(self.start_automation)
-        self.start_btn.setStyleSheet("""
-            QPushButton { background-color: #a6e3a1; color: #1e1e2e; font-weight: bold; font-size: 14px; }
-            QPushButton:hover { background-color: #94d990; }
-            QPushButton:disabled { background-color: #4a5a48; color: #6c7086; }
+        self.start_btn.setStyleSheet(f"""
+            QPushButton {{ 
+                background-color: {c['green']}; 
+                color: {c['crust']}; 
+                font-weight: bold; 
+                font-size: {FONT_SIZE_LARGE}px;
+                border-radius: {BORDER_RADIUS}px;
+            }}
+            QPushButton:hover {{ background-color: #96D391; }}
+            QPushButton:disabled {{ background-color: {c['surface1']}; color: {c['overlay0']}; }}
         """)
         control_layout.addWidget(self.start_btn)
         
         self.stop_btn = QPushButton("⏹ " + tr("STOP"))
-        self.stop_btn.setMinimumHeight(40)
+        self.stop_btn.setMinimumHeight(50)
         self.stop_btn.setEnabled(False)
         self.stop_btn.clicked.connect(lambda: self.stop_automation(sync=False))
-        self.stop_btn.setStyleSheet("""
-            QPushButton { background-color: #f38ba8; color: #1e1e2e; font-weight: bold; font-size: 14px; }
-            QPushButton:hover { background-color: #e879a0; }
-            QPushButton:disabled { background-color: #5a4a50; color: #6c7086; }
+        self.stop_btn.setStyleSheet(f"""
+            QPushButton {{ 
+                background-color: {c['red']}; 
+                color: {c['crust']}; 
+                font-weight: bold; 
+                font-size: {FONT_SIZE_LARGE}px;
+                border-radius: {BORDER_RADIUS}px;
+            }}
+            QPushButton:hover {{ background-color: #E37B98; }}
+            QPushButton:disabled {{ background-color: {c['surface1']}; color: {c['overlay0']}; }}
         """)
         control_layout.addWidget(self.stop_btn)
         
@@ -1421,14 +1522,15 @@ class MainWindow(QMainWindow):
         
         # === STATUS ===
         self.status_label = QLabel(tr("Ready"))
-        self.status_label.setStyleSheet("color: #6c7086;")
+        self.status_label.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_BASE}px;")
         main_layout.addWidget(self.status_label)
         
         # === LOGS ===
         self.log_area = QTextEdit()
         self.log_area.setReadOnly(True)
-        self.log_area.setMaximumHeight(120)
-        self.log_area.setFont(QFont("Consolas", 9))
+        self.log_area.setMinimumHeight(160)
+        self.log_area.setMaximumHeight(200)
+        self.log_area.setFont(QFont("Cascadia Code", 11))
         main_layout.addWidget(self.log_area)
     
     def create_cookie_mode(self):
@@ -1494,7 +1596,8 @@ class MainWindow(QMainWindow):
             btn = QPushButton(text)
             btn.clicked.connect(func)
             if text == "🔄":
-                btn.setFixedWidth(36)
+                btn.setFixedSize(40, 36)
+                btn.setStyleSheet("font-size: 16px; padding: 2px;")
                 btn.setToolTip(tr("Refresh proxy info"))
             btn_layout.addWidget(btn)
         layout.addLayout(btn_layout)
@@ -1727,7 +1830,7 @@ class MainWindow(QMainWindow):
         layout.addRow(self.cookie_human)
         
         save_btn = QPushButton(tr("Save Settings"))
-        save_btn.setStyleSheet("min-height: 35px; font-weight: bold;")
+        save_btn.setStyleSheet("min-height: 36px;")
         save_btn.clicked.connect(lambda: self.save_mode_settings("cookie"))
         layout.addRow(save_btn)
         
@@ -1753,7 +1856,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
         
         info = QLabel(tr("Add profiles with authorized Google accounts"))
-        info.setStyleSheet("color: #6c7086; font-size: 11px;")
+        info.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         layout.addWidget(info)
         
         # Search profiles
@@ -1804,9 +1907,11 @@ class MainWindow(QMainWindow):
             btn = QPushButton(text)
             btn.clicked.connect(func)
             if text == "🔄":
-                btn.setFixedWidth(36)
+                btn.setFixedSize(40, 36)
+                btn.setStyleSheet("font-size: 16px; padding: 2px;")
                 btn.setToolTip(tr("Refresh proxy info"))
             btn_layout.addWidget(btn)
+        layout.addLayout(btn_layout)
         layout.addLayout(btn_layout)
         
         self.load_profiles_list("google")
@@ -1827,11 +1932,11 @@ class MainWindow(QMainWindow):
         
         # === SECTION 1: Regular Sites (browse only) ===
         sites_label = QLabel(tr("🌐 Sites (browse only)"))
-        sites_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa;")
+        sites_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']};")
         layout.addWidget(sites_label)
         
         sites_info = QLabel(tr("Sites for browsing without Google authorization"))
-        sites_info.setStyleSheet("color: #6c7086; font-size: 10px;")
+        sites_info.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         layout.addWidget(sites_info)
         
         # Sites input
@@ -1883,11 +1988,11 @@ class MainWindow(QMainWindow):
         
         # === SECTION 2: One Tap Sites (with Google auth) ===
         onetap_label = QLabel(tr("🔐 Sites with Google One Tap"))
-        onetap_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        onetap_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
         layout.addWidget(onetap_label)
         
         onetap_info = QLabel(tr("Sites where bot will authorize via Google One Tap"))
-        onetap_info.setStyleSheet("color: #6c7086; font-size: 10px;")
+        onetap_info.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         layout.addWidget(onetap_info)
         
         onetap_add_layout = QHBoxLayout()
@@ -1938,7 +2043,7 @@ class MainWindow(QMainWindow):
         
         # === YouTube ===
         youtube_section_label = QLabel(tr("📺 YouTube"))
-        youtube_section_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        youtube_section_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
         layout.addWidget(youtube_section_label)
         
         self.google_youtube_checkbox = QCheckBox(tr("Add YouTube to session"))
@@ -1948,11 +2053,11 @@ class MainWindow(QMainWindow):
         
         # === SECTION 3: Google Services ===
         services_label = QLabel(tr("📊 Google Services"))
-        services_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        services_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
         layout.addWidget(services_label)
         
         services_info = QLabel(tr("Google services to visit during session"))
-        services_info.setStyleSheet("color: #6c7086; font-size: 10px;")
+        services_info.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         layout.addWidget(services_info)
         
         # Google services checkboxes (names kept as-is - brand names)
@@ -2179,7 +2284,7 @@ class MainWindow(QMainWindow):
         
         # === SITES SECTION ===
         sites_label = QLabel(tr("🌐 Sites"))
-        sites_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 5px;")
+        sites_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 5px;")
         layout.addRow(sites_label)
         
         self.google_min_time = QSpinBox()
@@ -2226,7 +2331,7 @@ class MainWindow(QMainWindow):
         
         # === GMAIL SECTION ===
         gmail_label = QLabel(tr("📧 Gmail"))
-        gmail_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        gmail_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
         layout.addRow(gmail_label)
         
         self.google_read_gmail = QCheckBox(tr("Read Gmail"))
@@ -2302,7 +2407,7 @@ class MainWindow(QMainWindow):
         
         # === YOUTUBE SECTION ===
         youtube_label = QLabel(tr("📺 YouTube"))
-        youtube_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        youtube_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
         layout.addRow(youtube_label)
         
         # YouTube activity percentage
@@ -2365,7 +2470,7 @@ class MainWindow(QMainWindow):
         
         # === BROWSING BEHAVIOR ===
         browsing_label = QLabel(tr("🖱️ Browsing Behavior"))
-        browsing_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        browsing_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
         layout.addRow(browsing_label)
         
         self.google_scroll_enabled = QCheckBox(tr("Enable scrolling"))
@@ -2644,43 +2749,75 @@ class MainWindow(QMainWindow):
         # === RIGHT PANEL: Statistics & Control ===
         right_panel = QVBoxLayout()
         
-        # World Clock Panel
+        # World Clock Panel - две колонки по 3 региона
         clock_group = QGroupBox(tr("🌍 Regional Time"))
-        clock_layout = QVBoxLayout(clock_group)
+        clock_layout = QHBoxLayout(clock_group)
+        clock_layout.setContentsMargins(8, 12, 8, 8)
+        clock_layout.setSpacing(12)
         
-        self.auto_clock_label = QLabel()
-        self.auto_clock_label.setStyleSheet("font-size: 11px; padding: 5px;")
+        # Левая колонка (US, UK, EU)
+        self.auto_clock_left = QLabel()
+        self.auto_clock_left.setStyleSheet(f"font-size: 14px; line-height: 1.5;")
+        clock_layout.addWidget(self.auto_clock_left)
+        
+        # Правая колонка (RU, JP, AU)
+        self.auto_clock_right = QLabel()
+        self.auto_clock_right.setStyleSheet(f"font-size: 14px; line-height: 1.5;")
+        clock_layout.addWidget(self.auto_clock_right)
+        
         self._update_world_clock()
-        clock_layout.addWidget(self.auto_clock_label)
         
         right_panel.addWidget(clock_group)
         
-        # Statistics Group
+        # Statistics Group - две колонки: Progress слева, State справа
         stats_group = QGroupBox(tr("📊 Statistics"))
-        stats_layout = QVBoxLayout(stats_group)
+        stats_main_layout = QVBoxLayout(stats_group)
+        stats_main_layout.setContentsMargins(8, 10, 8, 8)
+        stats_main_layout.setSpacing(6)
         
-        # Today's progress
-        self.auto_stats_label = QLabel()
-        self.auto_stats_label.setWordWrap(True)
-        self.auto_stats_label.setStyleSheet("font-size: 12px; padding: 10px;")
+        # Две колонки для статистики
+        stats_columns = QHBoxLayout()
+        stats_columns.setSpacing(12)
+        
+        # Левая колонка - Progress
+        self.auto_stats_progress_label = QLabel()
+        self.auto_stats_progress_label.setStyleSheet(f"font-size: 13px; line-height: 1.4;")
+        stats_columns.addWidget(self.auto_stats_progress_label)
+        
+        # Разделитель
+        separator = QFrame()
+        separator.setFrameShape(QFrame.VLine)
+        separator.setStyleSheet(f"color: {CATPPUCCIN['surface1']};")
+        stats_columns.addWidget(separator)
+        
+        # Правая колонка - Current State
+        self.auto_stats_state_label = QLabel()
+        self.auto_stats_state_label.setStyleSheet(f"font-size: 13px; line-height: 1.4;")
+        stats_columns.addWidget(self.auto_stats_state_label)
+        
+        stats_main_layout.addLayout(stats_columns)
+        
+        # Инициализация статистики
         self._update_auto_stats_display()
-        stats_layout.addWidget(self.auto_stats_label)
         
         # Buttons row
         stats_buttons = QHBoxLayout()
+        stats_buttons.setSpacing(8)
         
         # History button
         history_btn = QPushButton(tr("📅 History"))
+        history_btn.setStyleSheet("font-size: 13px; padding: 5px 10px;")
         history_btn.clicked.connect(self.show_auto_history)
         stats_buttons.addWidget(history_btn)
         
         # Reset progress button
         reset_btn = QPushButton(tr("🔄 Reset"))
+        reset_btn.setStyleSheet("font-size: 13px; padding: 5px 10px;")
         reset_btn.setToolTip(tr("Reset today's progress (for testing)"))
         reset_btn.clicked.connect(self.reset_auto_progress)
         stats_buttons.addWidget(reset_btn)
         
-        stats_layout.addLayout(stats_buttons)
+        stats_main_layout.addLayout(stats_buttons)
         
         right_panel.addWidget(stats_group)
         
@@ -2690,20 +2827,22 @@ class MainWindow(QMainWindow):
         
         # Status label
         self.auto_status_label = QLabel(tr("Status: Stopped"))
-        self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px;")
+        self.auto_status_label.setStyleSheet(f"font-weight: bold; font-size: {FONT_SIZE_LARGE}px; padding: 12px;")
         self.auto_status_label.setAlignment(Qt.AlignCenter)
         control_layout.addWidget(self.auto_status_label)
         
         # Control buttons
         buttons_layout = QHBoxLayout()
         
+        c = CATPPUCCIN
+        
         self.auto_start_btn = QPushButton("▶ " + tr("START"))
         self.auto_start_btn.setMinimumHeight(50)
         self.auto_start_btn.clicked.connect(self.start_auto_mode)
-        self.auto_start_btn.setStyleSheet("""
-            QPushButton { background-color: #a6e3a1; color: #1e1e2e; font-weight: bold; font-size: 14px; }
-            QPushButton:hover { background-color: #94d990; }
-            QPushButton:disabled { background-color: #4a5a48; color: #6c7086; }
+        self.auto_start_btn.setStyleSheet(f"""
+            QPushButton {{ background-color: {c['green']}; color: {c['crust']}; font-weight: bold; font-size: {FONT_SIZE_LARGE}px; border-radius: {BORDER_RADIUS}px; }}
+            QPushButton:hover {{ background-color: #96D391; }}
+            QPushButton:disabled {{ background-color: {c['surface1']}; color: {c['overlay0']}; }}
         """)
         buttons_layout.addWidget(self.auto_start_btn)
         
@@ -2711,10 +2850,10 @@ class MainWindow(QMainWindow):
         self.auto_stop_btn.setMinimumHeight(50)
         self.auto_stop_btn.setEnabled(False)
         self.auto_stop_btn.clicked.connect(self.stop_auto_mode)
-        self.auto_stop_btn.setStyleSheet("""
-            QPushButton { background-color: #f38ba8; color: #1e1e2e; font-weight: bold; font-size: 14px; }
-            QPushButton:hover { background-color: #e879a0; }
-            QPushButton:disabled { background-color: #5a4a50; color: #6c7086; }
+        self.auto_stop_btn.setStyleSheet(f"""
+            QPushButton {{ background-color: {c['red']}; color: {c['crust']}; font-weight: bold; font-size: {FONT_SIZE_LARGE}px; border-radius: {BORDER_RADIUS}px; }}
+            QPushButton:hover {{ background-color: #E37B98; }}
+            QPushButton:disabled {{ background-color: {c['surface1']}; color: {c['overlay0']}; }}
         """)
         buttons_layout.addWidget(self.auto_stop_btn)
         
@@ -2722,7 +2861,7 @@ class MainWindow(QMainWindow):
         
         # Next action info
         self.auto_next_action_label = QLabel(tr("Next action: -"))
-        self.auto_next_action_label.setStyleSheet("color: #6c7086; padding: 5px;")
+        self.auto_next_action_label.setStyleSheet(f"color: {c['subtext0']}; padding: 6px; font-size: {FONT_SIZE_BASE}px;")
         control_layout.addWidget(self.auto_next_action_label)
         
         right_panel.addWidget(control_group)
@@ -2733,7 +2872,7 @@ class MainWindow(QMainWindow):
         return widget
     
     def _update_auto_stats_display(self):
-        """Update the auto mode statistics display."""
+        """Update the auto mode statistics display (two columns)."""
         summary = self.auto_state.get_today_summary()
         
         # Get scheduler info if running
@@ -2762,22 +2901,28 @@ class MainWindow(QMainWindow):
         # Estimate completion time
         completion_str = self._estimate_completion_time()
         
-        stats_text = f"""
-<b>{tr("Today's Progress")}</b><br>
+        # Left column - Progress
+        progress_text = f"""<b>{tr("Today's Progress")}</b><br>
 {tr("Total Sessions")}: {progress_str}<br>
 • Cookie: {summary['cookie_sessions']}<br>
 • Google: {summary['google_sessions']}<br><br>
-<b>{tr("Current State")}</b><br>
+🏁 {tr("Est. finish")}: {completion_str}<br>
+{tr("Errors")}: {summary['total_errors']}"""
+        
+        # Right column - Current State
+        state_text = f"""<b>{tr("Current State")}</b><br>
 ▶ {tr("Running")}: {running_count}<br>
 ⏳ {tr("Waiting")}: {waiting}<br>
 ❄️ {tr("Cooldown")}: {cooldown}<br>
 😴 {tr("Sleeping")}: {sleeping}<br>
 ✅ {tr("Completed")}: {completed}<br>
-⏭️ {tr("Skipped")}: {skipped}<br><br>
-🏁 {tr("Est. finish")}: {completion_str}<br>
-{tr("Errors")}: {summary['total_errors']}
-        """
-        self.auto_stats_label.setText(stats_text)
+⏭️ {tr("Skipped")}: {skipped}"""
+        
+        # Update both labels
+        if hasattr(self, 'auto_stats_progress_label'):
+            self.auto_stats_progress_label.setText(progress_text)
+        if hasattr(self, 'auto_stats_state_label'):
+            self.auto_stats_state_label.setText(state_text)
     
     def _estimate_completion_time(self) -> str:
         """Estimate when all sessions will be completed."""
@@ -2820,14 +2965,16 @@ class MainWindow(QMainWindow):
         return tr("Unknown")
     
     def _update_world_clock(self):
-        """Update the world clock display."""
+        """Update the world clock display (two columns)."""
         from datetime import datetime, timezone, timedelta
         
-        # Key regions with their UTC offsets
-        regions = [
+        # Key regions with their UTC offsets - split into two columns
+        left_regions = [
             ("🇺🇸 US (CST)", -6),
             ("🇬🇧 UK", 0),
             ("🇪🇺 EU (CET)", 1),
+        ]
+        right_regions = [
             ("🇷🇺 RU (MSK)", 3),
             ("🇯🇵 JP", 9),
             ("🇦🇺 AU", 10),
@@ -2840,8 +2987,7 @@ class MainWindow(QMainWindow):
         work_start = auto_cfg.get("work_start_weekday", 7)
         work_end = auto_cfg.get("work_end_weekday", 23)
         
-        lines = []
-        for name, offset in regions:
+        def format_region(name, offset):
             local_time = utc_now + timedelta(hours=offset)
             hour = local_time.hour
             time_str = local_time.strftime("%H:%M")
@@ -2855,22 +3001,24 @@ class MainWindow(QMainWindow):
                 ws = work_start
                 we = work_end
             
-            # Simple check: is current hour within working hours?
-            # Working hours are defined as start-end in local time (e.g., 7-23)
-            # For weekend overnight (e.g., 9-25 meaning 9:00-01:00), we need special handling
             if we > 24:
-                # Overnight schedule (e.g., 9:00 to 01:00 next day)
-                # Only consider "awake" during the main working period (ws to 24)
-                # Early morning hours (00:00 to we-24) are NOT considered working hours
-                # because that would be "yesterday's late night", not today's work
                 awake = ws <= hour < 24
             else:
                 awake = ws <= hour < we
             
             status = "✅" if awake else "😴"
-            lines.append(f"{name}: <b>{time_str}</b> {status}")
+            return f"{name}: <b>{time_str}</b> {status}"
         
-        self.auto_clock_label.setText("<br>".join(lines))
+        # Format left column
+        left_lines = [format_region(name, offset) for name, offset in left_regions]
+        # Format right column
+        right_lines = [format_region(name, offset) for name, offset in right_regions]
+        
+        # Update both labels
+        if hasattr(self, 'auto_clock_left'):
+            self.auto_clock_left.setText("<br>".join(left_lines))
+        if hasattr(self, 'auto_clock_right'):
+            self.auto_clock_right.setText("<br>".join(right_lines))
     
     def save_auto_settings(self):
         """Save auto mode settings."""
@@ -3025,7 +3173,7 @@ class MainWindow(QMainWindow):
         self.auto_start_btn.setEnabled(False)
         self.auto_stop_btn.setEnabled(True)
         self.auto_status_label.setText(tr("Status: Running"))
-        self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px; color: #a6e3a1;")
+        self.auto_status_label.setStyleSheet(f"font-weight: bold; font-size: {FONT_SIZE_LARGE}px; padding: 12px; color: {CATPPUCCIN['green']};")
         
         # Start scheduler timer (check every 30 seconds)
         from PyQt5.QtCore import QTimer
@@ -3705,7 +3853,7 @@ class MainWindow(QMainWindow):
         self.auto_start_btn.setEnabled(True)
         self.auto_stop_btn.setEnabled(False)
         self.auto_status_label.setText(tr("Status: Stopped"))
-        self.auto_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px; color: #f38ba8;")
+        self.auto_status_label.setStyleSheet(f"font-weight: bold; font-size: {FONT_SIZE_LARGE}px; padding: 12px; color: {CATPPUCCIN['red']};")
         
         # Re-enable Play buttons
         self._set_play_buttons_enabled(True)
@@ -3773,7 +3921,7 @@ class MainWindow(QMainWindow):
         if not notifications:
             empty_label = QLabel(tr("No notifications"))
             empty_label.setAlignment(Qt.AlignCenter)
-            empty_label.setStyleSheet("color: #6c7086; padding: 20px;")
+            empty_label.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; padding: 20px;")
             scroll_layout.addWidget(empty_label)
         else:
             for notif in notifications:
@@ -3821,7 +3969,7 @@ class MainWindow(QMainWindow):
         header.addStretch()
         
         time_label = QLabel(notif.get_time_ago())
-        time_label.setStyleSheet("color: #6c7086; font-size: 11px;")
+        time_label.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         header.addWidget(time_label)
         
         layout.addLayout(header)
@@ -3851,16 +3999,27 @@ class MainWindow(QMainWindow):
         """Show global settings dialog"""
         from PyQt5.QtWidgets import QDialog, QDialogButtonBox
         
+        c = CATPPUCCIN
+        
         dialog = QDialog(self)
         dialog.setWindowTitle(tr("Global Settings"))
-        dialog.setMinimumWidth(400)
+        dialog.setMinimumSize(650, 600)
         dialog_layout = QVBoxLayout(dialog)
+        dialog_layout.setSpacing(SPACING)
+        dialog_layout.setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN)
         
-        form = QFormLayout()
+        # Scroll area for form
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll_widget = QWidget()
+        form = QFormLayout(scroll_widget)
+        form.setSpacing(12)
+        form.setContentsMargins(4, 4, 4, 4)
         
         # === CONNECTION ===
         conn_label = QLabel(tr("🔌 Connection"))
-        conn_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa;")
+        conn_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 8px;")
         form.addRow(conn_label)
         
         self.global_api_url = QLineEdit()
@@ -3876,14 +4035,15 @@ class MainWindow(QMainWindow):
         
         # Show/hide token button
         self.show_token_btn = QPushButton("👁")
-        self.show_token_btn.setFixedWidth(30)
+        self.show_token_btn.setFixedSize(44, 36)
+        self.show_token_btn.setStyleSheet("font-size: 16px; padding: 2px;")
         self.show_token_btn.setCheckable(True)
         self.show_token_btn.clicked.connect(self._toggle_token_visibility)
         form.addRow("", self.show_token_btn)
         
         # === INTERFACE ===
         iface_label = QLabel(tr("🎨 Interface"))
-        iface_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        iface_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
         form.addRow(iface_label)
         
         self.global_language = QComboBox()
@@ -3898,7 +4058,7 @@ class MainWindow(QMainWindow):
         
         # === EXECUTION ===
         exec_label = QLabel(tr("⚡ Execution"))
-        exec_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        exec_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
         form.addRow(exec_label)
         
         self.global_max_parallel = QSpinBox()
@@ -3923,7 +4083,7 @@ class MainWindow(QMainWindow):
         
         # === ADDITIONAL ===
         add_label = QLabel(tr("📋 Additional"))
-        add_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        add_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
         form.addRow(add_label)
         
         self.global_autosave_logs = QCheckBox(tr("Auto-save logs to file"))
@@ -3940,7 +4100,7 @@ class MainWindow(QMainWindow):
         
         # === GEO-BASED VISITING ===
         geo_label = QLabel(tr("🌍 Geo-based visiting"))
-        geo_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        geo_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
         form.addRow(geo_label)
         
         self.global_geo_enabled = QCheckBox(tr("Enable geo-based site visiting"))
@@ -3959,21 +4119,23 @@ class MainWindow(QMainWindow):
         form.addRow(tr("Local geo sites percent:"), geo_percent_layout)
         
         geo_hint = QLabel(tr("Bot will visit X% sites matching profile's proxy geo"))
-        geo_hint.setStyleSheet("color: #6c7086; font-size: 10px;")
+        geo_hint.setStyleSheet(f"color: {c['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         form.addRow(geo_hint)
         
         # === YOUTUBE ===
         yt_label = QLabel(tr("📺 YouTube"))
-        yt_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #89b4fa; margin-top: 10px;")
+        yt_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
         form.addRow(yt_label)
         
         yt_queries_btn = QPushButton(tr("Edit YouTube Queries"))
         yt_queries_btn.clicked.connect(self._show_youtube_queries_editor)
         form.addRow(yt_queries_btn)
         
-        dialog_layout.addLayout(form)
+        # Add scroll widget
+        scroll.setWidget(scroll_widget)
+        dialog_layout.addWidget(scroll, 1)
         
-        # Buttons
+        # Buttons (outside scroll)
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         buttons.accepted.connect(lambda: self._save_global_settings(dialog))
         buttons.rejected.connect(dialog.reject)
@@ -4034,14 +4196,18 @@ class MainWindow(QMainWindow):
         """Show dialog to edit YouTube search queries."""
         from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTextEdit
         
+        c = CATPPUCCIN
+        
         dialog = QDialog(self)
         dialog.setWindowTitle(tr("YouTube Search Queries"))
-        dialog.setMinimumWidth(500)
-        dialog.setMinimumHeight(400)
+        dialog.setMinimumSize(650, 500)
         layout = QVBoxLayout(dialog)
+        layout.setSpacing(SPACING)
+        layout.setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN)
         
         # Instructions
         info_label = QLabel(tr("Enter search queries separated by commas:"))
+        info_label.setStyleSheet(f"font-size: {FONT_SIZE_BASE}px; color: {c['subtext1']};")
         layout.addWidget(info_label)
         
         # Text editor for queries
@@ -4057,6 +4223,7 @@ class MainWindow(QMainWindow):
         
         # Query count label
         self.yt_count_label = QLabel()
+        self.yt_count_label.setStyleSheet(f"font-size: {FONT_SIZE_SMALL}px; color: {c['subtext0']};")
         self._update_yt_query_count()
         self.yt_queries_edit.textChanged.connect(self._update_yt_query_count)
         layout.addWidget(self.yt_count_label)
@@ -4125,78 +4292,464 @@ class MainWindow(QMainWindow):
         self.save_config()
     
     def apply_theme(self, theme="Dark"):
-        """Apply dark or light theme"""
+        """Apply Catppuccin Mocha theme with enhanced styling"""
+        c = CATPPUCCIN  # Shorthand
+        
+        # Common font settings
+        font_base = f"{FONT_SIZE_BASE}px"
+        font_small = f"{FONT_SIZE_SMALL}px"
+        font_large = f"{FONT_SIZE_LARGE}px"
+        
         if theme == "Dark":
-            self.setStyleSheet("""
-                QMainWindow, QWidget { background-color: #1e1e2e; color: #cdd6f4; font-family: 'Segoe UI', Arial; }
-                QGroupBox { border: 1px solid #45475a; border-radius: 6px; margin-top: 8px; padding-top: 8px; }
-                QGroupBox::title { color: #89b4fa; }
-                QPushButton {
-                    background-color: #45475a; border: none; border-radius: 4px;
-                    padding: 6px 12px; color: #cdd6f4;
-                }
-                QPushButton:hover { background-color: #585b70; }
-                QPushButton:checked { background-color: #89b4fa; color: #1e1e2e; }
-                QPushButton:disabled { background-color: #313244; color: #6c7086; }
-                QLineEdit, QSpinBox, QComboBox {
-                    background-color: #313244; border: 1px solid #45475a;
-                    border-radius: 4px; padding: 5px; color: #cdd6f4;
-                }
-                QLineEdit:focus, QSpinBox:focus { border-color: #89b4fa; }
-                QTextEdit {
-                    background-color: #11111b; border: 1px solid #45475a;
-                    border-radius: 4px; color: #a6e3a1;
-                }
-                QListWidget {
-                    background-color: #313244; border: 1px solid #45475a; border-radius: 4px;
-                }
-                QListWidget::item:selected { background-color: #89b4fa; color: #1e1e2e; }
-                QTabWidget::pane { border: 1px solid #45475a; border-radius: 4px; }
-                QTabBar::tab {
-                    background-color: #313244; border: 1px solid #45475a;
-                    padding: 6px 16px; margin-right: 2px;
-                }
-                QTabBar::tab:selected { background-color: #45475a; color: #89b4fa; }
-                QCheckBox::indicator { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #45475a; }
-                QCheckBox::indicator:checked { background-color: #89b4fa; }
-                QScrollArea { border: none; }
-                QDialog { background-color: #1e1e2e; color: #cdd6f4; }
+            self.setStyleSheet(f"""
+                /* === GLOBAL === */
+                QMainWindow, QWidget {{
+                    background-color: {c['base']};
+                    color: {c['text']};
+                    font-family: 'Segoe UI', 'SF Pro Display', Arial, sans-serif;
+                    font-size: {font_base};
+                }}
+                
+                QLabel {{
+                    color: {c['text']};
+                    font-size: {font_base};
+                }}
+                
+                /* === BUTTONS === */
+                QPushButton {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 4px 10px;
+                    min-height: {BUTTON_HEIGHT - 8}px;
+                    color: {c['text']};
+                    font-size: {font_base};
+                }}
+                QPushButton:hover {{
+                    background-color: {c['surface1']};
+                    border-color: {c['lavender']};
+                }}
+                QPushButton:pressed {{
+                    background-color: {c['surface2']};
+                }}
+                QPushButton:checked {{
+                    background-color: {c['lavender']};
+                    color: {c['crust']};
+                    border-color: {c['lavender']};
+                }}
+                QPushButton:disabled {{
+                    background-color: {c['surface0']};
+                    color: {c['overlay0']};
+                    border-color: {c['surface0']};
+                }}
+                
+                /* === INPUTS === */
+                QLineEdit, QSpinBox, QDoubleSpinBox {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 8px 12px;
+                    min-height: {INPUT_HEIGHT - 16}px;
+                    color: {c['text']};
+                    font-size: {font_base};
+                    selection-background-color: {c['lavender']};
+                    selection-color: {c['crust']};
+                }}
+                QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
+                    border-color: {c['lavender']};
+                    background-color: {c['surface1']};
+                }}
+                QLineEdit:disabled, QSpinBox:disabled {{
+                    background-color: {c['mantle']};
+                    color: {c['overlay0']};
+                }}
+                QLineEdit::placeholder {{
+                    color: {c['overlay0']};
+                }}
+                
+                /* === COMBOBOX === */
+                QComboBox {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 8px 12px;
+                    min-height: {INPUT_HEIGHT - 16}px;
+                    color: {c['text']};
+                    font-size: {font_base};
+                }}
+                QComboBox:hover {{
+                    border-color: {c['lavender']};
+                }}
+                QComboBox::drop-down {{
+                    border: none;
+                    padding-right: 10px;
+                }}
+                QComboBox::down-arrow {{
+                    width: 12px;
+                    height: 12px;
+                }}
+                QComboBox QAbstractItemView {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    color: {c['text']};
+                    selection-background-color: {c['lavender']};
+                    selection-color: {c['crust']};
+                    padding: 4px;
+                }}
+                
+                /* === TEXT EDIT (LOG) === */
+                QTextEdit {{
+                    background-color: {c['crust']};
+                    border: 1px solid {c['surface0']};
+                    border-radius: {BORDER_RADIUS}px;
+                    color: {c['green']};
+                    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+                    font-size: {font_small};
+                    padding: 8px;
+                }}
+                
+                /* === LISTS === */
+                QListWidget {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 4px;
+                    outline: none;
+                }}
+                QListWidget::item {{
+                    padding: 4px;
+                    border-radius: 4px;
+                    margin: 2px;
+                }}
+                QListWidget::item:hover {{
+                    background-color: {c['surface1']};
+                }}
+                QListWidget::item:selected {{
+                    background-color: {c['lavender']};
+                    color: {c['crust']};
+                }}
+                
+                /* === TABS === */
+                QTabWidget::pane {{
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    background-color: {c['base']};
+                    margin-top: -1px;
+                }}
+                QTabBar::tab {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-bottom: none;
+                    border-top-left-radius: {BORDER_RADIUS}px;
+                    border-top-right-radius: {BORDER_RADIUS}px;
+                    padding: 10px 20px;
+                    margin-right: 4px;
+                    color: {c['subtext0']};
+                    font-size: {font_base};
+                    font-weight: 500;
+                }}
+                QTabBar::tab:selected {{
+                    background-color: {c['base']};
+                    color: {c['lavender']};
+                    border-color: {c['surface1']};
+                }}
+                QTabBar::tab:hover:!selected {{
+                    background-color: {c['surface1']};
+                    color: {c['text']};
+                }}
+                
+                /* === GROUP BOX === */
+                QGroupBox {{
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    margin-top: 16px;
+                    padding-top: 16px;
+                    font-size: {font_base};
+                }}
+                QGroupBox::title {{
+                    subcontrol-origin: margin;
+                    left: 12px;
+                    padding: 0 8px;
+                    color: {c['blue']};
+                    font-weight: 600;
+                    font-size: {font_base};
+                }}
+                
+                /* === CHECKBOX === */
+                QCheckBox {{
+                    spacing: 10px;
+                    font-size: {font_base};
+                    color: {c['text']};
+                }}
+                QCheckBox::indicator {{
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 4px;
+                    border: 2px solid {c['surface2']};
+                    background-color: {c['surface0']};
+                }}
+                QCheckBox::indicator:hover {{
+                    border-color: {c['lavender']};
+                }}
+                QCheckBox::indicator:checked {{
+                    background-color: {c['green']};
+                    border-color: {c['green']};
+                }}
+                QCheckBox::indicator:disabled {{
+                    background-color: {c['surface0']};
+                    border-color: {c['surface1']};
+                }}
+                
+                /* === RADIO BUTTON === */
+                QRadioButton {{
+                    spacing: 10px;
+                    font-size: {font_base};
+                    color: {c['text']};
+                }}
+                QRadioButton::indicator {{
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 10px;
+                    border: 2px solid {c['surface2']};
+                    background-color: {c['surface0']};
+                }}
+                QRadioButton::indicator:hover {{
+                    border-color: {c['lavender']};
+                }}
+                QRadioButton::indicator:checked {{
+                    background-color: {c['lavender']};
+                    border-color: {c['lavender']};
+                }}
+                
+                /* === SCROLLBAR === */
+                QScrollBar:vertical {{
+                    background-color: {c['mantle']};
+                    width: 12px;
+                    border-radius: 6px;
+                    margin: 2px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background-color: {c['surface1']};
+                    border-radius: 5px;
+                    min-height: 30px;
+                    margin: 2px;
+                }}
+                QScrollBar::handle:vertical:hover {{
+                    background-color: {c['surface2']};
+                }}
+                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                    height: 0px;
+                }}
+                QScrollBar:horizontal {{
+                    background-color: {c['mantle']};
+                    height: 12px;
+                    border-radius: 6px;
+                    margin: 2px;
+                }}
+                QScrollBar::handle:horizontal {{
+                    background-color: {c['surface1']};
+                    border-radius: 5px;
+                    min-width: 30px;
+                    margin: 2px;
+                }}
+                QScrollBar::handle:horizontal:hover {{
+                    background-color: {c['surface2']};
+                }}
+                QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+                    width: 0px;
+                }}
+                
+                /* === SCROLL AREA === */
+                QScrollArea {{
+                    border: none;
+                    background-color: transparent;
+                }}
+                
+                /* === TOOLTIP === */
+                QToolTip {{
+                    background-color: {c['surface1']};
+                    color: {c['text']};
+                    border: 1px solid {c['surface2']};
+                    border-radius: 4px;
+                    padding: 6px 10px;
+                    font-size: {font_small};
+                }}
+                
+                /* === PROGRESS BAR === */
+                QProgressBar {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    text-align: center;
+                    color: {c['text']};
+                    font-size: {font_small};
+                    height: 24px;
+                }}
+                QProgressBar::chunk {{
+                    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                        stop:0 {c['lavender']}, stop:1 {c['mauve']});
+                    border-radius: 5px;
+                }}
+                
+                /* === SLIDER === */
+                QSlider::groove:horizontal {{
+                    background-color: {c['surface1']};
+                    height: 8px;
+                    border-radius: 4px;
+                }}
+                QSlider::handle:horizontal {{
+                    background-color: {c['lavender']};
+                    width: 20px;
+                    height: 20px;
+                    margin: -6px 0;
+                    border-radius: 10px;
+                }}
+                QSlider::handle:horizontal:hover {{
+                    background-color: {c['sky']};
+                }}
+                
+                /* === MENU === */
+                QMenu {{
+                    background-color: {c['surface0']};
+                    border: 1px solid {c['surface1']};
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 4px;
+                }}
+                QMenu::item {{
+                    padding: 8px 24px;
+                    border-radius: 4px;
+                    color: {c['text']};
+                }}
+                QMenu::item:selected {{
+                    background-color: {c['surface1']};
+                }}
+                QMenu::separator {{
+                    height: 1px;
+                    background-color: {c['surface1']};
+                    margin: 4px 8px;
+                }}
+                
+                /* === DIALOG === */
+                QDialog {{
+                    background-color: {c['base']};
+                    color: {c['text']};
+                }}
+                
+                /* === MESSAGE BOX === */
+                QMessageBox {{
+                    background-color: {c['base']};
+                }}
+                QMessageBox QLabel {{
+                    color: {c['text']};
+                    font-size: {font_base};
+                }}
+                QMessageBox QPushButton {{
+                    min-width: 80px;
+                }}
+                
+                /* === SPLITTER === */
+                QSplitter::handle {{
+                    background-color: {c['surface1']};
+                }}
+                QSplitter::handle:hover {{
+                    background-color: {c['lavender']};
+                }}
+                
+                /* === FRAME === */
+                QFrame {{
+                    border: none;
+                }}
+                QFrame[frameShape="4"] /* HLine */ {{
+                    background-color: {c['surface1']};
+                    max-height: 1px;
+                }}
+                QFrame[frameShape="5"] /* VLine */ {{
+                    background-color: {c['surface1']};
+                    max-width: 1px;
+                }}
             """)
-        else:  # Light theme
-            self.setStyleSheet("""
-                QMainWindow, QWidget { background-color: #f5f5f5; color: #333333; font-family: 'Segoe UI', Arial; }
-                QGroupBox { border: 1px solid #cccccc; border-radius: 6px; margin-top: 8px; padding-top: 8px; }
-                QGroupBox::title { color: #1a73e8; }
-                QPushButton {
-                    background-color: #e0e0e0; border: none; border-radius: 4px;
-                    padding: 6px 12px; color: #333333;
-                }
-                QPushButton:hover { background-color: #d0d0d0; }
-                QPushButton:checked { background-color: #1a73e8; color: #ffffff; }
-                QPushButton:disabled { background-color: #f0f0f0; color: #999999; }
-                QLineEdit, QSpinBox, QComboBox {
-                    background-color: #ffffff; border: 1px solid #cccccc;
-                    border-radius: 4px; padding: 5px; color: #333333;
-                }
-                QLineEdit:focus, QSpinBox:focus { border-color: #1a73e8; }
-                QTextEdit {
-                    background-color: #ffffff; border: 1px solid #cccccc;
-                    border-radius: 4px; color: #2e7d32;
-                }
-                QListWidget {
-                    background-color: #ffffff; border: 1px solid #cccccc; border-radius: 4px;
-                }
-                QListWidget::item:selected { background-color: #1a73e8; color: #ffffff; }
-                QTabWidget::pane { border: 1px solid #cccccc; border-radius: 4px; }
-                QTabBar::tab {
-                    background-color: #e8e8e8; border: 1px solid #cccccc;
-                    padding: 6px 16px; margin-right: 2px;
-                }
-                QTabBar::tab:selected { background-color: #ffffff; color: #1a73e8; }
-                QCheckBox::indicator { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #cccccc; }
-                QCheckBox::indicator:checked { background-color: #1a73e8; }
-                QScrollArea { border: none; }
-                QDialog { background-color: #f5f5f5; color: #333333; }
+        else:  # Light theme (Catppuccin Latte style)
+            self.setStyleSheet(f"""
+                QMainWindow, QWidget {{
+                    background-color: #EFF1F5;
+                    color: #4C4F69;
+                    font-family: 'Segoe UI', 'SF Pro Display', Arial, sans-serif;
+                    font-size: {font_base};
+                }}
+                QLabel {{ color: #4C4F69; font-size: {font_base}; }}
+                QPushButton {{
+                    background-color: #E6E9EF;
+                    border: 1px solid #DCE0E8;
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 8px 16px;
+                    min-height: {BUTTON_HEIGHT - 16}px;
+                    color: #4C4F69;
+                    font-size: {font_base};
+                }}
+                QPushButton:hover {{ background-color: #DCE0E8; border-color: #7287FD; }}
+                QPushButton:checked {{ background-color: #7287FD; color: #EFF1F5; }}
+                QPushButton:disabled {{ background-color: #E6E9EF; color: #9CA0B0; }}
+                QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
+                    background-color: #FFFFFF;
+                    border: 1px solid #DCE0E8;
+                    border-radius: {BORDER_RADIUS}px;
+                    padding: 8px 12px;
+                    min-height: {INPUT_HEIGHT - 16}px;
+                    color: #4C4F69;
+                    font-size: {font_base};
+                }}
+                QLineEdit:focus, QSpinBox:focus {{ border-color: #7287FD; }}
+                QTextEdit {{
+                    background-color: #FFFFFF;
+                    border: 1px solid #DCE0E8;
+                    border-radius: {BORDER_RADIUS}px;
+                    color: #40A02B;
+                    font-family: 'Cascadia Code', monospace;
+                    font-size: {font_small};
+                }}
+                QListWidget {{
+                    background-color: #FFFFFF;
+                    border: 1px solid #DCE0E8;
+                    border-radius: {BORDER_RADIUS}px;
+                }}
+                QListWidget::item:selected {{ background-color: #7287FD; color: #EFF1F5; }}
+                QTabWidget::pane {{ border: 1px solid #DCE0E8; border-radius: {BORDER_RADIUS}px; }}
+                QTabBar::tab {{
+                    background-color: #E6E9EF;
+                    border: 1px solid #DCE0E8;
+                    padding: 10px 20px;
+                    font-size: {font_base};
+                }}
+                QTabBar::tab:selected {{ background-color: #EFF1F5; color: #7287FD; }}
+                QGroupBox {{
+                    border: 1px solid #DCE0E8;
+                    border-radius: {BORDER_RADIUS}px;
+                    margin-top: 16px;
+                    padding-top: 16px;
+                }}
+                QGroupBox::title {{ color: #1E66F5; font-weight: 600; }}
+                QCheckBox::indicator {{
+                    width: 20px; height: 20px;
+                    border-radius: 4px;
+                    border: 2px solid #9CA0B0;
+                    background-color: #FFFFFF;
+                }}
+                QCheckBox::indicator:checked {{ background-color: #40A02B; border-color: #40A02B; }}
+                QScrollArea {{ border: none; }}
+                QDialog {{ background-color: #EFF1F5; color: #4C4F69; }}
+                QScrollBar:vertical {{
+                    background-color: #E6E9EF; width: 12px; border-radius: 6px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background-color: #BCC0CC; border-radius: 5px; min-height: 30px;
+                }}
+                QScrollBar::handle:vertical:hover {{ background-color: #9CA0B0; }}
+                QToolTip {{
+                    background-color: #E6E9EF; color: #4C4F69;
+                    border: 1px solid #DCE0E8; border-radius: 4px;
+                    padding: 6px 10px; font-size: {font_small};
+                }}
             """)
     
     def load_config(self):
@@ -4529,7 +5082,7 @@ class MainWindow(QMainWindow):
         
         if self.octo_api.test_connection():
             self.connection_status.setText("●")
-            self.connection_status.setStyleSheet("color: #a6e3a1; font-size: 16px;")
+            self.connection_status.setStyleSheet(f"color: {CATPPUCCIN['green']}; font-size: {FONT_SIZE_LARGE}px;")
             self.start_btn.setEnabled(True)
             self.log("Connected to Octo Browser")
             
@@ -4539,7 +5092,7 @@ class MainWindow(QMainWindow):
             # Auto-check all proxies after connection
             QTimer.singleShot(500, self._auto_check_all_proxies)
         else:
-            self.connection_status.setStyleSheet("color: #f38ba8; font-size: 16px;")
+            self.connection_status.setStyleSheet(f"color: {CATPPUCCIN['red']}; font-size: {FONT_SIZE_LARGE}px;")
             self.log("Connection failed")
     
     def _init_api_manager(self):
@@ -5995,14 +6548,18 @@ class MainWindow(QMainWindow):
         """Show dialog to bulk add sites (one per line)."""
         from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTextEdit
         
+        c = CATPPUCCIN
+        
         dialog = QDialog(self)
         dialog.setWindowTitle(tr("Bulk Add Sites"))
-        dialog.setMinimumWidth(500)
-        dialog.setMinimumHeight(400)
+        dialog.setMinimumSize(650, 500)
         layout = QVBoxLayout(dialog)
+        layout.setSpacing(SPACING)
+        layout.setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN)
         
         # Instructions
         info_label = QLabel(tr("Enter sites, one per line:"))
+        info_label.setStyleSheet(f"font-size: {FONT_SIZE_BASE}px; color: {c['subtext1']};")
         layout.addWidget(info_label)
         
         # Text editor for sites
@@ -6012,6 +6569,7 @@ class MainWindow(QMainWindow):
         
         # Count label
         count_label = QLabel(tr("Sites to add:") + " 0")
+        count_label.setStyleSheet(f"font-size: {FONT_SIZE_SMALL}px; color: {c['subtext0']};")
         def update_count():
             lines = [line.strip() for line in text_edit.toPlainText().split("\n") if line.strip()]
             count_label.setText(tr("Sites to add:") + f" {len(lines)}")
@@ -6132,7 +6690,7 @@ class MainWindow(QMainWindow):
         
         # Hint
         hint_label = QLabel(tr("Tip: You can add, remove or edit sites. Empty lines will be ignored."))
-        hint_label.setStyleSheet("color: #6c7086; font-size: 10px;")
+        hint_label.setStyleSheet(f"color: {CATPPUCCIN['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
         layout.addWidget(hint_label)
         
         # Buttons

@@ -1072,5 +1072,31 @@
         <translation>Профиль активен в Auto режиме. Нажмите для паузы.</translation>
     </message>
     
+    <!-- Refresh all proxies button -->
+    <message>
+        <source>Refresh all proxies &amp; update geo</source>
+        <translation>Обновить все прокси и геолокацию</translation>
+    </message>
+    <message>
+        <source>API token not set (add in Settings)</source>
+        <translation>API токен не установлен (добавьте в Настройках)</translation>
+    </message>
+    
+    <!-- Refresh profiles info button -->
+    <message>
+        <source>Refresh proxy info</source>
+        <translation>Обновить информацию о профилях</translation>
+    </message>
+    
+    <!-- Dialog buttons -->
+    <message>
+        <source>Save</source>
+        <translation>Сохранить</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    
 </context>
 </TS>

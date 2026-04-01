@@ -63,6 +63,8 @@ a = Analysis(
         'core.database',
         'core.auto_scheduler',
         'core.notifications',
+        'core.google_auth',
+        'core.scheduler',
         # GUI modules
         'gui.main_window',
     ],
