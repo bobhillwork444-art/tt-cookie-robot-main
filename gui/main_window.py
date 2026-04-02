@@ -542,13 +542,14 @@ class ProfileItemWidget(QWidget):
         layout.addWidget(self.copy_btn)
         
         # Play button - manual profile launch without bot logic
-        self.play_btn = QPushButton("▶")
+        self.play_btn = QPushButton("↗")
         self.play_btn.setFixedSize(btn_w, btn_h)
         self.play_btn.setToolTip(tr("Open profile manually"))
         c = CATPPUCCIN
         self.play_btn.setStyleSheet(f"""
             QPushButton {{
-                font-size: 14px;
+                font-size: 16px;
+                font-weight: bold;
                 color: {c['green']};
                 border: 1px solid {c['green']};
                 border-radius: 4px;
@@ -588,10 +589,11 @@ class ProfileItemWidget(QWidget):
             self.play_btn.setToolTip(tr("Profile is running (click to stop)"))
         else:
             # Green color - ready to start
-            self.play_btn.setText("▶")
+            self.play_btn.setText("↗")
             self.play_btn.setStyleSheet(f"""
                 QPushButton {{
-                    font-size: 14px;
+                    font-size: 16px;
+                    font-weight: bold;
                     color: {c['green']};
                     border: 1px solid {c['green']};
                     border-radius: 4px;
@@ -3874,12 +3876,23 @@ class MainWindow(QMainWindow):
                     color: white;
                     font-weight: bold;
                     border-radius: 4px;
+                    padding: 4px 8px;
+                    text-align: center;
+                    min-width: 50px;
                 }
                 QPushButton:hover { background-color: #e879a0; }
             """)
         else:
             self.notifications_btn.setText("🔔")
-            self.notifications_btn.setStyleSheet("font-size: 16px;")
+            self.notifications_btn.setStyleSheet("""
+                QPushButton {
+                    font-size: 22px;
+                    padding: 0px;
+                    border: none;
+                    min-width: 50px;
+                    text-align: center;
+                }
+            """)
     
     def show_notifications(self):
         """Show notifications popup dialog."""
@@ -6291,7 +6304,7 @@ class MainWindow(QMainWindow):
         self.log(f"[{uuid[:8]}] Ready: {status}")
     
     def _on_profile_paused_changed(self, uuid: str, paused: bool):
-        """Save profile paused state (async to database)."""
+        """Save profile paused state and update scheduler in real-time."""
         # Find which mode this profile belongs to
         mode = None
         for m in ["cookie", "google"]:
@@ -6312,8 +6325,33 @@ class MainWindow(QMainWindow):
         profile_info[uuid]["paused"] = paused
         self.set_mode_config(mode, cfg)
         
-        status = "⏸ PAUSED" if paused else "▶ RESUMED"
-        self.log(f"[{uuid[:8]}] {status}")
+        # Update scheduler in real-time if auto mode is running
+        if self.auto_state.is_auto_running():
+            if paused:
+                # Remove from scheduler so it won't be picked up
+                self.auto_scheduler.remove_profile(uuid)
+                self.log(f"[{uuid[:8]}] ⏸ PAUSED - removed from auto scheduler")
+            else:
+                # Add back to scheduler with current state
+                country = profile_info.get(uuid, {}).get("country", "UNKNOWN")
+                sessions = self.auto_state.get_profile_sessions_today(uuid)
+                errors = self.auto_state.get_profile_errors_today(uuid)
+                last_session = self.auto_state.get_last_session_time(uuid)
+                target_sessions = self.auto_state.get_profile_target_sessions(uuid)
+                
+                self.auto_scheduler.add_profile(
+                    uuid=uuid,
+                    mode=mode,
+                    country=country,
+                    sessions_today=sessions,
+                    errors_today=errors,
+                    target_sessions=target_sessions,
+                    last_session_end=last_session
+                )
+                self.log(f"[{uuid[:8]}] ▶ RESUMED - added back to auto scheduler")
+        else:
+            status = "⏸ PAUSED" if paused else "▶ RESUMED"
+            self.log(f"[{uuid[:8]}] {status}")
     
     def _on_proxy_status_changed(self, uuid: str, status: object):
         """Save proxy status to database for persistence across UI refreshes."""

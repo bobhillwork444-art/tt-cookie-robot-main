@@ -1,0 +1,436 @@
+[10:54:52] Mode: COOKIE
+[10:55:20] Mode: AUTO
+[10:55:21] Mode: GOOGLE
+[10:55:24] Connected to Octo Browser
+[10:55:25] Auto-checking proxies for 4 profiles...
+[10:55:27] Mode: AUTO
+[10:55:28] Proxy check complete: 4 OK, 0 failed
+[10:55:47] Mode: GOOGLE
+[10:57:24] [b4deca73] ⏸ PAUSED
+[10:57:24] [9417d8fe] ⏸ PAUSED
+[10:57:38] Mode: AUTO
+[10:57:50] ✅ Auto mode settings saved
+[10:57:53] Mode: GOOGLE
+[10:57:54] [b4deca73] ▶ RESUMED
+[10:57:55] [9417d8fe] ▶ RESUMED
+[10:57:57] Mode: AUTO
+[10:58:01] 🔄 Auto mode progress reset
+[10:58:03] [Auto] Loading 0 cookie profiles to scheduler...
+[10:58:03] [Auto] Loading 4 google profiles to scheduler...
+[10:58:03] [Auto]   944f1d73... country=Italy, target=0
+[10:58:03] [Auto]   9417d8fe... country=Austria, target=0
+[10:58:03] [Auto]   b4deca73... country=Austria, target=0
+[10:58:03] [Auto]   5170ba81... country=Austria, target=0
+[10:58:03] [Proxy] Checking 4 profiles (auto mode)...
+[10:58:03] [Auto] 🕐 944f1d73... country=Italy, local=08:58, awake=True
+[10:58:03] [Auto] ▶ Started 944f1d73... (google)
+[10:58:03] [Auto] 🕐 9417d8fe... country=Austria, local=08:58, awake=True
+[10:58:03] [Auto] ▶ Started 9417d8fe... (google)
+[10:58:03] [Auto] 🕐 b4deca73... country=Austria, local=08:58, awake=True
+[10:58:03] [Auto] ▶ Started b4deca73... (google)
+[10:58:03] [Auto] 🕐 5170ba81... country=Austria, local=08:58, awake=True
+[10:58:03] [Auto] ▶ Started 5170ba81... (google)
+[10:58:03] 🤖 Auto mode STARTED
+[10:58:03]    📊 Profiles: 0 Cookie + 4 Google
+[10:58:03] [944f1d73] Starting (google)...
+[10:58:03] [9417d8fe] Starting (google)...
+[10:58:03] [b4deca73] Starting (google)...
+[10:58:03] [5170ba81] Starting (google)...
+[10:58:06] [Proxy] Check complete (auto): 4 OK, 0 failed
+[10:58:08] [Auto] 🔄 Refreshing google profiles list...
+[10:58:08] [Auto] 🕐 5170ba81... (Austria) local=08:58, awake=True
+[10:58:08] [5170ba81] Proxy: 170.168.56.103 (Austria)
+[10:58:09] [Auto] 🔄 Refreshing google profiles list...
+[10:58:09] [Auto] 🕐 b4deca73... (Austria) local=08:58, awake=True
+[10:58:09] [b4deca73] Proxy: 170.168.108.145 (Austria)
+[10:58:09] [Auto] 🔄 Refreshing google profiles list...
+[10:58:09] [Auto] 🕐 9417d8fe... (Austria) local=08:58, awake=True
+[10:58:09] [9417d8fe] Proxy: 170.168.157.54 (Austria)
+[10:58:10] [Auto] 🔄 Refreshing google profiles list...
+[10:58:10] [Auto] 🕐 944f1d73... (Italy) local=08:58, awake=True
+[10:58:10] [944f1d73] Proxy: 136.234.137.151 (Italy)
+[10:58:18] [944f1d73] Media blocking enabled
+[10:58:18] [b4deca73] Media blocking enabled
+[10:58:18] [5170ba81] Media blocking enabled
+[10:58:18] [5170ba81] Notifications blocked
+[10:58:18] [944f1d73] Notifications blocked
+[10:58:18] [b4deca73] Notifications blocked
+[10:58:18] [944f1d73] Connected to Octo Browser
+[10:58:18] [5170ba81] Connected to Octo Browser
+[10:58:18] [b4deca73] Connected to Octo Browser
+[10:58:18] [9417d8fe] Media blocking enabled
+[10:58:18] [9417d8fe] Notifications blocked
+[10:58:18] [9417d8fe] Connected to Octo Browser
+[10:58:19] [944f1d73] CDP minimize failed: BrowserContext.new_cdp_session: Target page, context or browser has been closed
+[10:58:19] [b4deca73] Window minimized via CDP
+[10:58:19] [b4deca73] 🚀 Google Warm-up mode
+[10:58:19] [5170ba81] Window minimized via CDP
+[10:58:19] [b4deca73] 📺 YouTube skipped this session (40% chance)
+[10:58:19] [5170ba81] 🚀 Google Warm-up mode
+[10:58:19] [b4deca73] 🌍 Geo mode (AT): 3 local + 3 generic = 6 sites
+[10:58:19] [5170ba81] 📺 YouTube activity enabled via checkbox (40% chance)
+[10:58:19] [b4deca73] 📋 Plan: 6 sites + Gmail checks
+[10:58:19] [5170ba81] 🌍 Geo mode (AT): 4 local + 3 generic = 7 sites
+[10:58:19] [5170ba81] 📋 Plan: 7 sites + YouTube activity + Gmail checks
+[10:58:19] [b4deca73] 
+[1/6] https://www.bundesheer.at/
+[10:58:19] [5170ba81] 
+[1/7] https://kapwing.com/studio
+[10:58:19] [b4deca73]    🔍 Searching Google for: bundesheer
+[10:58:19] [944f1d73] Window minimized via pywin32
+[10:58:19] [944f1d73] 🚀 Google Warm-up mode
+[10:58:19] [944f1d73] 📺 YouTube skipped this session (40% chance)
+[10:58:19] [944f1d73] 🌍 Geo mode (IT): 2 local + 1 generic = 3 sites
+[10:58:19] [944f1d73] 📋 Plan: 3 sites + Gmail checks
+[10:58:19] [944f1d73] 
+[1/3] https://rabobank.nl
+[10:58:19] [944f1d73]    🔍 Searching Google for: rabobank
+[10:58:19] [944f1d73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:19] [944f1d73]    Direct navigation fallback...
+[10:58:19] [944f1d73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:19] [944f1d73]    Skipping due to page error
+[10:58:19] [5170ba81]    🔍 Searching Google for: kapwing
+[10:58:19] [9417d8fe] Window minimized via CDP
+[10:58:19] [9417d8fe] 🚀 Google Warm-up mode
+[10:58:19] [9417d8fe] 📺 YouTube skipped this session (40% chance)
+[10:58:19] [9417d8fe] 🌍 Geo mode (AT): 2 local + 3 generic = 5 sites
+[10:58:19] [9417d8fe] 📋 Plan: 5 sites + Gmail checks
+[10:58:19] [9417d8fe] 
+[1/5] https://www.threadwallets.com/
+[10:58:19] [9417d8fe]    🔍 Searching Google for: threadwallets
+[10:58:22] [Auto] ⏹ Stopped 944f1d73...
+[10:58:23] [944f1d73] 
+[2/3] https://ciaoflorence.it
+[10:58:23] [944f1d73]    Opening site directly...
+[10:58:23] [944f1d73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:23] [944f1d73]    Skipping due to page error
+[10:58:24] [9417d8fe]    ⚠️ Google search failed: Keyboard.type: Target page, context or b
+[10:58:24] [9417d8fe]    Direct navigation fallback...
+[10:58:24] [9417d8fe]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:24] [9417d8fe]    Skipping due to page error
+[10:58:25] [944f1d73] 
+[3/3] https://www.sky.it/
+[10:58:25] [944f1d73]    🔍 Searching Google for: sky
+[10:58:25] [944f1d73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:25] [944f1d73]    Direct navigation fallback...
+[10:58:25] [944f1d73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:25] [944f1d73]    Skipping due to page error
+[10:58:26] [Auto] ⏹ Stopped 9417d8fe...
+[10:58:28] [9417d8fe] 
+[2/5] https://www.goed.at/
+[10:58:28] [9417d8fe]    🔍 Searching Google for: goed
+[10:58:28] [9417d8fe]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:28] [9417d8fe]    Direct navigation fallback...
+[10:58:28] [9417d8fe]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:28] [9417d8fe]    Skipping due to page error
+[10:58:28] [5170ba81]    ⚠️ kapwing.com not found in organic results
+[10:58:28] [5170ba81]    Direct navigation fallback...
+[10:58:28] [b4deca73]    ⚠️ Google search failed: Page.evaluate: Target page, context or b
+[10:58:28] [b4deca73]    Direct navigation fallback...
+[10:58:28] [b4deca73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:28] [b4deca73]    Skipping due to page error
+[10:58:29] [944f1d73] 
+📧 Gmail check (no checks during session)...
+[10:58:29] [944f1d73] 📧 Opening Gmail... (read time: 11s per email)
+[10:58:29] [944f1d73]    ⚠️ Gmail navigation error: Page.goto: Target page, context or brows
+[10:58:29] [944f1d73] 
+✅ Google Warm-up complete! (2 IT sites, 1 generic)
+[10:58:30] [9417d8fe] 
+[3/5] https://www.fagron.nl/
+[10:58:30] [9417d8fe]    🔍 Searching Google for: fagron
+[10:58:30] [9417d8fe]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:30] [9417d8fe]    Direct navigation fallback...
+[10:58:30] [9417d8fe]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:30] [9417d8fe]    Skipping due to page error
+[10:58:30] [Auto] ⏹ Stopped b4deca73...
+[10:58:31] [944f1d73] Done
+[10:58:32] [b4deca73] 
+[2/6] https://brief.news
+[10:58:32] [b4deca73]    🔍 Searching Google for: brief
+[10:58:32] [b4deca73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:32] [b4deca73]    Direct navigation fallback...
+[10:58:32] [b4deca73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:32] [b4deca73]    Skipping due to page error
+[10:58:32] [9417d8fe] 
+[4/5] https://www.krone.at/
+[10:58:32] [9417d8fe]    🔍 Searching Google for: krone
+[10:58:32] [9417d8fe]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:32] [9417d8fe]    Direct navigation fallback...
+[10:58:32] [9417d8fe]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:32] [9417d8fe]    Skipping due to page error
+[10:58:33] [5170ba81]    Scanning for Google One Tap...
+[10:58:35] [Auto] ⏹ Stopped 5170ba81...
+[10:58:35] [Auto] ⚠️ Stop operation cancelled by user
+[10:58:35] 🤖 Auto mode STOPPED
+[10:58:35] [Auto] Stopped 4/4 profiles
+[10:58:35] 🤖 Auto mode STOPPED
+[10:58:36] [b4deca73] 
+[3/6] https://burgenlandenergie.at
+[10:58:36] [b4deca73]    🔍 Searching Google for: burgenlandenergie
+[10:58:36] [b4deca73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:36] [b4deca73]    Direct navigation fallback...
+[10:58:36] [b4deca73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:36] [b4deca73]    Skipping due to page error
+[10:58:36] [9417d8fe] 
+[5/5] https://www.waternet.nl/
+[10:58:36] [9417d8fe]    Opening site directly...
+[10:58:36] [9417d8fe]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:36] [9417d8fe]    Skipping due to page error
+[10:58:39] [9417d8fe] 
+📧 Gmail check (no checks during session)...
+[10:58:39] [9417d8fe] 📧 Opening Gmail... (read time: 10s per email)
+[10:58:39] [9417d8fe]    ⚠️ Gmail navigation error: Page.goto: Target page, context or brows
+[10:58:39] [9417d8fe] 
+✅ Google Warm-up complete! (2 AT sites, 3 generic)
+[10:58:39] [9417d8fe] Blocked 1 media requests
+[10:58:39] [b4deca73] 
+[4/6] https://independent.co.uk
+[10:58:39] [b4deca73]    🔍 Searching Google for: independent
+[10:58:39] [b4deca73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:39] [b4deca73]    Direct navigation fallback...
+[10:58:39] [b4deca73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:39] [b4deca73]    Skipping due to page error
+[10:58:41] [9417d8fe] Done
+[10:58:42] [b4deca73] 
+[5/6] https://www.ams.at/
+[10:58:42] [b4deca73]    🔍 Searching Google for: ams
+[10:58:42] [b4deca73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:42] [b4deca73]    Direct navigation fallback...
+[10:58:42] [b4deca73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:42] [b4deca73]    Skipping due to page error
+[10:58:44] [b4deca73] 
+[6/6] https://brandcrowd.com
+[10:58:44] [b4deca73]    🔍 Searching Google for: brandcrowd
+[10:58:44] [b4deca73]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:58:44] [b4deca73]    Direct navigation fallback...
+[10:58:44] [b4deca73]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:58:44] [b4deca73]    Skipping due to page error
+[10:58:48] [b4deca73] 
+📧 Final Gmail check (20% chance)...
+[10:58:48] [b4deca73] 📧 Opening Gmail... (read time: 11s per email)
+[10:58:48] [b4deca73]    ⚠️ Gmail navigation error: Page.goto: Target page, context or brows
+[10:58:48] [b4deca73] 
+✅ Google Warm-up complete! (3 AT sites, 3 generic)
+[10:58:48] [b4deca73] Blocked 1 media requests
+[10:58:50] [b4deca73] Done
+[10:58:53] [Auto] Loading 0 cookie profiles to scheduler...
+[10:58:53] [Auto] Loading 4 google profiles to scheduler...
+[10:58:53] [Auto]   944f1d73... country=Italy, target=4
+[10:58:53] [Auto]   9417d8fe... country=Austria, target=4
+[10:58:53] [Auto]   b4deca73... country=Austria, target=3
+[10:58:53] [Auto]   5170ba81... country=Austria, target=2
+[10:58:53] [Proxy] Checking 4 profiles (auto mode)...
+[10:58:54] [Auto] 🕐 5170ba81... country=Austria, local=08:58, awake=True
+[10:58:54] [Auto] ▶ Started 5170ba81... (google)
+[10:58:54] 🤖 Auto mode STARTED
+[10:58:54]    📊 Profiles: 0 Cookie + 4 Google
+[10:58:54] [5170ba81]    No One Tap found, trying Login button flow...
+[10:58:54] [5170ba81]    No Google One Tap found
+[10:58:54] [5170ba81] Starting (google)...
+[10:58:56] [5170ba81]    Browsing for 52s...
+[10:58:57] [Auto] 🔄 Refreshing google profiles list...
+[10:58:57] [Auto] 🕐 5170ba81... (Austria) local=08:58, awake=True
+[10:58:57] [5170ba81] Proxy: 170.168.56.103 (Austria)
+[10:58:57] [Proxy] Check complete (auto): 4 OK, 0 failed
+[10:58:58] [5170ba81] Media blocking enabled
+[10:58:58] [5170ba81] Notifications blocked
+[10:58:59] [5170ba81] Connected to Octo Browser
+[10:58:59] [5170ba81] Window minimized via CDP
+[10:58:59] [5170ba81] 🚀 Google Warm-up mode
+[10:58:59] [5170ba81] 📺 YouTube skipped this session (40% chance)
+[10:58:59] [5170ba81] 🌍 Geo mode (AT): 4 local + 3 generic = 7 sites
+[10:58:59] [5170ba81] 📋 Plan: 7 sites + Gmail checks
+[10:58:59] [5170ba81] 
+[1/7] https://www.bundesheer.at/
+[10:58:59] [5170ba81]    🔍 Searching Google for: bundesheer
+[10:59:09] [5170ba81]    ✓ Found bundesheer.at, opening in new tab...
+[10:59:11] [5170ba81]    ✓ Navigated via Google search
+[10:59:11] [5170ba81]    Checked consent checkbox (input)
+[10:59:12] [5170ba81]    Closing cookie banner (link): Facebook
+[10:59:15] [5170ba81]    Scanning for Google One Tap...
+[10:59:17] Mode: GOOGLE
+[10:59:21] [9417d8fe] ⏸ PAUSED - removed from auto scheduler
+[10:59:22] [b4deca73] ⏸ PAUSED - removed from auto scheduler
+[10:59:27] Mode: AUTO
+[10:59:31] Mode: GOOGLE
+[10:59:33] Mode: AUTO
+[10:59:36] [5170ba81]    No One Tap found, trying Login button flow...
+[10:59:36] [5170ba81]    No Google One Tap found
+[10:59:38] [5170ba81]    Browsing for 19s...
+[10:59:48] [5170ba81]    ✓ Browsed 52s
+[10:59:54] [5170ba81] 
+[2/7] https://www.bundesheer.at/
+[10:59:54] [5170ba81]    🔍 Searching Google for: bundesheer
+[10:59:54] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:59:54] [5170ba81]    Direct navigation fallback...
+[10:59:54] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:59:54] [5170ba81]    Skipping due to page error
+[10:59:57] [5170ba81] 
+[3/7] https://biteable.com
+[10:59:57] [5170ba81]    🔍 Searching Google for: biteable
+[10:59:57] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[10:59:57] [5170ba81]    Direct navigation fallback...
+[10:59:57] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[10:59:57] [5170ba81]    Skipping due to page error
+[10:59:59] [5170ba81]    ✓ Browsed 20s
+[11:00:01] [5170ba81] 
+[4/7] https://www.magenta.at/
+[11:00:01] [5170ba81]    Opening site directly...
+[11:00:01] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:00:01] [5170ba81]    Skipping due to page error
+[11:00:03] [5170ba81] 
+[5/7] https://www.meineoegk.at/
+[11:00:03] [5170ba81]    🔍 Searching Google for: meineoegk
+[11:00:03] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:00:03] [5170ba81]    Direct navigation fallback...
+[11:00:03] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:00:03] [5170ba81]    Skipping due to page error
+[11:00:06] [5170ba81] 
+[2/7] https://www.inps.it/
+[11:00:06] [5170ba81]    Opening site directly...
+[11:00:07] [5170ba81] 
+[6/7] https://tesco.co.uk
+[11:00:07] [5170ba81]    🔍 Searching Google for: tesco
+[11:00:07] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:00:07] [5170ba81]    Direct navigation fallback...
+[11:00:07] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:00:07] [5170ba81]    Skipping due to page error
+[11:00:08] [5170ba81]    Checked consent checkbox (input)
+[11:00:09] [5170ba81]    Closing cookie banner: Rifiuta i cookie non tecn
+[11:00:10] [5170ba81] 
+[7/7] https://www.meinbezirk.at/
+[11:00:10] [5170ba81]    🔍 Searching Google for: meinbezirk
+[11:00:10] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:00:10] [5170ba81]    Direct navigation fallback...
+[11:00:10] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:00:10] [5170ba81]    Skipping due to page error
+[11:00:11] [5170ba81]    Scanning for Google One Tap...
+[11:00:13] [5170ba81] 
+📺 Final YouTube activity (before Gmail)...
+[11:00:13] [5170ba81] 📺 Starting YouTube activity...
+[11:00:13] [5170ba81]    🔍 Searching Google for: YouTube
+[11:00:13] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:00:13] [5170ba81]    Direct YouTube navigation...
+[11:00:13] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:00:13] [5170ba81]    ⚠️ Could not navigate to YouTube
+[11:00:13] [5170ba81] 
+📧 Gmail check (no checks during session)...
+[11:00:13] [5170ba81] 📧 Opening Gmail... (read time: 18s per email)
+[11:00:13] [5170ba81]    ⚠️ Gmail navigation error: Page.goto: Target page, context or brows
+[11:00:13] [5170ba81] 
+✅ Google Warm-up complete! (4 AT sites, 3 generic)
+[11:00:13] [5170ba81] Blocked 9 media requests
+[11:00:18] [5170ba81] Done
+[11:00:32] [5170ba81]    No One Tap found, trying Login button flow...
+[11:00:32] [5170ba81]    No Google One Tap found
+[11:00:35] [5170ba81]    Browsing for 24s...
+[11:01:00] [5170ba81]    ✓ Browsed 24s
+[11:01:02] [5170ba81] 
+[3/7] https://budgetbakers.com/
+[11:01:02] [5170ba81]    🔍 Searching Google for: budgetbakers
+[11:01:02] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:01:02] [5170ba81]    Direct navigation fallback...
+[11:01:02] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:01:02] [5170ba81]    Skipping due to page error
+[11:01:05] [5170ba81] 
+[4/7] https://www.magenta.at/
+[11:01:05] [5170ba81]    🔍 Searching Google for: magenta
+[11:01:05] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:01:05] [5170ba81]    Direct navigation fallback...
+[11:01:05] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:01:05] [5170ba81]    Skipping due to page error
+[11:01:08] [5170ba81] 
+[5/7] https://www.optius.com/
+[11:01:08] [5170ba81]    🔍 Searching Google for: optius
+[11:01:08] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:01:08] [5170ba81]    Direct navigation fallback...
+[11:01:08] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:01:08] [5170ba81]    Skipping due to page error
+[11:01:12] [5170ba81] 
+[6/7] https://www.wienenergie.at/
+[11:01:12] [5170ba81]    🔍 Searching Google for: wienenergie
+[11:01:12] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:01:12] [5170ba81]    Direct navigation fallback...
+[11:01:12] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:01:12] [5170ba81]    Skipping due to page error
+[11:01:15] [5170ba81] 
+[7/7] https://asfinag.at
+[11:01:15] [5170ba81]    🔍 Searching Google for: asfinag
+[11:01:15] [5170ba81]    ⚠️ Cannot load Google: Page.goto: Target page, contex
+[11:01:15] [5170ba81]    Direct navigation fallback...
+[11:01:15] [5170ba81]    ⚠️ Direct navigation failed: BrowserContext.new_page: Target page, context or b
+[11:01:15] [5170ba81]    Skipping due to page error
+[11:01:18] [5170ba81] 
+📧 Gmail check (no checks during session)...
+[11:01:18] [5170ba81] 📧 Opening Gmail... (read time: 15s per email)
+[11:01:18] [5170ba81]    ⚠️ Gmail navigation error: Page.goto: Target page, context or brows
+[11:01:18] [5170ba81] 
+✅ Google Warm-up complete! (4 AT sites, 3 generic)
+[11:01:18] [5170ba81] Blocked 8 media requests
+[11:01:20] [5170ba81] Done
+[11:03:18] Mode: GOOGLE
+[11:03:34] Mode: COOKIE
+[11:03:34] Mode: GOOGLE
+[11:03:53] [Auto] 🕐 944f1d73... country=Italy, local=09:03, awake=True
+[11:03:53] [Auto] ▶ Started 944f1d73... (google)
+[11:03:53] [944f1d73] Starting (google)...
+[11:03:58] [Auto] 🔄 Refreshing google profiles list...
+[11:03:58] [Auto] 🕐 944f1d73... (Italy) local=09:03, awake=True
+[11:03:58] [944f1d73] Proxy: 136.234.137.151 (Italy)
+[11:03:59] [944f1d73] Media blocking enabled
+[11:03:59] [944f1d73] Notifications blocked
+[11:03:59] [944f1d73] Connected to Octo Browser
+[11:03:59] [944f1d73] Window minimized via CDP
+[11:03:59] [944f1d73] 🚀 Google Warm-up mode
+[11:03:59] [944f1d73] 📺 YouTube activity enabled via checkbox (40% chance)
+[11:03:59] [944f1d73] 🌍 Geo mode (IT): 2 local + 1 generic = 3 sites
+[11:03:59] [944f1d73] 📋 Plan: 3 sites + YouTube activity + Gmail checks
+[11:03:59] [944f1d73] 
+[1/3] https://inter.it
+[11:03:59] [944f1d73]    Opening site directly...
+[11:04:04] [944f1d73]    Closing cookie banner (link): Cookies
+[11:04:08] [944f1d73]    Scanning for Google One Tap...
+[11:04:25] Mode: AUTO
+[11:04:28] [944f1d73]    No One Tap found, trying Login button flow...
+[11:04:28] [944f1d73]    Found Login button: Login
+[11:04:58] [944f1d73]    No Google One Tap found
+[11:05:01] [944f1d73]    Browsing for 27s...
+[11:05:45] [944f1d73]    ✓ Browsed 43s
+[11:05:51] [944f1d73] 
+[2/3] https://rai.it
+[11:05:51] [944f1d73]    🔍 Searching Google for: rai
+[11:05:58] [944f1d73]    ✓ Found rai.it, opening in new tab...
+[11:06:01] [944f1d73]    ✓ Navigated via Google search
+[11:06:01] [944f1d73]    Closing cookie banner: Preferenze Cookie
+[11:06:33] [944f1d73]    Scanning for Google One Tap...
+[11:06:51] [Auto] ⏹ Stopped 944f1d73...
+[11:06:51] [Auto] ⚠️ Stop operation cancelled by user
+[11:06:51] 🤖 Auto mode STOPPED
+[11:06:51] [Auto] Stopped 1/1 profiles
+[11:06:51] 🤖 Auto mode STOPPED
+[11:06:53] [944f1d73]    No One Tap found, trying Login button flow...
+[11:06:54] [944f1d73]    No Google One Tap found
+[11:06:55] [944f1d73]    Browsing for 10s...
+[11:06:59] [944f1d73] 
+✅ Google Warm-up complete! (2 IT sites, 0 generic)
+[11:06:59] [944f1d73] Blocked 24 media requests
+[11:07:01] [944f1d73] Done
+[11:07:29] ✅ Auto mode settings saved
+[11:07:40] Mode: GOOGLE
+[11:07:47] Mode: COOKIE
+[11:07:48] Mode: GOOGLE
+[11:08:11] [b4deca73] ▶ RESUMED
+[11:08:12] [9417d8fe] ▶ RESUMED
+[11:15:47] Mode: COOKIE
+[11:15:51] Mode: GOOGLE
+[11:16:06] Connected to Octo Browser
+[11:16:06] Auto-checking proxies for 4 profiles...
+[11:16:13] Proxy check complete: 4 OK, 0 failed
+[11:16:30] [9417d8fe] Opening profile manually...
+[11:16:36] [9417d8fe] Profile opened successfully
+[11:16:49] [9417d8fe] Stopping manual profile...
+[11:16:53] [9417d8fe] Error stopping profile: argument of type 'bool' is not iterable
+[11:17:10] [5170ba81] Checking proxy...
+[11:17:11] [5170ba81] Proxy: ✓ OK
+[11:17:13] [5170ba81] Checking proxy...
+[11:17:14] [5170ba81] Proxy: ✓ OK
