@@ -442,7 +442,7 @@ class ProfileItemWidget(QWidget):
         
         # Pause/Play button for auto mode exclusion (between country code and UUID)
         self.pause_btn = QPushButton("⏸" if not self._paused else "▶")
-        self.pause_btn.setFixedSize(32, 28)
+        self.pause_btn.setFixedSize(36, 30)
         self._update_pause_btn_style()
         self.pause_btn.clicked.connect(self._on_pause_click)
         layout.addWidget(self.pause_btn)
@@ -453,8 +453,8 @@ class ProfileItemWidget(QWidget):
         self.uuid_label.setToolTip(uuid)
         layout.addWidget(self.uuid_label, 1)
         
-        # Button dimensions for profile row - compact
-        btn_w, btn_h = 36, 28
+        # Button dimensions for profile row - increased for better visibility
+        btn_w, btn_h = 40, 30
         
         # Google authorization button (only for cookie mode)
         if mode == "cookie":
@@ -469,7 +469,7 @@ class ProfileItemWidget(QWidget):
         if mode == "google":
             # Google Ads registration button
             self.ads_btn = QPushButton("Ads")
-            self.ads_btn.setFixedSize(50, btn_h)
+            self.ads_btn.setFixedSize(52, btn_h)
             self._update_ads_btn_style()
             self.ads_btn.clicked.connect(self._on_ads_click)
             layout.addWidget(self.ads_btn)
@@ -543,21 +543,22 @@ class ProfileItemWidget(QWidget):
         
         # Play button - manual profile launch without bot logic
         self.play_btn = QPushButton("↗")
-        self.play_btn.setFixedSize(btn_w, btn_h)
+        self.play_btn.setFixedSize(40, 30)
         self.play_btn.setToolTip(tr("Open profile manually"))
         c = CATPPUCCIN
         self.play_btn.setStyleSheet(f"""
             QPushButton {{
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: bold;
                 color: {c['green']};
-                border: 1px solid {c['green']};
+                border: 2px solid {c['green']};
                 border-radius: 4px;
                 background: transparent;
-                padding: 0px;
             }}
             QPushButton:hover {{
-                background: rgba(166, 227, 161, 0.15);
+                background: rgba(64, 160, 43, 0.15);
+                border-color: #2d8a1e;
+                color: #2d8a1e;
             }}
         """)
         self.play_btn.clicked.connect(self._on_play)
@@ -592,16 +593,17 @@ class ProfileItemWidget(QWidget):
             self.play_btn.setText("↗")
             self.play_btn.setStyleSheet(f"""
                 QPushButton {{
-                    font-size: 16px;
+                    font-size: 18px;
                     font-weight: bold;
                     color: {c['green']};
-                    border: 1px solid {c['green']};
+                    border: 2px solid {c['green']};
                     border-radius: 4px;
                     background: transparent;
-                    padding: 0px;
                 }}
                 QPushButton:hover {{
-                    background: rgba(166, 227, 161, 0.15);
+                    background: rgba(64, 160, 43, 0.15);
+                    border-color: #2d8a1e;
+                    color: #2d8a1e;
                 }}
             """)
             self.play_btn.setToolTip(tr("Open profile manually"))
@@ -1353,14 +1355,14 @@ class MainWindow(QMainWindow):
         
         # Load language from config
         self.current_language = self.config.get("language", "English")
-        self.current_theme = self.config.get("theme", "Dark")
+        self.current_theme = "Light"  # Always use Light theme
         
         # Load translation before building UI
         app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         load_translation(self.current_language, app_dir)
         
         self.init_ui()
-        self.apply_theme(self.current_theme)
+        self.apply_theme("Light")
         
         # Set initial mode to update button text (START TEST / STOP TEST)
         self.switch_mode("cookie")
@@ -4064,11 +4066,6 @@ class MainWindow(QMainWindow):
         self.global_language.setCurrentText(self.config.get("language", "English"))
         form.addRow(tr("Language:"), self.global_language)
         
-        self.global_theme = QComboBox()
-        self.global_theme.addItems(["Dark", "Light"])
-        self.global_theme.setCurrentText(self.config.get("theme", "Dark"))
-        form.addRow(tr("Theme:"), self.global_theme)
-        
         # === EXECUTION ===
         exec_label = QLabel(tr("⚡ Execution"))
         exec_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
@@ -4161,7 +4158,7 @@ class MainWindow(QMainWindow):
         self.config["api_url"] = self.global_api_url.text()
         self.config["octo_api_token"] = self.global_api_token.text()
         self.config["language"] = self.global_language.currentText()
-        self.config["theme"] = self.global_theme.currentText()
+        self.config["theme"] = "Light"  # Always use Light theme
         self.config["max_parallel_profiles"] = self.global_max_parallel.value()
         self.config["base_delay_min"] = self.global_delay_min.value()
         self.config["base_delay_max"] = self.global_delay_max.value()
@@ -4179,9 +4176,9 @@ class MainWindow(QMainWindow):
         if self.api_manager:
             self.api_manager.set_api_token(self.config["octo_api_token"])
         
-        # Apply theme immediately
-        self.current_theme = self.config["theme"]
-        self.apply_theme(self.current_theme)
+        # Apply Light theme
+        self.current_theme = "Light"
+        self.apply_theme("Light")
         
         # Save config
         self.current_language = self.config["language"]
@@ -4456,11 +4453,12 @@ class MainWindow(QMainWindow):
                     border-bottom: none;
                     border-top-left-radius: {BORDER_RADIUS}px;
                     border-top-right-radius: {BORDER_RADIUS}px;
-                    padding: 10px 20px;
+                    padding: 10px 24px;
                     margin-right: 4px;
                     color: {c['subtext0']};
                     font-size: {font_base};
                     font-weight: 500;
+                    min-width: 80px;
                 }}
                 QTabBar::tab:selected {{
                     background-color: {c['base']};
@@ -4731,8 +4729,9 @@ class MainWindow(QMainWindow):
                 QTabBar::tab {{
                     background-color: #E6E9EF;
                     border: 1px solid #DCE0E8;
-                    padding: 10px 20px;
+                    padding: 10px 24px;
                     font-size: {font_base};
+                    min-width: 80px;
                 }}
                 QTabBar::tab:selected {{ background-color: #EFF1F5; color: #7287FD; }}
                 QGroupBox {{
