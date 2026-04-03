@@ -1,3 +1,28 @@
 {
-  "notifications": []
+  "notifications": [
+    {
+      "id": "20260403110622476527",
+      "message": "Planned sessions: 10\nPossible today: 6\nDeficit: 4 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-04-03T11:06:22.476527+00:00",
+      "read": false
+    },
+    {
+      "id": "20260403105410485376",
+      "message": "Planned sessions: 10\nPossible today: 8\nDeficit: 2 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-04-03T10:54:10.485376+00:00",
+      "read": false
+    },
+    {
+      "id": "20260403102642649992",
+      "message": "Planned sessions: 10\nPossible today: 8\nDeficit: 2 sessions\n\nConsider reducing profiles or sessions per profile.",
+      "title": "Schedule Overload",
+      "type": "warning",
+      "timestamp": "2026-04-03T10:26:42.649992+00:00",
+      "read": false
+    }
+  ]
 }

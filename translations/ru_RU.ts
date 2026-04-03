@@ -816,6 +816,10 @@
         <translation>Случайное смещение времени пробуждения</translation>
     </message>
     <message>
+        <source>Launch delay:</source>
+        <translation>Задержка запуска:</translation>
+    </message>
+    <message>
         <source>Sessions per profile:</source>
         <translation>Сессий на профиль:</translation>
     </message>
@@ -930,6 +934,10 @@
     <message>
         <source>min</source>
         <translation>мин</translation>
+    </message>
+    <message>
+        <source>sec</source>
+        <translation>сек</translation>
     </message>
     <message>
         <source>Regional Time</source>

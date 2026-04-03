@@ -6,12 +6,13 @@ import json
 import asyncio
 import os
 import logging
+import random
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
-    QSpinBox, QDoubleSpinBox, QCheckBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
-    QStackedWidget, QFrame, QScrollArea, QSplitter, QApplication, QComboBox,
+    QCheckBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
+    QStackedWidget, QFrame, QScrollArea, QSplitter, QApplication,
     QSizePolicy, QProgressDialog
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, pyqtSlot, QTimer
@@ -19,1311 +20,28 @@ from PyQt5.QtGui import QFont, QPixmap
 
 from core.octo_api import OctoAPI
 from core.octo_api_async import OctoApiManager
-from core.automation import BrowserAutomation
+from core.browser import BrowserAutomation
 from core.translator import load_translation, tr
 from core.auto_state import AutoStateManager
 from core.notifications import NotificationManager, NotificationType
 from core.auto_scheduler import AutoScheduler, ProfileStatus
 from core.database import get_database, DatabaseManager
 
-
-# Country name to ISO code mapping (API returns full names)
-COUNTRY_NAME_TO_CODE = {
-    "UNITED STATES": "US", "USA": "US", "UNITED STATES OF AMERICA": "US",
-    "UNITED KINGDOM": "GB", "UK": "GB", "GREAT BRITAIN": "GB", "ENGLAND": "GB",
-    "GERMANY": "DE", "DEUTSCHLAND": "DE",
-    "FRANCE": "FR",
-    "ITALY": "IT", "ITALIA": "IT",
-    "SPAIN": "ES", "ESPANA": "ES",
-    "NETHERLANDS": "NL", "THE NETHERLANDS": "NL", "HOLLAND": "NL",
-    "POLAND": "PL", "POLSKA": "PL",
-    "RUSSIA": "RU", "RUSSIAN FEDERATION": "RU",
-    "UKRAINE": "UA",
-    "CANADA": "CA",
-    "AUSTRALIA": "AU",
-    "JAPAN": "JP",
-    "SOUTH KOREA": "KR", "KOREA": "KR",
-    "CHINA": "CN",
-    "BRAZIL": "BR", "BRASIL": "BR",
-    "MEXICO": "MX",
-    "ARGENTINA": "AR",
-    "INDIA": "IN",
-    "SINGAPORE": "SG",
-    "SWEDEN": "SE",
-    "NORWAY": "NO",
-    "FINLAND": "FI",
-    "DENMARK": "DK",
-    "SWITZERLAND": "CH",
-    "AUSTRIA": "AT",
-    "BELGIUM": "BE",
-    "PORTUGAL": "PT",
-    "CZECH REPUBLIC": "CZ", "CZECHIA": "CZ",
-    "GREECE": "GR",
-    "TURKEY": "TR",
-    "ISRAEL": "IL",
-    "UNITED ARAB EMIRATES": "AE", "UAE": "AE",
-    "SOUTH AFRICA": "ZA",
-    "THAILAND": "TH",
-    "VIETNAM": "VN",
-    "INDONESIA": "ID",
-    "MALAYSIA": "MY",
-    "PHILIPPINES": "PH",
-    "HONG KONG": "HK",
-    "TAIWAN": "TW",
-    "NEW ZEALAND": "NZ",
-    "IRELAND": "IE",
-    "ROMANIA": "RO",
-    "HUNGARY": "HU",
-    "SLOVAKIA": "SK",
-    "BULGARIA": "BG",
-    "CROATIA": "HR",
-    "SERBIA": "RS",
-    "LITHUANIA": "LT",
-    "LATVIA": "LV",
-    "ESTONIA": "EE",
-    "CHILE": "CL",
-    "COLOMBIA": "CO",
-    "PERU": "PE",
-    # Additional countries
-    "SLOVENIA": "SI",
-    "CYPRUS": "CY",
-    "MALTA": "MT",
-    "LUXEMBOURG": "LU",
-    "ICELAND": "IS",
-    "MONACO": "MC",
-    "ANDORRA": "AD",
-    "LIECHTENSTEIN": "LI",
-    "SAN MARINO": "SM",
-    "MONTENEGRO": "ME",
-    "NORTH MACEDONIA": "MK", "MACEDONIA": "MK",
-    "ALBANIA": "AL",
-    "BOSNIA AND HERZEGOVINA": "BA", "BOSNIA": "BA",
-    "KOSOVO": "XK",
-    "MOLDOVA": "MD",
-    "BELARUS": "BY",
-    "GEORGIA": "GE",
-    "ARMENIA": "AM",
-    "AZERBAIJAN": "AZ",
-    "KAZAKHSTAN": "KZ",
-    "UZBEKISTAN": "UZ",
-    "PAKISTAN": "PK",
-    "BANGLADESH": "BD",
-    "SRI LANKA": "LK",
-    "NEPAL": "NP",
-    "CAMBODIA": "KH",
-    "MYANMAR": "MM", "BURMA": "MM",
-    "LAOS": "LA",
-    "MONGOLIA": "MN",
-    "NORTH KOREA": "KP",
-    "SAUDI ARABIA": "SA",
-    "QATAR": "QA",
-    "KUWAIT": "KW",
-    "BAHRAIN": "BH",
-    "OMAN": "OM",
-    "JORDAN": "JO",
-    "LEBANON": "LB",
-    "IRAQ": "IQ",
-    "IRAN": "IR",
-    "EGYPT": "EG",
-    "MOROCCO": "MA",
-    "ALGERIA": "DZ",
-    "TUNISIA": "TN",
-    "LIBYA": "LY",
-    "NIGERIA": "NG",
-    "KENYA": "KE",
-    "GHANA": "GH",
-    "ETHIOPIA": "ET",
-    "TANZANIA": "TZ",
-    "UGANDA": "UG",
-    "VENEZUELA": "VE",
-    "ECUADOR": "EC",
-    "BOLIVIA": "BO",
-    "PARAGUAY": "PY",
-    "URUGUAY": "UY",
-    "COSTA RICA": "CR",
-    "PANAMA": "PA",
-    "GUATEMALA": "GT",
-    "CUBA": "CU",
-    "DOMINICAN REPUBLIC": "DO",
-    "PUERTO RICO": "PR",
-    "JAMAICA": "JM",
-}
-
-# Country code to flag emoji mapping (for systems that support it)
-COUNTRY_FLAGS = {
-    "US": "🇺🇸", "GB": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷", "IT": "🇮🇹",
-    "ES": "🇪🇸", "NL": "🇳🇱", "PL": "🇵🇱", "RU": "🇷🇺", "UA": "🇺🇦",
-    "CA": "🇨🇦", "AU": "🇦🇺", "JP": "🇯🇵", "KR": "🇰🇷", "CN": "🇨🇳",
-    "BR": "🇧🇷", "MX": "🇲🇽", "AR": "🇦🇷", "IN": "🇮🇳", "SG": "🇸🇬",
-    "SE": "🇸🇪", "NO": "🇳🇴", "FI": "🇫🇮", "DK": "🇩🇰", "CH": "🇨🇭",
-    "AT": "🇦🇹", "BE": "🇧🇪", "PT": "🇵🇹", "CZ": "🇨🇿", "GR": "🇬🇷",
-    "TR": "🇹🇷", "IL": "🇮🇱", "AE": "🇦🇪", "ZA": "🇿🇦", "TH": "🇹🇭",
-    "VN": "🇻🇳", "ID": "🇮🇩", "MY": "🇲🇾", "PH": "🇵🇭", "HK": "🇭🇰",
-    "TW": "🇹🇼", "NZ": "🇳🇿", "IE": "🇮🇪", "RO": "🇷🇴", "HU": "🇭🇺",
-    "SK": "🇸🇰", "BG": "🇧🇬", "HR": "🇭🇷", "RS": "🇷🇸", "LT": "🇱🇹",
-    "LV": "🇱🇻", "EE": "🇪🇪", "CL": "🇨🇱", "CO": "🇨🇴", "PE": "🇵🇪",
-    # Additional countries
-    "SI": "🇸🇮", "CY": "🇨🇾", "MT": "🇲🇹", "LU": "🇱🇺", "IS": "🇮🇸",
-    "MC": "🇲🇨", "AD": "🇦🇩", "LI": "🇱🇮", "SM": "🇸🇲", "ME": "🇲🇪",
-    "MK": "🇲🇰", "AL": "🇦🇱", "BA": "🇧🇦", "XK": "🇽🇰", "MD": "🇲🇩",
-    "BY": "🇧🇾", "GE": "🇬🇪", "AM": "🇦🇲", "AZ": "🇦🇿", "KZ": "🇰🇿",
-    "UZ": "🇺🇿", "PK": "🇵🇰", "BD": "🇧🇩", "LK": "🇱🇰", "NP": "🇳🇵",
-    "KH": "🇰🇭", "MM": "🇲🇲", "LA": "🇱🇦", "MN": "🇲🇳", "KP": "🇰🇵",
-    "SA": "🇸🇦", "QA": "🇶🇦", "KW": "🇰🇼", "BH": "🇧🇭", "OM": "🇴🇲",
-    "JO": "🇯🇴", "LB": "🇱🇧", "IQ": "🇮🇶", "IR": "🇮🇷", "EG": "🇪🇬",
-    "MA": "🇲🇦", "DZ": "🇩🇿", "TN": "🇹🇳", "LY": "🇱🇾", "NG": "🇳🇬",
-    "KE": "🇰🇪", "GH": "🇬🇭", "ET": "🇪🇹", "TZ": "🇹🇿", "UG": "🇺🇬",
-    "VE": "🇻🇪", "EC": "🇪🇨", "BO": "🇧🇴", "PY": "🇵🇾", "UY": "🇺🇾",
-    "CR": "🇨🇷", "PA": "🇵🇦", "GT": "🇬🇹", "CU": "🇨🇺", "DO": "🇩🇴",
-    "PR": "🇵🇷", "JM": "🇯🇲",
-}
-
-
-def normalize_country(country_raw: str) -> str:
-    """Convert country name or code to ISO 2-letter code."""
-    if not country_raw:
-        return ""
-    country_upper = country_raw.upper().strip()
-    # If already a 2-letter code
-    if len(country_upper) == 2 and country_upper in COUNTRY_FLAGS:
-        return country_upper
-    # Look up in name mapping
-    return COUNTRY_NAME_TO_CODE.get(country_upper, "")
-
-
-# === CATPPUCCIN MOCHA THEME ===
-CATPPUCCIN = {
-    # Backgrounds
-    "base":      "#1E1E2E",  # Main background
-    "mantle":    "#181825",  # Darker (sidebar, header)
-    "crust":     "#11111B",  # Darkest (borders)
-    "surface0":  "#313244",  # Cards, inputs
-    "surface1":  "#45475A",  # Hover states
-    "surface2":  "#585B70",  # Active elements
-    
-    # Text
-    "text":      "#CDD6F4",  # Primary text
-    "subtext1":  "#BAC2DE",  # Secondary text
-    "subtext0":  "#A6ADC8",  # Muted text
-    "overlay0":  "#6C7086",  # Placeholders, disabled
-    
-    # Accents
-    "lavender":  "#B4BEFE",  # Primary accent
-    "blue":      "#89B4FA",  # Links, info
-    "sapphire":  "#74C7EC",  # Secondary accent
-    "sky":       "#89DCEB",  # Hover on accents
-    "teal":      "#94E2D5",  # Alt success
-    "green":     "#A6E3A1",  # Success (proxy OK)
-    "yellow":    "#F9E2AF",  # Warning
-    "peach":     "#FAB387",  # Pause, pending
-    "maroon":    "#EBA0AC",  # Soft error
-    "red":       "#F38BA8",  # Error
-    "mauve":     "#CBA6F7",  # Special accent
-    "pink":      "#F5C2E7",  # Decorative
-    "flamingo":  "#F2CDCD",  # Decorative
-    "rosewater": "#F5E0DC",  # Decorative
-}
-
-# === UI SIZE CONSTANTS (1.5x window, 1.35x elements) ===
-UI_SCALE = 1.35
-WINDOW_MIN_WIDTH = 1200
-WINDOW_MIN_HEIGHT = 900
-FONT_SIZE_BASE = 16
-FONT_SIZE_SMALL = 14
-FONT_SIZE_LARGE = 19
-FONT_SIZE_TITLE = 22
-ICON_SIZE = 19
-BUTTON_HEIGHT = 38
-BUTTON_MIN_WIDTH = 90
-INPUT_HEIGHT = 32
-SPACING = 12
-MARGIN = 14
-BORDER_RADIUS = 6
-PROFILE_ROW_HEIGHT = 44
-FLAG_WIDTH = 32
-FLAG_HEIGHT = 22
-
-
-# === GEO DOMAIN CONSTANTS ===
-# EU member states TLDs (27 countries)
-EU_TLDS = {
-    'at', 'be', 'bg', 'hr', 'cy', 'cz', 'dk', 'ee', 'fi', 'fr',
-    'de', 'gr', 'hu', 'ie', 'it', 'lv', 'lt', 'lu', 'mt', 'nl',
-    'pl', 'pt', 'ro', 'sk', 'si', 'es', 'se'
-}
-
-# Generic TLDs (not country-specific)
-GENERIC_TLDS = {
-    'com', 'org', 'net', 'io', 'xyz', 'info', 'biz', 'co', 'app',
-    'dev', 'ai', 'tech', 'online', 'site', 'website', 'blog', 'shop',
-    'store', 'cloud', 'digital', 'media', 'news', 'tv', 'fm', 'me'
-}
-
-# Country code to TLD mapping (most use lowercase country code)
-COUNTRY_TO_TLD = {
-    'US': ['us', 'com'],  # US includes .com as local
-    'GB': ['uk', 'co.uk'],
-    'CA': ['ca'],
-    'AU': ['au', 'com.au'],
-    'DE': ['de'],
-    'FR': ['fr'],
-    'IT': ['it'],
-    'ES': ['es'],
-    'NL': ['nl'],
-    'PL': ['pl'],
-    'PT': ['pt'],
-    'AT': ['at'],
-    'BE': ['be'],
-    'SE': ['se'],
-    'NO': ['no'],
-    'FI': ['fi'],
-    'DK': ['dk'],
-    'CH': ['ch'],
-    'CZ': ['cz'],
-    'GR': ['gr'],
-    'RO': ['ro'],
-    'HU': ['hu'],
-    'SK': ['sk'],
-    'BG': ['bg'],
-    'HR': ['hr'],
-    'SI': ['si'],
-    'LT': ['lt'],
-    'LV': ['lv'],
-    'EE': ['ee'],
-    'IE': ['ie'],
-    'CY': ['cy'],
-    'MT': ['mt'],
-    'LU': ['lu'],
-    'RU': ['ru'],
-    'UA': ['ua'],
-    'TR': ['tr'],
-    'JP': ['jp'],
-    'KR': ['kr'],
-    'CN': ['cn'],
-    'IN': ['in'],
-    'BR': ['br'],
-    'MX': ['mx'],
-    'AR': ['ar'],
-}
-
-def get_site_tld(url: str) -> str:
-    """Extract TLD from URL (e.g., 'example.com' -> 'com', 'site.co.uk' -> 'co.uk')."""
-    try:
-        # Remove protocol
-        domain = url.lower().replace('https://', '').replace('http://', '')
-        # Remove path
-        domain = domain.split('/')[0]
-        # Remove port
-        domain = domain.split(':')[0]
-        # Get TLD
-        parts = domain.split('.')
-        if len(parts) >= 2:
-            # Check for compound TLDs like co.uk, com.au
-            if len(parts) >= 3 and parts[-2] in ('co', 'com', 'org', 'net', 'gov', 'ac'):
-                return f"{parts[-2]}.{parts[-1]}"
-            return parts[-1]
-        return ''
-    except:
-        return ''
-
-def get_site_geo_category(url: str) -> str:
-    """Categorize site by geo: 'us', 'uk', 'ca', 'eu', 'generic', or specific country code."""
-    tld = get_site_tld(url)
-    if not tld:
-        return 'generic'
-    
-    # US
-    if tld in ('us', 'com'):
-        return 'us'
-    # UK
-    if tld in ('uk', 'co.uk'):
-        return 'uk'
-    # CA
-    if tld == 'ca':
-        return 'ca'
-    # EU
-    if tld in EU_TLDS:
-        return 'eu'
-    # Generic
-    if tld in GENERIC_TLDS:
-        return 'generic'
-    # Specific country TLD
-    return tld
-
-
-class ProfileItemWidget(QWidget):
-    """Custom widget for profile list item with flag and copy button"""
-    copy_clicked = pyqtSignal(str)  # Emits UUID when copy clicked
-    migrate_clicked = pyqtSignal(str, int, bool)  # Emits UUID, age_days, google_authorized
-    check_changed = pyqtSignal(str, bool)  # Emits UUID and check state
-    google_auth_changed = pyqtSignal(str, bool)  # Emits UUID and auth state
-    ads_changed = pyqtSignal(str, bool)  # Google Ads registration state
-    payment_changed = pyqtSignal(str, bool)  # Payment method state
-    campaign_changed = pyqtSignal(str, bool)  # Ad campaign state
-    ready_changed = pyqtSignal(str, bool)  # Profile ready state
-    play_clicked = pyqtSignal(str)  # Emits UUID when play clicked for manual profile launch
-    proxy_check_clicked = pyqtSignal(str)  # Emits UUID when proxy check clicked
-    paused_changed = pyqtSignal(str, bool)  # Emits UUID and paused state for auto mode exclusion
-    proxy_status_changed = pyqtSignal(str, object)  # Emits UUID and proxy status (True/False/None)
-    
-    def __init__(self, uuid: str, country: str = "", first_run: str = "", mode: str = "cookie", 
-                 google_authorized: bool = False, ads_registered: bool = False,
-                 payment_linked: bool = False, campaign_launched: bool = False,
-                 profile_ready: bool = False,
-                 ads_timestamp: str = "", payment_timestamp: str = "", 
-                 campaign_timestamp: str = "", ready_timestamp: str = "",
-                 paused: bool = False, proxy_status: object = None,
-                 parent=None):
-        super().__init__(parent)
-        self.uuid = uuid
-        self.mode = mode
-        self.google_authorized = google_authorized
-        self.ads_registered = ads_registered
-        self.payment_linked = payment_linked
-        self.campaign_launched = campaign_launched
-        self.profile_ready = profile_ready
-        # Timestamps for activation time tracking
-        self.ads_timestamp = ads_timestamp
-        self.payment_timestamp = payment_timestamp
-        self.campaign_timestamp = campaign_timestamp
-        self.ready_timestamp = ready_timestamp
-        # Normalize country name to ISO code
-        self.country_code = normalize_country(country)
-        self.first_run = first_run  # ISO date string
-        self.age_days = self._get_age_days()
-        # Pause state for auto mode exclusion
-        self._paused = paused
-        # Proxy status: None = unchecked, True = ok, False = error (restored from DB)
-        self._proxy_status = proxy_status
-        self._proxy_checking = False
-        
-        # Use theme colors
-        c = CATPPUCCIN
-        
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(6, 2, 6, 2)
-        layout.setSpacing(8)
-        
-        # Checkbox for selection
-        self.checkbox = QCheckBox()
-        self.checkbox.stateChanged.connect(self._on_check_changed)
-        layout.addWidget(self.checkbox)
-        
-        # Flag icon using QLabel with pixmap or emoji fallback
-        self.flag_label = QLabel()
-        flag_loaded = False
-        
-        if self.country_code:
-            # Try to load flag PNG from assets folder
-            app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            flag_path = os.path.join(app_dir, "assets", "flags", f"{self.country_code.lower()}.png")
-            if os.path.exists(flag_path):
-                pixmap = QPixmap(flag_path)
-                if not pixmap.isNull():
-                    self.flag_label.setPixmap(pixmap.scaled(FLAG_WIDTH, FLAG_HEIGHT, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-                    flag_loaded = True
-        
-        if not flag_loaded:
-            # Fallback to emoji (may not render on Windows)
-            flag_emoji = COUNTRY_FLAGS.get(self.country_code, "🌐") if self.country_code else "🌐"
-            self.flag_label.setText(flag_emoji)
-            self.flag_label.setStyleSheet(f"font-size: {FONT_SIZE_LARGE}px;")
-        
-        self.flag_label.setFixedWidth(FLAG_WIDTH + 4)
-        layout.addWidget(self.flag_label)
-        
-        # Country code label (e.g., "GB", "NL") - always create, hide if empty
-        self.code_label = QLabel(f"({self.country_code})" if self.country_code else "")
-        self.code_label.setStyleSheet(f"color: {c['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
-        self.code_label.setFixedWidth(40)
-        if not self.country_code:
-            self.code_label.hide()
-        layout.addWidget(self.code_label)
-        
-        # Pause/Play button for auto mode exclusion (between country code and UUID)
-        self.pause_btn = QPushButton("⏸" if not self._paused else "▶")
-        self.pause_btn.setFixedSize(36, 30)
-        self._update_pause_btn_style()
-        self.pause_btn.clicked.connect(self._on_pause_click)
-        layout.addWidget(self.pause_btn)
-        
-        # UUID label (truncated)
-        self.uuid_label = QLabel(f"{uuid[:8]}...")
-        self.uuid_label.setStyleSheet(f"font-size: {FONT_SIZE_BASE}px; font-family: 'Cascadia Code', 'Consolas', monospace;")
-        self.uuid_label.setToolTip(uuid)
-        layout.addWidget(self.uuid_label, 1)
-        
-        # Button dimensions for profile row - increased for better visibility
-        btn_w, btn_h = 40, 30
-        
-        # Google authorization button (only for cookie mode)
-        if mode == "cookie":
-            self.google_btn = QPushButton("G")
-            self.google_btn.setFixedSize(btn_w, btn_h)
-            self.google_btn.setToolTip(tr("Google authorization status"))
-            self._update_google_btn_style()
-            self.google_btn.clicked.connect(self._on_google_click)
-            layout.addWidget(self.google_btn)
-        
-        # Google mode buttons: Ads, Payment, Campaign, Ready
-        if mode == "google":
-            # Google Ads registration button
-            self.ads_btn = QPushButton("Ads")
-            self.ads_btn.setFixedSize(52, btn_h)
-            self._update_ads_btn_style()
-            self.ads_btn.clicked.connect(self._on_ads_click)
-            layout.addWidget(self.ads_btn)
-            
-            # Payment method button
-            self.payment_btn = QPushButton("💳")
-            self.payment_btn.setFixedSize(btn_w, btn_h)
-            self._update_payment_btn_style()
-            self.payment_btn.clicked.connect(self._on_payment_click)
-            layout.addWidget(self.payment_btn)
-            
-            # Ad campaign button (РК = Рекламная Кампания in Russian)
-            self.campaign_btn = QPushButton(tr("Ad"))
-            self.campaign_btn.setFixedSize(btn_w, btn_h)
-            self._update_campaign_btn_style()
-            self.campaign_btn.clicked.connect(self._on_campaign_click)
-            layout.addWidget(self.campaign_btn)
-            
-            # Profile ready button (profile warmed up and ready)
-            self.ready_btn = QPushButton("✓")
-            self.ready_btn.setFixedSize(btn_w, btn_h)
-            self._update_ready_btn_style()
-            self.ready_btn.clicked.connect(self._on_ready_click)
-            layout.addWidget(self.ready_btn)
-        
-        # Migration button (only for cookie mode) - arrow pointing right
-        if mode == "cookie":
-            self.migrate_btn = QPushButton("→")
-            self.migrate_btn.setFixedSize(btn_w, btn_h)
-            self.migrate_btn.setToolTip(tr("Migrate to Google mode"))
-            self.migrate_btn.setStyleSheet(f"font-size: 16px; padding: 0px;")
-            self.migrate_btn.clicked.connect(self._on_migrate)
-            layout.addWidget(self.migrate_btn)
-        
-        # Profile age in days (from first run)
-        age_text = self._calculate_age()
-        self.age_label = QLabel(age_text)
-        self.age_label.setStyleSheet(f"color: {c['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
-        self.age_label.setFixedWidth(60)
-        self.age_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        if self.first_run:
-            self.age_label.setToolTip(f"First run: {self.first_run}")
-        layout.addWidget(self.age_label)
-        
-        # Proxy check button
-        self.proxy_btn = QPushButton("⇄")
-        self.proxy_btn.setFixedSize(btn_w, btn_h)
-        self.proxy_btn.setToolTip(tr("Check proxy"))
-        # Note: _proxy_status and _proxy_checking are initialized in __init__ above
-        self.proxy_btn.clicked.connect(self._on_proxy_check)
-        layout.addWidget(self.proxy_btn)
-        
-        # Proxy warning label (hidden by default) - must be created before _update_proxy_btn_style
-        self.proxy_warning = QLabel("⚠")
-        self.proxy_warning.setStyleSheet(f"color: {c['red']}; font-size: {FONT_SIZE_BASE}px; font-weight: bold;")
-        self.proxy_warning.setFixedWidth(20)
-        self.proxy_warning.setToolTip(tr("Proxy error"))
-        self.proxy_warning.hide()
-        layout.addWidget(self.proxy_warning)
-        
-        # Now update style (after proxy_warning is created)
-        self._update_proxy_btn_style()
-        
-        # Copy button
-        self.copy_btn = QPushButton("⧉")
-        self.copy_btn.setFixedSize(btn_w, btn_h)
-        self.copy_btn.setToolTip(tr("Copy UUID"))
-        self.copy_btn.setStyleSheet(f"font-size: 16px; padding: 0px;")
-        self.copy_btn.clicked.connect(self._on_copy)
-        layout.addWidget(self.copy_btn)
-        
-        # Play button - manual profile launch without bot logic
-        self.play_btn = QPushButton("↗")
-        self.play_btn.setFixedSize(40, 30)
-        self.play_btn.setToolTip(tr("Open profile manually"))
-        c = CATPPUCCIN
-        self.play_btn.setStyleSheet(f"""
-            QPushButton {{
-                font-size: 18px;
-                font-weight: bold;
-                color: {c['green']};
-                border: 2px solid {c['green']};
-                border-radius: 4px;
-                background: transparent;
-            }}
-            QPushButton:hover {{
-                background: rgba(64, 160, 43, 0.15);
-                border-color: #2d8a1e;
-                color: #2d8a1e;
-            }}
-        """)
-        self.play_btn.clicked.connect(self._on_play)
-        layout.addWidget(self.play_btn)
-        
-        # Track if profile is manually running
-        self._is_manually_running = False
-    
-    def set_manually_running(self, running: bool):
-        """Set the manual running state and update Play button appearance."""
-        self._is_manually_running = running
-        c = CATPPUCCIN
-        if running:
-            # Red color - profile is running
-            self.play_btn.setText("⏹")
-            self.play_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    color: {c['red']};
-                    border: 1px solid {c['red']};
-                    border-radius: 4px;
-                    background: rgba(243, 139, 168, 0.1);
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(243, 139, 168, 0.25);
-                }}
-            """)
-            self.play_btn.setToolTip(tr("Profile is running (click to stop)"))
-        else:
-            # Green color - ready to start
-            self.play_btn.setText("↗")
-            self.play_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 18px;
-                    font-weight: bold;
-                    color: {c['green']};
-                    border: 2px solid {c['green']};
-                    border-radius: 4px;
-                    background: transparent;
-                }}
-                QPushButton:hover {{
-                    background: rgba(64, 160, 43, 0.15);
-                    border-color: #2d8a1e;
-                    color: #2d8a1e;
-                }}
-            """)
-            self.play_btn.setToolTip(tr("Open profile manually"))
-    
-    def is_manually_running(self) -> bool:
-        """Check if profile is manually running."""
-        return self._is_manually_running
-    
-    def _update_proxy_btn_style(self):
-        """Update proxy button style based on status."""
-        c = CATPPUCCIN
-        if self._proxy_checking:
-            self.proxy_btn.setText("...")
-            self.proxy_btn.setStyleSheet(f"""
-                QPushButton {{
-                    color: {c['overlay0']};
-                    border: 1px solid {c['overlay0']};
-                    border-radius: 4px;
-                    background: transparent;
-                    font-size: 12px;
-                    padding: 0px;
-                }}
-            """)
-            self.proxy_btn.setToolTip(tr("Checking proxy..."))
-            self.proxy_warning.hide()
-        elif self._proxy_status is None:
-            self.proxy_btn.setText("⇄")
-            self.proxy_btn.setStyleSheet(f"""
-                QPushButton {{
-                    color: {c['overlay0']};
-                    border: 1px solid {c['surface2']};
-                    border-radius: 4px;
-                    background: transparent;
-                    font-size: 14px;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(108, 112, 134, 0.15);
-                }}
-            """)
-            self.proxy_btn.setToolTip(tr("Check proxy"))
-            self.proxy_warning.hide()
-        elif self._proxy_status:
-            self.proxy_btn.setText("⇄")
-            self.proxy_btn.setStyleSheet(f"""
-                QPushButton {{
-                    color: {c['green']};
-                    border: 1px solid {c['green']};
-                    border-radius: 4px;
-                    background: transparent;
-                    font-size: 14px;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(166, 227, 161, 0.15);
-                }}
-            """)
-            self.proxy_btn.setToolTip(tr("Proxy OK (click to recheck)"))
-            self.proxy_warning.hide()
-        else:
-            self.proxy_btn.setText("⇄")
-            self.proxy_btn.setStyleSheet(f"""
-                QPushButton {{
-                    color: {c['red']};
-                    border: 1px solid {c['red']};
-                    border-radius: 4px;
-                    background: rgba(243, 139, 168, 0.1);
-                    font-size: 14px;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(243, 139, 168, 0.25);
-                }}
-            """)
-            self.proxy_btn.setToolTip(tr("Proxy error (click to recheck)"))
-            self.proxy_warning.show()
-    
-    def set_proxy_checking(self, checking: bool):
-        """Set proxy checking state."""
-        self._proxy_checking = checking
-        self._update_proxy_btn_style()
-    
-    def set_proxy_status(self, success: bool, message: str = ""):
-        """Set proxy check result and emit signal to persist state."""
-        self._proxy_checking = False
-        self._proxy_status = success
-        if message:
-            if success:
-                self.proxy_btn.setToolTip(f"Proxy OK: {message}")
-            else:
-                self.proxy_btn.setToolTip(f"Proxy error: {message}")
-                self.proxy_warning.setToolTip(f"Error: {message}")
-        self._update_proxy_btn_style()
-        # Emit signal to save state to database
-        self.proxy_status_changed.emit(self.uuid, success)
-    
-    def get_proxy_status(self):
-        """Get current proxy status."""
-        return self._proxy_status
-    
-    def _on_proxy_check(self):
-        """Handle proxy check button click."""
-        if not self._proxy_checking:
-            self.proxy_check_clicked.emit(self.uuid)
-    
-    # === Pause/Play button for Auto mode exclusion ===
-    def _update_pause_btn_style(self):
-        """Update pause button style based on paused state."""
-        c = CATPPUCCIN
-        if self._paused:
-            self.pause_btn.setText("▶")
-            self.pause_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    color: {c['peach']};
-                    border: 1px solid {c['peach']};
-                    border-radius: 4px;
-                    background: rgba(250, 179, 135, 0.1);
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(250, 179, 135, 0.25);
-                }}
-            """)
-            self.pause_btn.setToolTip(tr("Profile paused (excluded from Auto mode). Click to resume."))
-        else:
-            self.pause_btn.setText("⏸")
-            self.pause_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    color: {c['overlay0']};
-                    border: 1px solid {c['surface2']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(108, 112, 134, 0.15);
-                }}
-            """)
-            self.pause_btn.setToolTip(tr("Profile active in Auto mode. Click to pause."))
-    
-    def _on_pause_click(self):
-        """Handle pause button click - toggle paused state."""
-        self._paused = not self._paused
-        self._update_pause_btn_style()
-        self.paused_changed.emit(self.uuid, self._paused)
-    
-    def is_paused(self) -> bool:
-        """Check if profile is paused (excluded from Auto mode)."""
-        return self._paused
-    
-    def set_paused(self, paused: bool):
-        """Set paused state without emitting signal (for loading from DB)."""
-        self._paused = paused
-        self._update_pause_btn_style()
-    
-    def _update_google_btn_style(self):
-        """Update Google button style based on authorization state."""
-        c = CATPPUCCIN
-        if self.google_authorized:
-            self.google_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 13px;
-                    font-weight: bold;
-                    color: {c['blue']};
-                    border: 2px solid {c['blue']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(137, 180, 250, 0.15);
-                }}
-            """)
-            self.google_btn.setToolTip(tr("Google authorized") + " ✓")
-        else:
-            self.google_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 13px;
-                    font-weight: bold;
-                    color: {c['overlay0']};
-                    border: 2px solid {c['surface1']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{
-                    background: rgba(108, 112, 134, 0.1);
-                }}
-            """)
-            self.google_btn.setToolTip(tr("Google not authorized"))
-    
-    def _get_profile_info_text(self) -> str:
-        """Get profile info string for alerts: flag + code + UUID"""
-        flag = COUNTRY_FLAGS.get(self.country_code, "🌐") if self.country_code else "🌐"
-        code_str = f" ({self.country_code})" if self.country_code else ""
-        return f"{flag}{code_str} {self.uuid[:8]}..."
-    
-    def _on_google_click(self):
-        """Handle Google button click - activate or deactivate."""
-        profile_info = self._get_profile_info_text()
-        
-        if self.google_authorized:
-            # Already active - ask to deactivate
-            reply = QMessageBox.question(
-                self,
-                tr("Deactivate Google Authorization"),
-                tr("Deactivate Google authorization for this profile?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.google_authorized = False
-                self._update_google_btn_style()
-                self.google_auth_changed.emit(self.uuid, False)
-        else:
-            # Not active - ask to activate
-            reply = QMessageBox.question(
-                self,
-                tr("Google Authorization"),
-                tr("Did you authorize Google in this profile?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.google_authorized = True
-                self._update_google_btn_style()
-                self.google_auth_changed.emit(self.uuid, True)
-            else:
-                QMessageBox.information(
-                    self,
-                    tr("Authorization Required"),
-                    tr("Please authorize Google account in this profile first.") + f"\n\n{profile_info}"
-                )
-    
-    # === Google Mode Buttons ===
-    def _format_time_ago(self, timestamp_str: str) -> str:
-        """Format timestamp as 'Xд Yч назад' string."""
-        if not timestamp_str:
-            return ""
-        try:
-            ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-            now = datetime.now(ts.tzinfo) if ts.tzinfo else datetime.now()
-            diff = now - ts
-            
-            total_hours = int(diff.total_seconds() / 3600)
-            days = total_hours // 24
-            hours = total_hours % 24
-            
-            if days > 0:
-                return f" {days}д {hours}ч назад"
-            elif hours > 0:
-                return f" {hours}ч назад"
-            else:
-                minutes = int(diff.total_seconds() / 60)
-                return f" {minutes}м назад" if minutes > 0 else " только что"
-        except:
-            return ""
-    
-    def _update_ads_btn_style(self):
-        """Update Google Ads button style based on registration state."""
-        c = CATPPUCCIN
-        if self.ads_registered:
-            self.ads_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 11px;
-                    font-weight: bold;
-                    color: {c['yellow']};
-                    border: 2px solid {c['yellow']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(249, 226, 175, 0.15); }}
-            """)
-            time_ago = self._format_time_ago(self.ads_timestamp)
-            self.ads_btn.setToolTip(tr("Google Ads registered") + f" ✓{time_ago}")
-        else:
-            self.ads_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 11px;
-                    font-weight: bold;
-                    color: {c['overlay0']};
-                    border: 2px solid {c['surface1']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
-            """)
-            self.ads_btn.setToolTip(tr("Google Ads not registered"))
-    
-    def _update_payment_btn_style(self):
-        """Update payment button style based on link state."""
-        c = CATPPUCCIN
-        if self.payment_linked:
-            self.payment_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    color: {c['green']};
-                    border: 2px solid {c['green']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(166, 227, 161, 0.15); }}
-            """)
-            time_ago = self._format_time_ago(self.payment_timestamp)
-            self.payment_btn.setToolTip(tr("Payment method linked") + f" ✓{time_ago}")
-        else:
-            self.payment_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    color: {c['overlay0']};
-                    border: 2px solid {c['surface1']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
-            """)
-            self.payment_btn.setToolTip(tr("Payment method not linked"))
-    
-    def _update_campaign_btn_style(self):
-        """Update campaign button style based on launch state."""
-        c = CATPPUCCIN
-        if self.campaign_launched:
-            self.campaign_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 11px;
-                    font-weight: bold;
-                    color: {c['red']};
-                    border: 2px solid {c['red']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(243, 139, 168, 0.15); }}
-            """)
-            time_ago = self._format_time_ago(self.campaign_timestamp)
-            self.campaign_btn.setToolTip(tr("Ad campaign launched") + f" ✓{time_ago}")
-        else:
-            self.campaign_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 11px;
-                    font-weight: bold;
-                    color: {c['overlay0']};
-                    border: 2px solid {c['surface1']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
-            """)
-            self.campaign_btn.setToolTip(tr("Ad campaign not launched"))
-    
-    def _update_ready_btn_style(self):
-        """Update ready button style based on profile ready state."""
-        c = CATPPUCCIN
-        if self.profile_ready:
-            self.ready_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    font-weight: bold;
-                    color: {c['teal']};
-                    border: 2px solid {c['teal']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(148, 226, 213, 0.15); }}
-            """)
-            time_ago = self._format_time_ago(self.ready_timestamp)
-            self.ready_btn.setToolTip(tr("Profile warmed up and ready") + f" ✓{time_ago}")
-        else:
-            self.ready_btn.setStyleSheet(f"""
-                QPushButton {{
-                    font-size: 14px;
-                    font-weight: bold;
-                    color: {c['overlay0']};
-                    border: 2px solid {c['surface1']};
-                    border-radius: 4px;
-                    background: transparent;
-                    padding: 0px;
-                }}
-                QPushButton:hover {{ background: rgba(108, 112, 134, 0.1); }}
-            """)
-            self.ready_btn.setToolTip(tr("Profile not ready"))
-    
-    def _on_ads_click(self):
-        """Handle Google Ads button click - activate or deactivate."""
-        profile_info = self._get_profile_info_text()
-        
-        if self.ads_registered:
-            # Already active - ask to deactivate
-            reply = QMessageBox.question(
-                self,
-                tr("Deactivate Google Ads"),
-                tr("Deactivate Google Ads registration for this profile?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.ads_registered = False
-                self._update_ads_btn_style()
-                self.ads_changed.emit(self.uuid, False)
-        else:
-            # Not active - ask to activate
-            reply = QMessageBox.question(
-                self,
-                tr("Google Ads"),
-                tr("Did you register Google Ads account?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.ads_registered = True
-                self._update_ads_btn_style()
-                self.ads_changed.emit(self.uuid, True)
-            else:
-                QMessageBox.information(
-                    self,
-                    tr("Registration Required"),
-                    tr("Please register Google Ads account first.") + f"\n\n{profile_info}"
-                )
-    
-    def _on_payment_click(self):
-        """Handle payment button click - activate or deactivate."""
-        profile_info = self._get_profile_info_text()
-        
-        if self.payment_linked:
-            # Already active - ask to deactivate
-            reply = QMessageBox.question(
-                self,
-                tr("Deactivate Payment Method"),
-                tr("Deactivate payment method for this profile?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.payment_linked = False
-                self._update_payment_btn_style()
-                self.payment_changed.emit(self.uuid, False)
-        else:
-            # Not active - ask to activate
-            reply = QMessageBox.question(
-                self,
-                tr("Payment Method"),
-                tr("Did you link payment method in Google Ads?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.payment_linked = True
-                self._update_payment_btn_style()
-                self.payment_changed.emit(self.uuid, True)
-            else:
-                QMessageBox.information(
-                    self,
-                    tr("Payment Required"),
-                    tr("Please link payment method in Google Ads first!") + f"\n\n{profile_info}"
-                )
-    
-    def _on_campaign_click(self):
-        """Handle campaign button click - activate or deactivate."""
-        profile_info = self._get_profile_info_text()
-        
-        if self.campaign_launched:
-            # Already active - ask to deactivate
-            reply = QMessageBox.question(
-                self,
-                tr("Deactivate Ad Campaign"),
-                tr("Deactivate ad campaign for this profile?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.campaign_launched = False
-                self._update_campaign_btn_style()
-                self.campaign_changed.emit(self.uuid, False)
-        else:
-            # Not active - ask to activate
-            reply = QMessageBox.question(
-                self,
-                tr("Ad Campaign"),
-                tr("Did you launch an ad campaign in Google Ads?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.campaign_launched = True
-                self._update_campaign_btn_style()
-                self.campaign_changed.emit(self.uuid, True)
-            else:
-                QMessageBox.information(
-                    self,
-                    tr("Campaign Required"),
-                    tr("Please launch an ad campaign in Google Ads first!") + f"\n\n{profile_info}"
-                )
-    
-    def _on_ready_click(self):
-        """Handle ready button click - activate or deactivate."""
-        profile_info = self._get_profile_info_text()
-        
-        if self.profile_ready:
-            # Already active - ask to deactivate
-            reply = QMessageBox.question(
-                self,
-                tr("Deactivate Ready Status"),
-                tr("Deactivate 'ready' status for this profile?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.profile_ready = False
-                self._update_ready_btn_style()
-                self.ready_changed.emit(self.uuid, False)
-        else:
-            # Not active - ask to activate
-            reply = QMessageBox.question(
-                self,
-                tr("Profile Ready"),
-                tr("Is the profile warmed up and ready for work?") + f"\n\n{profile_info}",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.profile_ready = True
-                self._update_ready_btn_style()
-                self.ready_changed.emit(self.uuid, True)
-    
-    def _get_age_days(self) -> int:
-        """Get profile age in days."""
-        if not self.first_run:
-            return -1  # Unknown age
-        try:
-            first_date = datetime.fromisoformat(self.first_run.replace("Z", "+00:00"))
-            now = datetime.now(first_date.tzinfo) if first_date.tzinfo else datetime.now()
-            return (now - first_date).days
-        except:
-            return -1
-    
-    def _calculate_age(self) -> str:
-        """Calculate profile age in days from first run date."""
-        if self.age_days < 0:
-            return ""
-        return f"{self.age_days}d"
-    
-    def _on_copy(self):
-        QApplication.clipboard().setText(self.uuid)
-        self.copy_clicked.emit(self.uuid)
-    
-    def _on_migrate(self):
-        self.migrate_clicked.emit(self.uuid, self.age_days, self.google_authorized)
-    
-    def _on_play(self):
-        """Emit signal to open profile manually without bot logic."""
-        self.play_clicked.emit(self.uuid)
-    
-    def _on_check_changed(self, state):
-        self.check_changed.emit(self.uuid, state == Qt.Checked)
-    
-    def setChecked(self, checked: bool):
-        self.checkbox.setChecked(checked)
-    
-    def isChecked(self) -> bool:
-        return self.checkbox.isChecked()
-
-
-class WorkerThread(QThread):
-    log_signal = pyqtSignal(str)
-    finished_signal = pyqtSignal(str)
-    error_signal = pyqtSignal(str, str)
-    country_detected = pyqtSignal(str, str)  # uuid, country_code
-    
-    def __init__(self, profile_uuid, sites, settings, octo_api, mode="cookie", start_minimized=True):
-        super().__init__()
-        self.profile_uuid = profile_uuid
-        self.sites = sites
-        self.settings = settings
-        self.octo_api = octo_api
-        self.mode = mode
-        self.start_minimized = start_minimized
-        self.should_stop = False
-        self.automation = None
-    
-    def run(self):
-        asyncio.run(self._run_async())
-    
-    async def _run_async(self):
-        try:
-            self.log_signal.emit(f"[{self.profile_uuid[:8]}] Starting ({self.mode})...")
-            
-            connection = self.octo_api.start_profile(
-                self.profile_uuid, 
-                minimized=self.start_minimized
-            )
-            
-            if not connection:
-                self.log_signal.emit(f"[{self.profile_uuid[:8]}] Failed to start")
-                self.error_signal.emit(self.profile_uuid, "Failed to start profile")
-                return
-            
-            if "error" in connection:
-                self.log_signal.emit(f"[{self.profile_uuid[:8]}] Error: {connection.get('error')}")
-                self.error_signal.emit(self.profile_uuid, connection.get("error"))
-                return
-            
-            proxy_info = connection.get("proxy_info", "")
-            
-            # Extract and emit country from connection_data
-            connection_data = connection.get("connection_data", {})
-            country = connection_data.get("country", "")
-            if country:
-                self.country_detected.emit(self.profile_uuid, country)
-            
-            if connection.get("proxy_status") == "error" or not connection.get("ws_endpoint"):
-                self.log_signal.emit(f"[{self.profile_uuid[:8]}] PROXY ERROR")
-                self.octo_api.stop_profile(self.profile_uuid)
-                return
-            
-            self.log_signal.emit(f"[{self.profile_uuid[:8]}] Proxy: {proxy_info}")
-            
-            ws_endpoint = connection.get("ws_endpoint")
-            debug_port = connection.get("debug_port")
-            
-            if ws_endpoint or debug_port:
-                self.automation = BrowserAutomation(
-                    log_callback=lambda x: self.log_signal.emit(f"[{self.profile_uuid[:8]}] {x}")
-                )
-                
-                try:
-                    connected = await self.automation.connect_to_octo(ws_endpoint=ws_endpoint, debug_port=debug_port)
-                except Exception as e:
-                    self.log_signal.emit(f"[{self.profile_uuid[:8]}] Connection failed: {e}")
-                    self.octo_api.stop_profile(self.profile_uuid)
-                    return
-                
-                if connected:
-                    # Try to minimize browser window if setting enabled
-                    if self.start_minimized:
-                        await self._try_minimize_browser()
-                    
-                    self.automation.should_stop = self.should_stop
-                    try:
-                        if self.mode == "cookie":
-                            await self.automation.run_session(
-                                sites=self.sites.copy(),
-                                settings=self.settings
-                            )
-                        elif self.mode == "google":
-                            await self.automation.run_google_warmup(
-                                sites=self.sites.copy(),
-                                settings=self.settings
-                            )
-                    except Exception as e:
-                        self.log_signal.emit(f"[{self.profile_uuid[:8]}] Error: {e}")
-                    await self.automation.disconnect()
-            
-            self.octo_api.stop_profile(self.profile_uuid)
-            self.log_signal.emit(f"[{self.profile_uuid[:8]}] Done")
-            
-        except Exception as e:
-            self.log_signal.emit(f"[{self.profile_uuid[:8]}] Error: {e}")
-        finally:
-            self.finished_signal.emit(self.profile_uuid)
-    
-    async def _try_minimize_browser(self):
-        """Try to minimize browser window using CDP or pywin32."""
-        try:
-            # Small delay for browser to initialize
-            await asyncio.sleep(0.3)
-            
-            if self.automation and self.automation.page:
-                # Method 1: Use CDP to minimize window
-                try:
-                    cdp = await self.automation.page.context.new_cdp_session(self.automation.page)
-                    # Get window bounds
-                    window_id = await cdp.send("Browser.getWindowForTarget")
-                    if window_id and window_id.get("windowId"):
-                        # Set window state to minimized
-                        await cdp.send("Browser.setWindowBounds", {
-                            "windowId": window_id.get("windowId"),
-                            "bounds": {"windowState": "minimized"}
-                        })
-                        self.log_signal.emit(f"[{self.profile_uuid[:8]}] Window minimized via CDP")
-                        return
-                except Exception as e:
-                    self.log_signal.emit(f"[{self.profile_uuid[:8]}] CDP minimize failed: {e}")
-                
-                # Method 2: Use pywin32 on Windows
-                try:
-                    import win32gui
-                    import win32con
-                    
-                    def minimize_by_title(title_part):
-                        def callback(hwnd, results):
-                            if win32gui.IsWindowVisible(hwnd):
-                                window_title = win32gui.GetWindowText(hwnd)
-                                if title_part.lower() in window_title.lower():
-                                    win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
-                                    return False  # Stop enumeration
-                            return True
-                        win32gui.EnumWindows(callback, None)
-                    
-                    # Try to find Octo Browser window by profile UUID
-                    minimize_by_title(self.profile_uuid[:8])
-                    self.log_signal.emit(f"[{self.profile_uuid[:8]}] Window minimized via pywin32")
-                except ImportError:
-                    pass  # pywin32 not available
-                    
-        except Exception as e:
-            self.log_signal.emit(f"[{self.profile_uuid[:8]}] Minimize failed: {e}")
-    
-    def stop(self):
-        self.should_stop = True
-        if self.automation:
-            self.automation.should_stop = True
-
+# Import refactored components
+from gui.styles import (
+    CATPPUCCIN, COUNTRY_NAME_TO_CODE, COUNTRY_FLAGS,
+    COUNTRY_TO_TLD, EU_TLDS, GENERIC_TLDS,
+    UI_SCALE, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT,
+    FONT_SIZE_BASE, FONT_SIZE_SMALL, FONT_SIZE_LARGE, FONT_SIZE_TITLE,
+    ICON_SIZE, BUTTON_HEIGHT, BUTTON_MIN_WIDTH, INPUT_HEIGHT,
+    SPACING, MARGIN, BORDER_RADIUS, PROFILE_ROW_HEIGHT,
+    FLAG_WIDTH, FLAG_HEIGHT,
+    normalize_country, get_site_tld, get_site_geo_category,
+    get_theme_stylesheet
+)
+from gui.widgets.profile_item import ProfileItemWidget
+from gui.widgets.worker_thread import WorkerThread
+from gui.widgets.no_scroll import NoScrollSpinBox as QSpinBox, NoScrollDoubleSpinBox as QDoubleSpinBox, NoScrollComboBox as QComboBox
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -1363,6 +81,9 @@ class MainWindow(QMainWindow):
         
         self.init_ui()
         self.apply_theme("Light")
+        
+        # Reset all working states on startup (in case app was closed while running)
+        self._reset_all_working_states()
         
         # Set initial mode to update button text (START TEST / STOP TEST)
         self.switch_mode("cookie")
@@ -2333,6 +1054,33 @@ class MainWindow(QMainWindow):
         sites_per_session_layout.addStretch()
         layout.addRow(tr("Sites per session:"), sites_per_session_layout)
         
+        # === ONE TAP SITES SECTION ===
+        onetap_section_label = QLabel(tr("🔐 One Tap Sites"))
+        onetap_section_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
+        layout.addRow(onetap_section_label)
+        
+        # Checkbox: Visit One Tap sites
+        self.onetap_visit_enabled = QCheckBox(tr("Visit One Tap sites"))
+        self.onetap_visit_enabled.setChecked(self.get_mode_config("google").get("settings", {}).get("onetap_visit_enabled", True))
+        self.onetap_visit_enabled.setToolTip(tr("Enable visiting sites with Google One Tap authorization"))
+        layout.addRow(self.onetap_visit_enabled)
+        
+        # Range: One Tap sites per session (min-max)
+        onetap_per_session_layout = QHBoxLayout()
+        self.onetap_sites_min = QSpinBox()
+        self.onetap_sites_min.setRange(0, 50)
+        self.onetap_sites_min.setValue(self.get_mode_config("google").get("settings", {}).get("onetap_sites_min", 1))
+        self.onetap_sites_min.setStyleSheet(input_style)
+        onetap_per_session_layout.addWidget(self.onetap_sites_min)
+        onetap_per_session_layout.addWidget(QLabel("-"))
+        self.onetap_sites_max = QSpinBox()
+        self.onetap_sites_max.setRange(0, 50)
+        self.onetap_sites_max.setValue(self.get_mode_config("google").get("settings", {}).get("onetap_sites_max", 3))
+        self.onetap_sites_max.setStyleSheet(input_style)
+        onetap_per_session_layout.addWidget(self.onetap_sites_max)
+        onetap_per_session_layout.addStretch()
+        layout.addRow(tr("One Tap sites per session:"), onetap_per_session_layout)
+        
         # === GMAIL SECTION ===
         gmail_label = QLabel(tr("📧 Gmail"))
         gmail_label.setStyleSheet(f"font-weight: bold; font-size: 16px; color: {CATPPUCCIN['blue']}; margin-top: 10px;")
@@ -2649,6 +1397,24 @@ class MainWindow(QMainWindow):
         self.auto_start_random.setStyleSheet(input_style)
         self.auto_start_random.setToolTip(tr("Random offset for wake-up time"))
         form_layout.addRow(tr("Start randomization:"), self.auto_start_random)
+        
+        # Staggered start delay (delay between profile launches)
+        stagger_layout = QHBoxLayout()
+        self.auto_stagger_min = QSpinBox()
+        self.auto_stagger_min.setRange(0, 120)
+        self.auto_stagger_min.setValue(self.config.get("auto_mode", {}).get("stagger_delay_min", 15))
+        self.auto_stagger_min.setSuffix(" " + tr("sec"))
+        self.auto_stagger_min.setStyleSheet(input_style)
+        stagger_layout.addWidget(self.auto_stagger_min)
+        stagger_layout.addWidget(QLabel("-"))
+        self.auto_stagger_max = QSpinBox()
+        self.auto_stagger_max.setRange(0, 120)
+        self.auto_stagger_max.setValue(self.config.get("auto_mode", {}).get("stagger_delay_max", 30))
+        self.auto_stagger_max.setSuffix(" " + tr("sec"))
+        self.auto_stagger_max.setStyleSheet(input_style)
+        stagger_layout.addWidget(self.auto_stagger_max)
+        stagger_layout.addStretch()
+        form_layout.addRow(tr("Launch delay:"), stagger_layout)
         
         # --- Sessions Section ---
         sessions_label = QLabel(tr("🔄 Sessions"))
@@ -3034,6 +1800,8 @@ class MainWindow(QMainWindow):
             "work_start_weekend": self.auto_work_start_weekend.value(),
             "work_end_weekend": self.auto_work_end_weekend.value(),
             "start_randomization": self.auto_start_random.value(),
+            "stagger_delay_min": self.auto_stagger_min.value(),
+            "stagger_delay_max": self.auto_stagger_max.value(),
             "sessions_per_profile_min": self.auto_sessions_min.value(),
             "sessions_per_profile_max": self.auto_sessions_max.value(),
             "cooldown_min": self.auto_cooldown_min.value(),
@@ -3371,9 +2139,25 @@ class MainWindow(QMainWindow):
         to_start = self.auto_scheduler.get_profiles_to_start()
         logging.info(f"[AUTO_DEBUG] _auto_scheduler_tick: to_start has {len(to_start)} profiles")
         
-        for profile in to_start:
-            logging.info(f"[AUTO_DEBUG] Starting profile from to_start: {profile.uuid[:8]}, mode={profile.mode}, country={profile.country}")
-            self._start_auto_profile(profile.uuid, profile.mode)
+        # Get stagger delay settings from config
+        stagger_min = self.config.get("auto_mode", {}).get("stagger_delay_min", 15)
+        stagger_max = self.config.get("auto_mode", {}).get("stagger_delay_max", 30)
+        
+        # Staggered start: add profiles to queue with delay between each
+        for i, profile in enumerate(to_start):
+            # Calculate delay based on settings
+            if i == 0:
+                delay_ms = 0  # First profile starts immediately
+            else:
+                delay_ms = random.randint(stagger_min * 1000, stagger_max * 1000)
+            
+            # Use QTimer for delayed start
+            if delay_ms == 0:
+                logging.info(f"[AUTO_DEBUG] Starting profile immediately: {profile.uuid[:8]}, mode={profile.mode}")
+                self._start_auto_profile(profile.uuid, profile.mode)
+            else:
+                logging.info(f"[AUTO_DEBUG] Scheduling profile start in {delay_ms/1000:.1f}s: {profile.uuid[:8]}, mode={profile.mode}")
+                QTimer.singleShot(delay_ms, lambda u=profile.uuid, m=profile.mode: self._start_auto_profile(u, m))
     
     def _async_check_session_timeouts(self):
         """Async wrapper for session timeout check - runs in background thread."""
@@ -3610,9 +2394,25 @@ class MainWindow(QMainWindow):
             youtube_enabled = cfg.get("youtube_enabled", False)
             settings["youtube_enabled"] = youtube_enabled
         else:  # google
-            sites = cfg.get("browse_sites", [])
+            sites = cfg.get("browse_sites", []) + cfg.get("onetap_sites", [])
+            # Add separate lists for proper handling in automation
+            settings["browse_sites"] = cfg.get("browse_sites", [])
+            settings["onetap_sites"] = cfg.get("onetap_sites", [])
+            settings["services"] = cfg.get("services", {})
+            settings["youtube_enabled"] = cfg.get("youtube_enabled", True)
+            # Add YouTube queries from global settings
+            settings["youtube_queries"] = self.config.get("youtube_queries", "")
         
-        if not sites:
+        # Check if there are sites to visit
+        # For google mode: also check if services are enabled (they count as sites)
+        has_sites = bool(sites)
+        if mode == "google" and not has_sites:
+            # Check if any Google services are enabled
+            services = cfg.get("services", {})
+            has_services = any(services.values())
+            has_sites = has_services
+        
+        if not has_sites:
             self.log(f"[Auto] ⚠️ No sites for {uuid[:8]}... ({mode})")
             return
         
@@ -3628,6 +2428,9 @@ class MainWindow(QMainWindow):
         
         self.auto_workers[uuid] = worker
         self.auto_scheduler.mark_profile_started(uuid)
+        
+        # Update working state (UI + DB)
+        self._set_profile_working(uuid, True, mode)
         
         # Track start time for session timeout watchdog
         import time
@@ -3724,6 +2527,9 @@ class MainWindow(QMainWindow):
         # Clean up start time tracking
         if hasattr(self, '_auto_worker_start_times') and uuid in self._auto_worker_start_times:
             del self._auto_worker_start_times[uuid]
+        
+        # Update working state (UI + DB)
+        self._set_profile_working(uuid, False)
         
         # Update scheduler and state
         self.auto_scheduler.mark_profile_completed(uuid, success)
@@ -3849,6 +2655,10 @@ class MainWindow(QMainWindow):
     
     def _finish_stop_auto_mode(self):
         """Finish stopping auto mode - update state and UI."""
+        # Reset working state for all profiles that were running
+        for uuid in list(self.auto_workers.keys()):
+            self._set_profile_working(uuid, False)
+        
         self.auto_workers.clear()
         
         self.auto_state.set_auto_running(False)
@@ -4292,6 +3102,19 @@ class MainWindow(QMainWindow):
         
         self.log(f"Mode: {mode.upper()}")
     
+    def _reset_all_working_states(self):
+        """Reset all working states to False on startup (cleanup after crash/close)."""
+        for mode in ["cookie", "google"]:
+            cfg = self.get_mode_config(mode)
+            profile_info = cfg.get("profile_info", {})
+            changed = False
+            for uuid, info in profile_info.items():
+                if info.get("working", False):
+                    info["working"] = False
+                    changed = True
+            if changed:
+                self.set_mode_config(mode, cfg)
+    
     def get_mode_config(self, mode):
         key = "cookie_mode" if mode == "cookie" else "google_mode"
         return self.config.get(key, {"profiles": [], "sites": [], "settings": {}})
@@ -4301,468 +3124,9 @@ class MainWindow(QMainWindow):
         self.config[key] = data
         self.save_config()
     
-    def apply_theme(self, theme="Dark"):
-        """Apply Catppuccin Mocha theme with enhanced styling"""
-        c = CATPPUCCIN  # Shorthand
-        
-        # Common font settings
-        font_base = f"{FONT_SIZE_BASE}px"
-        font_small = f"{FONT_SIZE_SMALL}px"
-        font_large = f"{FONT_SIZE_LARGE}px"
-        
-        if theme == "Dark":
-            self.setStyleSheet(f"""
-                /* === GLOBAL === */
-                QMainWindow, QWidget {{
-                    background-color: {c['base']};
-                    color: {c['text']};
-                    font-family: 'Segoe UI', 'SF Pro Display', Arial, sans-serif;
-                    font-size: {font_base};
-                }}
-                
-                QLabel {{
-                    color: {c['text']};
-                    font-size: {font_base};
-                }}
-                
-                /* === BUTTONS === */
-                QPushButton {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 4px 10px;
-                    min-height: {BUTTON_HEIGHT - 8}px;
-                    color: {c['text']};
-                    font-size: {font_base};
-                }}
-                QPushButton:hover {{
-                    background-color: {c['surface1']};
-                    border-color: {c['lavender']};
-                }}
-                QPushButton:pressed {{
-                    background-color: {c['surface2']};
-                }}
-                QPushButton:checked {{
-                    background-color: {c['lavender']};
-                    color: {c['crust']};
-                    border-color: {c['lavender']};
-                }}
-                QPushButton:disabled {{
-                    background-color: {c['surface0']};
-                    color: {c['overlay0']};
-                    border-color: {c['surface0']};
-                }}
-                
-                /* === INPUTS === */
-                QLineEdit, QSpinBox, QDoubleSpinBox {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 8px 12px;
-                    min-height: {INPUT_HEIGHT - 16}px;
-                    color: {c['text']};
-                    font-size: {font_base};
-                    selection-background-color: {c['lavender']};
-                    selection-color: {c['crust']};
-                }}
-                QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
-                    border-color: {c['lavender']};
-                    background-color: {c['surface1']};
-                }}
-                QLineEdit:disabled, QSpinBox:disabled {{
-                    background-color: {c['mantle']};
-                    color: {c['overlay0']};
-                }}
-                QLineEdit::placeholder {{
-                    color: {c['overlay0']};
-                }}
-                
-                /* === COMBOBOX === */
-                QComboBox {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 8px 12px;
-                    min-height: {INPUT_HEIGHT - 16}px;
-                    color: {c['text']};
-                    font-size: {font_base};
-                }}
-                QComboBox:hover {{
-                    border-color: {c['lavender']};
-                }}
-                QComboBox::drop-down {{
-                    border: none;
-                    padding-right: 10px;
-                }}
-                QComboBox::down-arrow {{
-                    width: 12px;
-                    height: 12px;
-                }}
-                QComboBox QAbstractItemView {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    color: {c['text']};
-                    selection-background-color: {c['lavender']};
-                    selection-color: {c['crust']};
-                    padding: 4px;
-                }}
-                
-                /* === TEXT EDIT (LOG) === */
-                QTextEdit {{
-                    background-color: {c['crust']};
-                    border: 1px solid {c['surface0']};
-                    border-radius: {BORDER_RADIUS}px;
-                    color: {c['green']};
-                    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-                    font-size: {font_small};
-                    padding: 8px;
-                }}
-                
-                /* === LISTS === */
-                QListWidget {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 4px;
-                    outline: none;
-                }}
-                QListWidget::item {{
-                    padding: 4px;
-                    border-radius: 4px;
-                    margin: 2px;
-                }}
-                QListWidget::item:hover {{
-                    background-color: {c['surface1']};
-                }}
-                QListWidget::item:selected {{
-                    background-color: {c['lavender']};
-                    color: {c['crust']};
-                }}
-                
-                /* === TABS === */
-                QTabWidget::pane {{
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    background-color: {c['base']};
-                    margin-top: -1px;
-                }}
-                QTabBar::tab {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-bottom: none;
-                    border-top-left-radius: {BORDER_RADIUS}px;
-                    border-top-right-radius: {BORDER_RADIUS}px;
-                    padding: 10px 24px;
-                    margin-right: 4px;
-                    color: {c['subtext0']};
-                    font-size: {font_base};
-                    font-weight: 500;
-                    min-width: 80px;
-                }}
-                QTabBar::tab:selected {{
-                    background-color: {c['base']};
-                    color: {c['lavender']};
-                    border-color: {c['surface1']};
-                }}
-                QTabBar::tab:hover:!selected {{
-                    background-color: {c['surface1']};
-                    color: {c['text']};
-                }}
-                
-                /* === GROUP BOX === */
-                QGroupBox {{
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    margin-top: 16px;
-                    padding-top: 16px;
-                    font-size: {font_base};
-                }}
-                QGroupBox::title {{
-                    subcontrol-origin: margin;
-                    left: 12px;
-                    padding: 0 8px;
-                    color: {c['blue']};
-                    font-weight: 600;
-                    font-size: {font_base};
-                }}
-                
-                /* === CHECKBOX === */
-                QCheckBox {{
-                    spacing: 10px;
-                    font-size: {font_base};
-                    color: {c['text']};
-                }}
-                QCheckBox::indicator {{
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 4px;
-                    border: 2px solid {c['surface2']};
-                    background-color: {c['surface0']};
-                }}
-                QCheckBox::indicator:hover {{
-                    border-color: {c['lavender']};
-                }}
-                QCheckBox::indicator:checked {{
-                    background-color: {c['green']};
-                    border-color: {c['green']};
-                }}
-                QCheckBox::indicator:disabled {{
-                    background-color: {c['surface0']};
-                    border-color: {c['surface1']};
-                }}
-                
-                /* === RADIO BUTTON === */
-                QRadioButton {{
-                    spacing: 10px;
-                    font-size: {font_base};
-                    color: {c['text']};
-                }}
-                QRadioButton::indicator {{
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 10px;
-                    border: 2px solid {c['surface2']};
-                    background-color: {c['surface0']};
-                }}
-                QRadioButton::indicator:hover {{
-                    border-color: {c['lavender']};
-                }}
-                QRadioButton::indicator:checked {{
-                    background-color: {c['lavender']};
-                    border-color: {c['lavender']};
-                }}
-                
-                /* === SCROLLBAR === */
-                QScrollBar:vertical {{
-                    background-color: {c['mantle']};
-                    width: 12px;
-                    border-radius: 6px;
-                    margin: 2px;
-                }}
-                QScrollBar::handle:vertical {{
-                    background-color: {c['surface1']};
-                    border-radius: 5px;
-                    min-height: 30px;
-                    margin: 2px;
-                }}
-                QScrollBar::handle:vertical:hover {{
-                    background-color: {c['surface2']};
-                }}
-                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-                    height: 0px;
-                }}
-                QScrollBar:horizontal {{
-                    background-color: {c['mantle']};
-                    height: 12px;
-                    border-radius: 6px;
-                    margin: 2px;
-                }}
-                QScrollBar::handle:horizontal {{
-                    background-color: {c['surface1']};
-                    border-radius: 5px;
-                    min-width: 30px;
-                    margin: 2px;
-                }}
-                QScrollBar::handle:horizontal:hover {{
-                    background-color: {c['surface2']};
-                }}
-                QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-                    width: 0px;
-                }}
-                
-                /* === SCROLL AREA === */
-                QScrollArea {{
-                    border: none;
-                    background-color: transparent;
-                }}
-                
-                /* === TOOLTIP === */
-                QToolTip {{
-                    background-color: {c['surface1']};
-                    color: {c['text']};
-                    border: 1px solid {c['surface2']};
-                    border-radius: 4px;
-                    padding: 6px 10px;
-                    font-size: {font_small};
-                }}
-                
-                /* === PROGRESS BAR === */
-                QProgressBar {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    text-align: center;
-                    color: {c['text']};
-                    font-size: {font_small};
-                    height: 24px;
-                }}
-                QProgressBar::chunk {{
-                    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                        stop:0 {c['lavender']}, stop:1 {c['mauve']});
-                    border-radius: 5px;
-                }}
-                
-                /* === SLIDER === */
-                QSlider::groove:horizontal {{
-                    background-color: {c['surface1']};
-                    height: 8px;
-                    border-radius: 4px;
-                }}
-                QSlider::handle:horizontal {{
-                    background-color: {c['lavender']};
-                    width: 20px;
-                    height: 20px;
-                    margin: -6px 0;
-                    border-radius: 10px;
-                }}
-                QSlider::handle:horizontal:hover {{
-                    background-color: {c['sky']};
-                }}
-                
-                /* === MENU === */
-                QMenu {{
-                    background-color: {c['surface0']};
-                    border: 1px solid {c['surface1']};
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 4px;
-                }}
-                QMenu::item {{
-                    padding: 8px 24px;
-                    border-radius: 4px;
-                    color: {c['text']};
-                }}
-                QMenu::item:selected {{
-                    background-color: {c['surface1']};
-                }}
-                QMenu::separator {{
-                    height: 1px;
-                    background-color: {c['surface1']};
-                    margin: 4px 8px;
-                }}
-                
-                /* === DIALOG === */
-                QDialog {{
-                    background-color: {c['base']};
-                    color: {c['text']};
-                }}
-                
-                /* === MESSAGE BOX === */
-                QMessageBox {{
-                    background-color: {c['base']};
-                }}
-                QMessageBox QLabel {{
-                    color: {c['text']};
-                    font-size: {font_base};
-                }}
-                QMessageBox QPushButton {{
-                    min-width: 80px;
-                }}
-                
-                /* === SPLITTER === */
-                QSplitter::handle {{
-                    background-color: {c['surface1']};
-                }}
-                QSplitter::handle:hover {{
-                    background-color: {c['lavender']};
-                }}
-                
-                /* === FRAME === */
-                QFrame {{
-                    border: none;
-                }}
-                QFrame[frameShape="4"] /* HLine */ {{
-                    background-color: {c['surface1']};
-                    max-height: 1px;
-                }}
-                QFrame[frameShape="5"] /* VLine */ {{
-                    background-color: {c['surface1']};
-                    max-width: 1px;
-                }}
-            """)
-        else:  # Light theme (Catppuccin Latte style)
-            self.setStyleSheet(f"""
-                QMainWindow, QWidget {{
-                    background-color: #EFF1F5;
-                    color: #4C4F69;
-                    font-family: 'Segoe UI', 'SF Pro Display', Arial, sans-serif;
-                    font-size: {font_base};
-                }}
-                QLabel {{ color: #4C4F69; font-size: {font_base}; }}
-                QPushButton {{
-                    background-color: #E6E9EF;
-                    border: 1px solid #DCE0E8;
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 8px 16px;
-                    min-height: {BUTTON_HEIGHT - 16}px;
-                    color: #4C4F69;
-                    font-size: {font_base};
-                }}
-                QPushButton:hover {{ background-color: #DCE0E8; border-color: #7287FD; }}
-                QPushButton:checked {{ background-color: #7287FD; color: #EFF1F5; }}
-                QPushButton:disabled {{ background-color: #E6E9EF; color: #9CA0B0; }}
-                QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
-                    background-color: #FFFFFF;
-                    border: 1px solid #DCE0E8;
-                    border-radius: {BORDER_RADIUS}px;
-                    padding: 8px 12px;
-                    min-height: {INPUT_HEIGHT - 16}px;
-                    color: #4C4F69;
-                    font-size: {font_base};
-                }}
-                QLineEdit:focus, QSpinBox:focus {{ border-color: #7287FD; }}
-                QTextEdit {{
-                    background-color: #FFFFFF;
-                    border: 1px solid #DCE0E8;
-                    border-radius: {BORDER_RADIUS}px;
-                    color: #40A02B;
-                    font-family: 'Cascadia Code', monospace;
-                    font-size: {font_small};
-                }}
-                QListWidget {{
-                    background-color: #FFFFFF;
-                    border: 1px solid #DCE0E8;
-                    border-radius: {BORDER_RADIUS}px;
-                }}
-                QListWidget::item:selected {{ background-color: #7287FD; color: #EFF1F5; }}
-                QTabWidget::pane {{ border: 1px solid #DCE0E8; border-radius: {BORDER_RADIUS}px; }}
-                QTabBar::tab {{
-                    background-color: #E6E9EF;
-                    border: 1px solid #DCE0E8;
-                    padding: 10px 24px;
-                    font-size: {font_base};
-                    min-width: 80px;
-                }}
-                QTabBar::tab:selected {{ background-color: #EFF1F5; color: #7287FD; }}
-                QGroupBox {{
-                    border: 1px solid #DCE0E8;
-                    border-radius: {BORDER_RADIUS}px;
-                    margin-top: 16px;
-                    padding-top: 16px;
-                }}
-                QGroupBox::title {{ color: #1E66F5; font-weight: 600; }}
-                QCheckBox::indicator {{
-                    width: 20px; height: 20px;
-                    border-radius: 4px;
-                    border: 2px solid #9CA0B0;
-                    background-color: #FFFFFF;
-                }}
-                QCheckBox::indicator:checked {{ background-color: #40A02B; border-color: #40A02B; }}
-                QScrollArea {{ border: none; }}
-                QDialog {{ background-color: #EFF1F5; color: #4C4F69; }}
-                QScrollBar:vertical {{
-                    background-color: #E6E9EF; width: 12px; border-radius: 6px;
-                }}
-                QScrollBar::handle:vertical {{
-                    background-color: #BCC0CC; border-radius: 5px; min-height: 30px;
-                }}
-                QScrollBar::handle:vertical:hover {{ background-color: #9CA0B0; }}
-                QToolTip {{
-                    background-color: #E6E9EF; color: #4C4F69;
-                    border: 1px solid #DCE0E8; border-radius: 4px;
-                    padding: 6px 10px; font-size: {font_small};
-                }}
-            """)
+    def apply_theme(self, theme="Light"):
+        """Apply theme stylesheet from styles module."""
+        self.setStyleSheet(get_theme_stylesheet(theme))
     
     def load_config(self):
         """Load configuration from MongoDB Atlas."""
@@ -5382,6 +3746,7 @@ class MainWindow(QMainWindow):
             # Paused and proxy status (persisted across UI refreshes)
             paused = info.get("paused", False)
             proxy_status = info.get("proxy_status", None)  # True/False/None
+            working = info.get("working", False)  # Working state from DB
             
             item = QListWidgetItem()
             item.setData(Qt.UserRole, uuid)  # Store UUID in item data
@@ -5391,7 +3756,7 @@ class MainWindow(QMainWindow):
                 uuid, country, first_run, mode, 
                 google_authorized, ads_registered, payment_linked, campaign_launched,
                 profile_ready, ads_timestamp, payment_timestamp, campaign_timestamp, ready_timestamp,
-                paused, proxy_status
+                paused, proxy_status, working
             )
             widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
             widget.play_clicked.connect(self._on_play_profile)
@@ -5474,7 +3839,7 @@ class MainWindow(QMainWindow):
                 item = QListWidgetItem()
                 item.setData(Qt.UserRole, uuid)
                 
-                widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False, False, "", "", "", "", False, None)
+                widget = ProfileItemWidget(uuid, country, "", mode, False, False, False, False, False, "", "", "", "", False, None, False)
                 widget.copy_clicked.connect(lambda u: self.log(f"Copied: {u}"))
                 widget.play_clicked.connect(self._on_play_profile)
                 widget.proxy_check_clicked.connect(self._on_proxy_check)
@@ -5651,6 +4016,35 @@ class MainWindow(QMainWindow):
                 if item and item.data(Qt.UserRole) == uuid:
                     return lst.itemWidget(item)
         return None
+    
+    def _set_profile_working(self, uuid: str, working: bool, mode: str = None):
+        """
+        Set profile working state (UI + DB).
+        Called when profile starts/stops in Auto mode.
+        """
+        # Update UI
+        widget = self._find_profile_widget(uuid)
+        if widget:
+            widget.set_working(working)
+        
+        # Find mode if not provided
+        if mode is None:
+            for m in ["cookie", "google"]:
+                cfg = self.get_mode_config(m)
+                if uuid in cfg.get("profiles", []):
+                    mode = m
+                    break
+        
+        if not mode:
+            return
+        
+        # Save to DB
+        cfg = self.get_mode_config(mode)
+        profile_info = cfg.setdefault("profile_info", {})
+        if uuid not in profile_info:
+            profile_info[uuid] = {}
+        profile_info[uuid]["working"] = working
+        self.set_mode_config(mode, cfg)
     
     def _on_proxy_check(self, uuid: str):
         """Handle manual proxy check for a single profile."""
@@ -6818,6 +5212,10 @@ class MainWindow(QMainWindow):
                 "google_search_percent": self.google_search_percent.value(),
                 "sites_per_session_min": self.sites_per_session_min.value(),
                 "sites_per_session_max": self.sites_per_session_max.value(),
+                # One Tap Sites
+                "onetap_visit_enabled": self.onetap_visit_enabled.isChecked(),
+                "onetap_sites_min": self.onetap_sites_min.value(),
+                "onetap_sites_max": self.onetap_sites_max.value(),
                 # Gmail
                 "read_gmail": self.google_read_gmail.isChecked(),
                 "gmail_read_percent": self.gmail_read_percent.value(),

@@ -25,386 +25,23 @@ from core.google_auth import (
     is_logged_in as google_is_logged_in,
 )
 
+# Import helpers from refactored module
+from core.automation.helpers import (
+    HumanBehavior,
+    COOKIE_SELECTORS, COOKIE_BUTTON_TEXTS,
+    CLOSE_SELECTORS, CLOSE_TEXTS,
+    BLOCKED_MEDIA_PATTERNS, BLOCKED_AD_DOMAINS,
+    YOUTUBE_SEARCH_WORDS,
+    EU_TLDS, GENERIC_TLDS, COUNTRY_TO_TLD, COUNTRY_NAME_TO_CODE,
+    normalize_country_code, get_site_tld, is_site_local_geo,
+    is_site_generic, split_sites_by_geo
+)
+
 logger = logging.getLogger(__name__)
 
-# === COOKIE CONSENT ===
-COOKIE_SELECTORS = [
-    '#accept-cookies', '#acceptCookies', '#cookie-accept', '#cookieAccept',
-    '#accept-all', '#acceptAll', '#accept_all', '#onetrust-accept-btn-handler',
-    '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
-    '#didomi-notice-agree-button', '#consent-accept', '#cookie-consent-accept',
-    '#tarteaucitronPersonalize2', '#axeptio_btn_acceptAll',
-    '.accept-cookies', '.accept-all', '.cookie-accept', '.consent-accept',
-    '.agree-button', '.accept-button', '.cookie-agree', '.cookies-accept',
-    '[data-action="accept"]', '[data-consent="accept"]',
-    'button[data-gdpr-expression="acceptAll"]',
-]
 
-COOKIE_BUTTON_TEXTS = [
-    'Accept', 'Accept all', 'Accept All', 'Accept cookies', 'Accept Cookies',
-    'Agree', 'Agree all', 'Agree All', 'I agree', 'I Agree', 'Agree and close',
-    'OK', 'Ok', 'Okay', 'Got it', 'Got It',
-    'Allow', 'Allow all', 'Allow All', 'Allow cookies',
-    'Continue', 'Understood', 'I understand',
-    'Accepter', 'Tout accepter', "J'accepte", 'Autoriser', 'Continuer',
-    'Accepter et continuer', 'Accepter et fermer', 'Accepter tout',
-    'Akzeptieren', 'Alle akzeptieren', 'Zustimmen', 'Alles akzeptieren',
-    'Aceptar', 'Aceptar todo', 'Acepto', 'Aceptar todas',
-    'Accetta', 'Accetta tutto', 'Accetto',
-    'Aceitar', 'Aceitar tudo',
-    'Принять', 'Принять все', 'Согласен', 'Согласиться', 'ОК', 'Понятно',
-]
-
-CLOSE_SELECTORS = [
-    'button[aria-label="Close"]', 'button[aria-label="close"]',
-    'button[aria-label="Fermer"]', '[aria-label="Close"]',
-    '.close-button', '.close-btn', '.btn-close', '.modal-close',
-    '[data-dismiss="modal"]', '[data-close]',
-]
-
-CLOSE_TEXTS = [
-    'Close', 'X', '×', '✕', '✖', '✗',
-    'Dismiss', 'Cancel', 'No thanks', 'Not now', 'Later', 'Skip',
-    'Fermer', 'Non merci', 'Schließen', 'Cerrar', 'Закрыть',
-]
-
-# Audio/Video file patterns to block
-BLOCKED_MEDIA_PATTERNS = [
-    r'\.mp3(\?|$)',
-    r'\.mp4(\?|$)',
-    r'\.webm(\?|$)',
-    r'\.ogg(\?|$)',
-    r'\.wav(\?|$)',
-    r'\.m4a(\?|$)',
-    r'\.aac(\?|$)',
-    r'\.flac(\?|$)',
-    r'\.m3u8(\?|$)',  # HLS streams
-    r'\.mpd(\?|$)',   # DASH streams
-    r'/videoplayback',  # YouTube-style
-    r'/audio/',
-    r'googlevideo\.com',
-    r'doubleclick\.net.*video',
-    r'googleads.*video',
-]
-
-# Ad domains to block (they often have autoplay videos)
-BLOCKED_AD_DOMAINS = [
-    'doubleclick.net',
-    'googlesyndication.com',
-    'googleadservices.com',
-    'moatads.com',
-    'amazon-adsystem.com',
-    'facebook.com/tr',
-    'adnxs.com',
-    'rubiconproject.com',
-    'pubmatic.com',
-    'openx.net',
-    'casalemedia.com',
-    'outbrain.com',
-    'taboola.com',
-    'criteo.com',
-    'teads.tv',
-    'smartadserver.com',
-]
-
-# === YOUTUBE ACTIVITY CONSTANTS ===
-YOUTUBE_SEARCH_WORDS = [
-    'music', 'gaming', 'vlog', 'tutorial', 'review', 'unboxing', 'podcast', 
-    'documentary', 'interview', 'prank', 'challenge', 'workout', 'meditation', 
-    'cooking', 'baking', 'travel', 'animation', 'trailer', 'reaction', 
-    'livestream', 'news', 'highlights', 'compilation', 'remix', 'cover', 
-    'parody', 'experiment', 'science', 'technology', 'programming', 'coding', 
-    'design', 'photography', 'cinematography', 'editing', 'marketing', 'finance', 
-    'investing', 'crypto', 'stocks', 'motivation', 'inspiration', 'speech', 
-    'debate', 'politics', 'history', 'geography', 'psychology', 'philosophy', 
-    'education', 'math', 'algebra', 'calculus', 'physics', 'chemistry', 
-    'biology', 'astronomy', 'nature', 'wildlife', 'ocean', 'space', 'nasa', 
-    'spacex', 'robotics', 'ai', 'gadgets', 'smartphones', 'laptops', 'cars', 
-    'supercars', 'motorcycles', 'fashion', 'makeup', 'skincare', 'fitness', 
-    'yoga', 'pilates', 'boxing', 'football', 'basketball', 'soccer', 'tennis', 
-    'golf', 'baseball', 'hockey', 'esports', 'minecraft', 'fortnite', 'roblox', 
-    'gta', 'minecraftmods', 'speedrun', 'walkthrough', 'gameplay', 'strategy', 
-    'tips', 'hacks', 'secrets', 'bloopers', 'fails', 'memes', 'shorts', 
-    'tiktok', 'reels', 'aesthetic', 'ambience', 'lofi', 'jazz', 'rock', 'pop', 
-    'classical', 'metal', 'hiphop', 'rap', 'country', 'reggae', 'blues', 
-    'instrumental', 'karaoke', 'orchestra', 'piano', 'guitar', 'drums', 
-    'violin', 'singing', 'dance', 'choreography', 'ballet', 'salsa', 'tango', 
-    'kpop', 'anime', 'manga', 'marvel', 'dc', 'starwars', 'harrypotter', 
-    'disney', 'pixar', 'netflix', 'series', 'movie', 'horror', 'thriller', 
-    'comedy', 'drama', 'action', 'adventure', 'fantasy', 'mystery', 'crime', 
-    'detective', 'survival', 'camping', 'fishing', 'hunting', 'diy', 'crafts', 
-    'woodworking', 'gardening', 'farming', 'minimalism', 'productivity', 
-    'startup', 'entrepreneurship', 'freelancing', 'remote', 'codinglife', 
-    'debugging', 'cybersecurity', 'hacking', 'privacy', 'blockchain', 'web3', 
-    'ecommerce', 'dropshipping', 'amazon', 'shopify', 'branding', 'storytelling', 
-    'voiceover', 'asmr', 'relaxation', 'sleep', 'thunder', 'rain', 'fireplace', 
-    'timelapse', 'sunrise', 'sunset', 'mountains', 'forest', 'desert', 'island', 
-    'waterfall', 'volcano', 'earthquake', 'tornado', 'hurricane', 'tsunami',
-]
-
-# === GEO DOMAIN CONSTANTS FOR AUTOMATION ===
-# EU member states TLDs (27 countries)
-EU_TLDS = {
-    'at', 'be', 'bg', 'hr', 'cy', 'cz', 'dk', 'ee', 'fi', 'fr',
-    'de', 'gr', 'hu', 'ie', 'it', 'lv', 'lt', 'lu', 'mt', 'nl',
-    'pl', 'pt', 'ro', 'sk', 'si', 'es', 'se'
-}
-
-# Generic TLDs (not country-specific)
-GENERIC_TLDS = {
-    'com', 'org', 'net', 'io', 'xyz', 'info', 'biz', 'co', 'app',
-    'dev', 'ai', 'tech', 'online', 'site', 'website', 'blog', 'shop',
-    'store', 'cloud', 'digital', 'media', 'news', 'tv', 'fm', 'me'
-}
-
-# Country code to TLD mapping (expanded)
-COUNTRY_TO_TLD = {
-    'US': ['us', 'com'],  # US includes .com as local
-    'GB': ['uk', 'co.uk'],
-    'CA': ['ca'],
-    'AU': ['au', 'com.au'],
-    'NZ': ['nz', 'co.nz'],
-    # EU countries
-    'DE': ['de'], 'FR': ['fr'], 'IT': ['it'], 'ES': ['es'],
-    'NL': ['nl'], 'PL': ['pl'], 'PT': ['pt'], 'AT': ['at'],
-    'BE': ['be'], 'SE': ['se'], 'FI': ['fi'], 'DK': ['dk'],
-    'CZ': ['cz'], 'GR': ['gr'], 'RO': ['ro'], 'HU': ['hu'],
-    'SK': ['sk'], 'BG': ['bg'], 'HR': ['hr'], 'SI': ['si'],
-    'LT': ['lt'], 'LV': ['lv'], 'EE': ['ee'], 'IE': ['ie'],
-    'CY': ['cy'], 'MT': ['mt'], 'LU': ['lu'],
-    # Non-EU Europe
-    'CH': ['ch'], 'NO': ['no'], 'IS': ['is'],
-    'RU': ['ru'], 'UA': ['ua'], 'BY': ['by'], 'MD': ['md'],
-    'RS': ['rs'], 'ME': ['me'], 'MK': ['mk'], 'AL': ['al'], 'BA': ['ba'],
-    # Middle East & Asia
-    'TR': ['tr'], 'IL': ['il'], 'AE': ['ae'], 'SA': ['sa'], 'QA': ['qa'],
-    'JP': ['jp'], 'KR': ['kr'], 'CN': ['cn'], 'IN': ['in'],
-    'TH': ['th'], 'VN': ['vn'], 'ID': ['id'], 'MY': ['my'], 'PH': ['ph'],
-    'SG': ['sg'], 'HK': ['hk'], 'TW': ['tw'],
-    # Americas
-    'BR': ['br', 'com.br'], 'MX': ['mx'], 'AR': ['ar'],
-    'CL': ['cl'], 'CO': ['co'], 'PE': ['pe'], 'VE': ['ve'],
-    # Africa
-    'ZA': ['za', 'co.za'], 'EG': ['eg'], 'NG': ['ng'], 'KE': ['ke'],
-    'MA': ['ma'], 'DZ': ['dz'], 'TN': ['tn'],
-}
-
-# Country name to code mapping for normalization (full list)
-COUNTRY_NAME_TO_CODE = {
-    "UNITED STATES": "US", "USA": "US", "UNITED STATES OF AMERICA": "US",
-    "UNITED KINGDOM": "GB", "UK": "GB", "GREAT BRITAIN": "GB", "ENGLAND": "GB",
-    "GERMANY": "DE", "DEUTSCHLAND": "DE",
-    "FRANCE": "FR",
-    "ITALY": "IT", "ITALIA": "IT",
-    "SPAIN": "ES", "ESPANA": "ES",
-    "NETHERLANDS": "NL", "THE NETHERLANDS": "NL", "HOLLAND": "NL",
-    "POLAND": "PL", "POLSKA": "PL",
-    "RUSSIA": "RU", "RUSSIAN FEDERATION": "RU",
-    "UKRAINE": "UA",
-    "CANADA": "CA",
-    "AUSTRALIA": "AU",
-    "JAPAN": "JP",
-    "SOUTH KOREA": "KR", "KOREA": "KR",
-    "CHINA": "CN",
-    "BRAZIL": "BR", "BRASIL": "BR",
-    "MEXICO": "MX",
-    "ARGENTINA": "AR",
-    "INDIA": "IN",
-    "SINGAPORE": "SG",
-    "SWEDEN": "SE",
-    "NORWAY": "NO",
-    "FINLAND": "FI",
-    "DENMARK": "DK",
-    "SWITZERLAND": "CH",
-    "AUSTRIA": "AT",
-    "BELGIUM": "BE",
-    "PORTUGAL": "PT",
-    "CZECH REPUBLIC": "CZ", "CZECHIA": "CZ",
-    "GREECE": "GR",
-    "TURKEY": "TR",
-    "ISRAEL": "IL",
-    "UNITED ARAB EMIRATES": "AE", "UAE": "AE",
-    "SOUTH AFRICA": "ZA",
-    "THAILAND": "TH",
-    "VIETNAM": "VN",
-    "INDONESIA": "ID",
-    "MALAYSIA": "MY",
-    "PHILIPPINES": "PH",
-    "HONG KONG": "HK",
-    "TAIWAN": "TW",
-    "NEW ZEALAND": "NZ",
-    "IRELAND": "IE",
-    "ROMANIA": "RO",
-    "HUNGARY": "HU",
-    "SLOVAKIA": "SK",
-    "BULGARIA": "BG",
-    "CROATIA": "HR",
-    "SERBIA": "RS",
-    "LITHUANIA": "LT",
-    "LATVIA": "LV",
-    "ESTONIA": "EE",
-    "CHILE": "CL",
-    "COLOMBIA": "CO",
-    "PERU": "PE",
-    "SLOVENIA": "SI",
-    "CYPRUS": "CY",
-    "MALTA": "MT",
-    "LUXEMBOURG": "LU",
-    "ICELAND": "IS",
-    "MONACO": "MC",
-    "ANDORRA": "AD",
-    "LIECHTENSTEIN": "LI",
-    "SAN MARINO": "SM",
-    "MONTENEGRO": "ME",
-    "NORTH MACEDONIA": "MK", "MACEDONIA": "MK",
-    "ALBANIA": "AL",
-    "BOSNIA AND HERZEGOVINA": "BA", "BOSNIA": "BA",
-    "KOSOVO": "XK",
-    "MOLDOVA": "MD",
-    "BELARUS": "BY",
-    "GEORGIA": "GE",
-    "ARMENIA": "AM",
-    "AZERBAIJAN": "AZ",
-    "KAZAKHSTAN": "KZ",
-    "UZBEKISTAN": "UZ",
-    "PAKISTAN": "PK",
-    "BANGLADESH": "BD",
-    "SRI LANKA": "LK",
-    "NEPAL": "NP",
-    "CAMBODIA": "KH",
-    "MYANMAR": "MM", "BURMA": "MM",
-    "LAOS": "LA",
-    "MONGOLIA": "MN",
-    "NORTH KOREA": "KP",
-    "SAUDI ARABIA": "SA",
-    "QATAR": "QA",
-    "KUWAIT": "KW",
-    "BAHRAIN": "BH",
-    "OMAN": "OM",
-    "JORDAN": "JO",
-    "LEBANON": "LB",
-    "IRAQ": "IQ",
-    "IRAN": "IR",
-    "EGYPT": "EG",
-    "MOROCCO": "MA",
-    "ALGERIA": "DZ",
-    "TUNISIA": "TN",
-    "LIBYA": "LY",
-    "NIGERIA": "NG",
-    "KENYA": "KE",
-    "GHANA": "GH",
-    "ETHIOPIA": "ET",
-    "TANZANIA": "TZ",
-    "UGANDA": "UG",
-    "VENEZUELA": "VE",
-    "ECUADOR": "EC",
-    "BOLIVIA": "BO",
-    "PARAGUAY": "PY",
-    "URUGUAY": "UY",
-    "COSTA RICA": "CR",
-    "PANAMA": "PA",
-    "GUATEMALA": "GT",
-    "CUBA": "CU",
-    "DOMINICAN REPUBLIC": "DO",
-    "PUERTO RICO": "PR",
-    "JAMAICA": "JM",
-}
-
-def normalize_country_code(country: str) -> str:
-    """Normalize country name to 2-letter code."""
-    if not country:
-        return ""
-    country_upper = country.upper().strip()
-    # Already a 2-letter code
-    if len(country_upper) == 2:
-        return country_upper
-    # Look up in mapping
-    return COUNTRY_NAME_TO_CODE.get(country_upper, country_upper)
-
-def get_site_tld_auto(url: str) -> str:
-    """Extract TLD from URL. Returns both compound TLD (co.uk) and simple TLD (uk) for matching."""
-    try:
-        domain = url.lower().replace('https://', '').replace('http://', '')
-        domain = domain.split('/')[0].split(':')[0]
-        parts = domain.split('.')
-        if len(parts) >= 2:
-            # Only treat as compound TLD if it's a known second-level domain pattern
-            # co.uk, com.au, org.uk, etc. - but NOT gov.uk (gov is just a subdomain)
-            if len(parts) >= 3 and parts[-2] in ('co', 'com', 'org', 'net', 'ac'):
-                return f"{parts[-2]}.{parts[-1]}"
-            return parts[-1]
-        return ''
-    except:
-        return ''
-
-def is_site_local_geo(url: str, country_code: str) -> bool:
-    """Check if site matches the profile's country geo."""
-    if not country_code:
-        return False
-    # Normalize country code (handle full names like "Slovenia" -> "SI")
-    normalized_code = normalize_country_code(country_code)
-    tld = get_site_tld_auto(url)
-    local_tlds = COUNTRY_TO_TLD.get(normalized_code.upper(), [normalized_code.lower()])
-    return tld in local_tlds
-
-def is_site_generic(url: str) -> bool:
-    """Check if site has a generic (non-country) TLD."""
-    tld = get_site_tld_auto(url)
-    return tld in GENERIC_TLDS
-
-def split_sites_by_geo(sites: List[str], country_code: str) -> tuple:
-    """Split sites into local geo and generic lists."""
-    local_sites = []
-    generic_sites = []
-    
-    for site in sites:
-        if is_site_local_geo(site, country_code):
-            local_sites.append(site)
-        elif is_site_generic(site):
-            generic_sites.append(site)
-        else:
-            # Non-matching country TLD goes to generic pool
-            generic_sites.append(site)
-    
-    return local_sites, generic_sites
-
-
-class HumanBehavior:
-    @staticmethod
-    async def random_delay(min_sec: float = 0.5, max_sec: float = 3.0):
-        await asyncio.sleep(random.uniform(min_sec, max_sec))
-    
-    @staticmethod
-    async def smooth_scroll(page: Page, direction: str = "down", 
-                            iterations_min: int = 3, iterations_max: int = 6,
-                            pixels_min: int = 50, pixels_max: int = 150,
-                            pause_min: float = 0.1, pause_max: float = 0.3):
-        try:
-            for _ in range(random.randint(iterations_min, iterations_max)):
-                scroll = random.randint(pixels_min, pixels_max) * (1 if direction == "down" else -1)
-                await page.evaluate(f"window.scrollBy(0, {scroll})")
-                await asyncio.sleep(random.uniform(pause_min, pause_max))
-        except:
-            pass
-    
-    @staticmethod
-    async def random_mouse(page: Page):
-        try:
-            vp = await page.evaluate("() => ({w: window.innerWidth, h: window.innerHeight})")
-            await page.mouse.move(
-                random.randint(100, max(200, vp['w'] - 100)),
-                random.randint(100, max(200, vp['h'] - 100)),
-                steps=random.randint(5, 10)
-            )
-        except:
-            pass
-    
-    @staticmethod
-    async def simulate_reading(page: Page):
-        for _ in range(random.randint(2, 4)):
-            await HumanBehavior.smooth_scroll(page, "down")
-            await HumanBehavior.random_delay(1, 3)
-
+# Backward compatibility: re-export get_site_tld as get_site_tld_auto
+get_site_tld_auto = get_site_tld
 
 class BrowserAutomation:
     def __init__(self, log_callback: Optional[Callable] = None):
@@ -1143,8 +780,32 @@ class BrowserAutomation:
         
         # NEW: Get separate site lists from settings (for different handling)
         browse_sites = settings.get("browse_sites", [])  # No auth needed
-        onetap_sites = settings.get("onetap_sites", [])  # Auth via One Tap
+        onetap_sites_all = settings.get("onetap_sites", [])  # Auth via One Tap (full list)
         google_services = settings.get("services", {})   # Google services checkboxes
+        
+        # NEW: One Tap sites settings - visit enabled + random count per session
+        onetap_visit_enabled = settings.get("onetap_visit_enabled", True)
+        onetap_sites_min = settings.get("onetap_sites_min", 1)
+        onetap_sites_max = settings.get("onetap_sites_max", 3)
+        
+        # Log One Tap settings for debugging
+        self.log(f"🔐 One Tap settings: enabled={onetap_visit_enabled}, range={onetap_sites_min}-{onetap_sites_max}, available={len(onetap_sites_all)}")
+        
+        # Select random One Tap sites based on settings
+        onetap_sites = []
+        if onetap_visit_enabled and onetap_sites_all:
+            # Determine how many One Tap sites to visit this session
+            onetap_count = random.randint(onetap_sites_min, onetap_sites_max)
+            onetap_count = min(onetap_count, len(onetap_sites_all))  # Don't exceed available sites
+            
+            if onetap_count > 0:
+                # Randomly select sites from the list
+                onetap_sites = random.sample(onetap_sites_all, onetap_count)
+                self.log(f"🔐 One Tap: selected {onetap_count} sites: {', '.join([s[:30] for s in onetap_sites])}")
+        elif not onetap_visit_enabled:
+            self.log("🔐 One Tap sites disabled in settings")
+        elif not onetap_sites_all:
+            self.log("🔐 One Tap: no sites in list")
         
         # Build Google services URLs from enabled checkboxes
         service_url_map = {
@@ -1170,9 +831,17 @@ class BrowserAutomation:
         for s in enabled_services:
             self._site_auth_map[s.lower().rstrip('/')] = False
         
-        # Combine all sites: user sites + enabled Google services
-        all_sites = sites.copy()  # Start with passed sites (already includes browse + onetap)
+        # Combine all sites: browse_sites + selected onetap_sites + enabled Google services
+        # NOTE: Exclude onetap sites from browse_sites to avoid duplicates
+        onetap_urls_lower = {s.lower().rstrip('/') for s in onetap_sites}
+        browse_sites_filtered = [s for s in browse_sites if s.lower().rstrip('/') not in onetap_urls_lower]
+        
+        all_sites = browse_sites_filtered.copy()
+        all_sites.extend(onetap_sites)  # Add randomly selected One Tap sites
         all_sites.extend(enabled_services)  # Add enabled Google services
+        
+        # Log the site queue composition
+        self.log(f"📋 Site queue: {len(browse_sites_filtered)} browse + {len(onetap_sites)} One Tap + {len(enabled_services)} services = {len(all_sites)} total")
         
         # === YOUTUBE ACTIVITY SETUP ===
         # YouTube can be enabled via:
@@ -1243,49 +912,84 @@ class BrowserAutomation:
         if profile_country:
             profile_country = normalize_country_code(profile_country)
         
-        # Apply geo-based site selection if enabled
-        if geo_enabled and profile_country and sites_queue:
-            local_sites, generic_sites = split_sites_by_geo(sites_queue, profile_country)
+        # IMPORTANT: Extract One Tap sites BEFORE geo filtering (they must be preserved)
+        # Use the same key normalization as _site_auth_map
+        onetap_sites_in_queue = [s for s in sites_queue if self._site_auth_map.get(s.lower().rstrip('/'), False)]
+        non_onetap_sites = [s for s in sites_queue if not self._site_auth_map.get(s.lower().rstrip('/'), False)]
+        
+        # Debug: log the actual One Tap sites found in queue
+        if onetap_sites_in_queue:
+            self.log(f"🔐 One Tap in queue: {len(onetap_sites_in_queue)} sites")
+        
+        # Apply geo-based site selection if enabled (only to non-onetap sites)
+        if geo_enabled and profile_country and non_onetap_sites:
+            local_sites, generic_sites = split_sites_by_geo(non_onetap_sites, profile_country)
             
             if local_sites:
                 # Calculate counts based on geo_percent
+                # Reserve space for One Tap sites
+                onetap_count = len(onetap_sites_in_queue)
                 total_to_visit = min(
                     random.randint(sites_per_session_min, sites_per_session_max),
-                    len(sites_queue)
+                    len(non_onetap_sites) + onetap_count
                 )
-                local_count = max(1, round(total_to_visit * geo_percent / 100))
-                generic_count = total_to_visit - local_count
+                # Subtract onetap sites from total budget
+                other_sites_budget = max(1, total_to_visit - onetap_count)
+                
+                local_count = max(1, round(other_sites_budget * geo_percent / 100))
+                generic_count = other_sites_budget - local_count
                 
                 # Ensure we don't exceed available sites
                 local_count = min(local_count, len(local_sites))
                 generic_count = min(generic_count, len(generic_sites))
                 
                 # If not enough generic, use more local
-                if generic_count < (total_to_visit - local_count) and len(local_sites) > local_count:
-                    local_count = min(total_to_visit - generic_count, len(local_sites))
+                if generic_count < (other_sites_budget - local_count) and len(local_sites) > local_count:
+                    local_count = min(other_sites_budget - generic_count, len(local_sites))
                 
                 # Shuffle and select
                 random.shuffle(local_sites)
                 random.shuffle(generic_sites)
                 
-                sites_queue = local_sites[:local_count] + generic_sites[:generic_count]
+                # Build queue: One Tap sites + local + generic
+                sites_queue = onetap_sites_in_queue + local_sites[:local_count] + generic_sites[:generic_count]
                 random.shuffle(sites_queue)
                 
-                self.log(f"🌍 Geo mode ({profile_country}): {local_count} local + {generic_count} generic = {len(sites_queue)} sites")
+                if onetap_sites_in_queue:
+                    self.log(f"🌍 Geo mode ({profile_country}): {onetap_count} One Tap + {local_count} local + {generic_count} generic = {len(sites_queue)} sites")
+                else:
+                    self.log(f"🌍 Geo mode ({profile_country}): {local_count} local + {generic_count} generic = {len(sites_queue)} sites")
             else:
-                # No local sites - fallback to generic
+                # No local sites - fallback to generic + onetap
                 self.log(f"⚠️ No sites for geo {profile_country}, using generic sites")
                 random.shuffle(generic_sites)
-                sites_queue = generic_sites
+                sites_queue = onetap_sites_in_queue + generic_sites
+                random.shuffle(sites_queue)
         else:
             random.shuffle(sites_queue)
         
         # NEW: Limit sites per session
+        # IMPORTANT: Ensure One Tap sites are ALWAYS included in the final queue
         if sites_per_session_max < len(sites_queue):
             sites_to_visit = random.randint(sites_per_session_min, sites_per_session_max)
             sites_to_visit = min(sites_to_visit, len(sites_queue))
-            sites_queue = sites_queue[:sites_to_visit]
-            self.log(f"📊 Sites limited to {sites_to_visit} for this session")
+            
+            # Separate One Tap sites (they MUST be included)
+            onetap_in_queue = [s for s in sites_queue if self._site_auth_map.get(s.lower().rstrip('/'), False)]
+            other_sites = [s for s in sites_queue if s not in onetap_in_queue]
+            
+            # Calculate how many "other" sites we can fit
+            other_count = max(0, sites_to_visit - len(onetap_in_queue))
+            
+            # Build final queue: onetap + random other sites
+            random.shuffle(other_sites)
+            sites_queue = onetap_in_queue + other_sites[:other_count]
+            random.shuffle(sites_queue)  # Mix them up
+            
+            if onetap_in_queue:
+                self.log(f"📊 Sites limited to {len(sites_queue)} ({len(onetap_in_queue)} One Tap guaranteed)")
+            else:
+                self.log(f"📊 Sites limited to {len(sites_queue)} for this session")
         
         total_sites_count = len(sites_queue)
         
@@ -1338,6 +1042,7 @@ class BrowserAutomation:
             
             # Step 1: Authenticate on site (if enabled AND site needs auth)
             if auth_on_sites and site_needs_auth:
+                self.log("   🔐 One Tap site → attempting Google auth")
                 # NOTE: Watcher disabled - using new CDP-based auth instead
                 # await self._start_google_watcher()
                 
@@ -3372,6 +3077,9 @@ class BrowserAutomation:
             self._site_tab = site_tab
             self.page = site_tab  # Now all operations work on site tab
             
+            # CRITICAL: Bring the new tab to front to ensure Playwright focus
+            await self.page.bring_to_front()
+            
             self.log(f"   ✓ Navigated via Google search")
             return True
             
@@ -3467,6 +3175,9 @@ class BrowserAutomation:
             # Store site tab reference and switch working page to it
             self._site_tab = site_tab
             self.page = site_tab
+            
+            # CRITICAL: Bring the new tab to front to ensure Playwright focus
+            await self.page.bring_to_front()
             
             return True
             
@@ -3656,8 +3367,8 @@ class BrowserAutomation:
                 await asyncio.sleep(1)
             
             if click_attempted:
-                self.log("   ⚠️ Clicked but not confirmed")
-                return 'success'  # Optimistic
+                self.log("   ⚠️ Clicked but not confirmed (assuming success)")
+                return 'success'  # Optimistic - click was sent, assume it worked
             else:
                 # ============================================================
                 # FALLBACK: Try Login button → Continue as flow (Pinterest style)
