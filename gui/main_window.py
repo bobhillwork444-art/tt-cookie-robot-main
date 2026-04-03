@@ -3217,6 +3217,15 @@ class MainWindow(QMainWindow):
                     "work_start_weekend": settings.get("work_hours_weekend_start", 9),
                     "work_end_weekend": settings.get("work_hours_weekend_end", 23),
                     "max_session_duration": settings.get("max_session_duration", 900),
+                    # New settings that were missing
+                    "start_randomization": settings.get("start_randomization", 30),
+                    "stagger_delay_min": settings.get("stagger_delay_min", 15),
+                    "stagger_delay_max": settings.get("stagger_delay_max", 30),
+                    "max_errors": settings.get("max_errors", 3),
+                    "error_action": settings.get("error_action", "skip_today"),
+                    "notify_cycle_complete": settings.get("notify_cycle_complete", True),
+                    "notify_profile_errors": settings.get("notify_profile_errors", True),
+                    "notify_time_shortage": settings.get("notify_time_shortage", True),
                 },
                 
                 # YouTube queries (as comma-separated string for UI compatibility)
@@ -3328,6 +3337,15 @@ class MainWindow(QMainWindow):
                 "work_hours_weekend_start": auto_mode.get("work_start_weekend", 9),
                 "work_hours_weekend_end": auto_mode.get("work_end_weekend", 23),
                 "max_session_duration": auto_mode.get("max_session_duration", 900),
+                # New settings
+                "start_randomization": auto_mode.get("start_randomization", 30),
+                "stagger_delay_min": auto_mode.get("stagger_delay_min", 15),
+                "stagger_delay_max": auto_mode.get("stagger_delay_max", 30),
+                "max_errors": auto_mode.get("max_errors", 3),
+                "error_action": auto_mode.get("error_action", "skip_today"),
+                "notify_cycle_complete": auto_mode.get("notify_cycle_complete", True),
+                "notify_profile_errors": auto_mode.get("notify_profile_errors", True),
+                "notify_time_shortage": auto_mode.get("notify_time_shortage", True),
             })
             
             if self.db.save_settings(settings):
