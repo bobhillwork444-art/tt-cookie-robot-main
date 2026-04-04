@@ -1185,6 +1185,26 @@
         <source>Failed to download update</source>
         <translation>Не удалось загрузить обновление</translation>
     </message>
+    <message>
+        <source>File</source>
+        <translation>Файл</translation>
+    </message>
+    <message>
+        <source>Please extract the archive and replace the application files</source>
+        <translation>Пожалуйста, распакуйте архив и замените файлы приложения</translation>
+    </message>
+    <message>
+        <source>The download folder will open now</source>
+        <translation>Сейчас откроется папка с загрузкой</translation>
+    </message>
+    <message>
+        <source>The DMG will open. Please drag the app to Applications folder</source>
+        <translation>DMG файл откроется. Перетащите приложение в папку Applications</translation>
+    </message>
+    <message>
+        <source>Failed to open DMG</source>
+        <translation>Не удалось открыть DMG</translation>
+    </message>
     
     <!-- Dialog buttons -->
     <message>

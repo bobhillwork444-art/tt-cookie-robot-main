@@ -3207,7 +3207,7 @@ class MainWindow(QMainWindow):
     def _start_download_update(self, update_info: dict):
         """Start downloading update in background thread."""
         from PyQt5.QtWidgets import QProgressDialog, QMessageBox
-        from PyQt5.QtCore import QThread, pyqtSignal
+        from PyQt5.QtCore import QThread, pyqtSignal, Qt
         
         download_url = update_info.get("download_url")
         version = update_info.get("version", "?")
@@ -3220,7 +3220,11 @@ class MainWindow(QMainWindow):
             )
             return
         
-        # Create progress dialog
+        # Close settings dialog if open
+        if hasattr(self, '_settings_dialog') and self._settings_dialog:
+            self._settings_dialog.close()
+        
+        # Create progress dialog (modal, on top)
         self._update_progress = QProgressDialog(
             tr("Downloading update..."),
             tr("Cancel"),
@@ -3228,11 +3232,15 @@ class MainWindow(QMainWindow):
             self
         )
         self._update_progress.setWindowTitle(tr("Updating"))
+        self._update_progress.setWindowModality(Qt.ApplicationModal)
         self._update_progress.setAutoClose(False)
         self._update_progress.setAutoReset(False)
         self._update_progress.setMinimumDuration(0)
+        self._update_progress.setMinimumWidth(400)
         self._update_progress.setValue(0)
         self._update_progress.show()
+        self._update_progress.raise_()
+        self._update_progress.activateWindow()
         
         # Create and start download thread
         self._download_thread = DownloadThread(download_url, version)
@@ -3255,6 +3263,7 @@ class MainWindow(QMainWindow):
         from PyQt5.QtWidgets import QMessageBox
         import subprocess
         import sys
+        import os
         
         if hasattr(self, '_update_progress') and self._update_progress:
             self._update_progress.close()
@@ -3262,34 +3271,79 @@ class MainWindow(QMainWindow):
         
         self.log(f"[Update] Download complete: {file_path}")
         
-        # Ask to install
-        reply = QMessageBox.question(
-            self,
-            tr("Download Complete"),
-            f"{tr('Update downloaded successfully')}.\n\n"
-            f"{tr('The application will close to install the update')}.\n"
-            f"{tr('Continue?')}",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
-        )
+        # Check file type
+        is_installer = file_path.endswith(".exe") and "installer" in file_path.lower()
+        is_zip = file_path.endswith(".zip")
+        is_dmg = file_path.endswith(".dmg")
         
-        if reply == QMessageBox.Yes:
-            try:
-                if file_path.endswith(".exe"):
-                    # Run installer
-                    subprocess.Popen([file_path], shell=True)
-                elif file_path.endswith(".dmg"):
-                    subprocess.Popen(["open", file_path])
+        if is_zip:
+            # For ZIP (portable) - open folder and show message
+            folder = os.path.dirname(file_path)
+            
+            QMessageBox.information(
+                self,
+                tr("Download Complete"),
+                f"{tr('Update downloaded successfully')}!\n\n"
+                f"{tr('File')}: {os.path.basename(file_path)}\n\n"
+                f"{tr('Please extract the archive and replace the application files')}.\n"
+                f"{tr('The download folder will open now')}."
+            )
+            
+            # Open folder with the file
+            if sys.platform == "win32":
+                subprocess.Popen(f'explorer /select,"{file_path}"', shell=True)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", file_path])
+            else:
+                subprocess.Popen(["xdg-open", folder])
                 
-                # Close application
-                QApplication.quit()
-            except Exception as e:
-                QMessageBox.warning(
-                    self,
-                    tr("Error"),
-                    f"{tr('Failed to start installer')}: {str(e)}\n\n"
-                    f"{tr('Please install manually from')}: {file_path}"
-                )
+        elif is_installer or file_path.endswith(".exe"):
+            # For EXE installer - ask to run
+            reply = QMessageBox.question(
+                self,
+                tr("Download Complete"),
+                f"{tr('Update downloaded successfully')}.\n\n"
+                f"{tr('The application will close to install the update')}.\n"
+                f"{tr('Continue?')}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
+            
+            if reply == QMessageBox.Yes:
+                try:
+                    # Run installer and close app
+                    subprocess.Popen([file_path], shell=True)
+                    QApplication.quit()
+                except Exception as e:
+                    QMessageBox.warning(
+                        self,
+                        tr("Error"),
+                        f"{tr('Failed to start installer')}: {str(e)}\n\n"
+                        f"{tr('File')}: {file_path}"
+                    )
+                    
+        elif is_dmg:
+            # For DMG - mount and open
+            reply = QMessageBox.question(
+                self,
+                tr("Download Complete"),
+                f"{tr('Update downloaded successfully')}.\n\n"
+                f"{tr('The DMG will open. Please drag the app to Applications folder')}.\n"
+                f"{tr('Continue?')}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
+            
+            if reply == QMessageBox.Yes:
+                try:
+                    subprocess.Popen(["open", file_path])
+                    QApplication.quit()
+                except Exception as e:
+                    QMessageBox.warning(
+                        self,
+                        tr("Error"),
+                        f"{tr('Failed to open DMG')}: {str(e)}"
+                    )
     
     def _on_download_error(self, error_msg: str):
         """Handle download error."""
