@@ -153,6 +153,15 @@ class MainWindow(QMainWindow):
         app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         load_translation(self.current_language, app_dir)
         
+        # Import QTimer early (needed for all timers)
+        from PyQt5.QtCore import QTimer
+        
+        # Debounced save timer - MUST init before _reset_all_working_states which calls save_config
+        self._save_pending = False
+        self._save_timer = QTimer(self)
+        self._save_timer.setSingleShot(True)
+        self._save_timer.timeout.connect(self._do_save_config)
+        
         self.init_ui()
         self.apply_theme("Light")
         
@@ -163,7 +172,6 @@ class MainWindow(QMainWindow):
         self.switch_mode("cookie")
         
         # Start clock update timer (every 30 seconds)
-        from PyQt5.QtCore import QTimer
         self.clock_timer = QTimer(self)
         self.clock_timer.timeout.connect(self._update_world_clock)
         self.clock_timer.start(30000)  # 30 seconds
@@ -172,12 +180,6 @@ class MainWindow(QMainWindow):
         self._manual_profile_check_timer = QTimer(self)
         self._manual_profile_check_timer.timeout.connect(self._check_manual_profiles_status)
         self._manual_profile_check_timer.start(3000)  # 3 seconds
-        
-        # Debounced save timer - prevents excessive DB writes
-        self._save_timer = QTimer(self)
-        self._save_timer.setSingleShot(True)
-        self._save_timer.timeout.connect(self._do_save_config)
-        self._save_pending = False
         
         # Check for updates on startup (after 3 seconds delay)
         QTimer.singleShot(3000, self._check_updates_on_startup)
