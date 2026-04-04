@@ -43,6 +43,80 @@ from gui.widgets.profile_item import ProfileItemWidget
 from gui.widgets.worker_thread import WorkerThread
 from gui.widgets.no_scroll import NoScrollSpinBox as QSpinBox, NoScrollDoubleSpinBox as QDoubleSpinBox, NoScrollComboBox as QComboBox
 
+
+class DownloadThread(QThread):
+    """Thread for downloading updates without blocking UI."""
+    progress = pyqtSignal(int, str)  # percent, status
+    finished_signal = pyqtSignal(str, str)  # file_path, version
+    error = pyqtSignal(str)  # error_message
+    
+    def __init__(self, download_url: str, version: str):
+        super().__init__()
+        self.download_url = download_url
+        self.version = version
+        self._cancelled = False
+    
+    def cancel(self):
+        """Request cancellation."""
+        self._cancelled = True
+    
+    def run(self):
+        """Download the update file."""
+        import tempfile
+        import os
+        from urllib.request import urlopen, Request
+        
+        try:
+            # Determine file extension
+            if self.download_url.endswith(".dmg"):
+                ext = ".dmg"
+            elif self.download_url.endswith(".zip"):
+                ext = ".zip"
+            else:
+                ext = ".exe"
+            
+            # Create temp file
+            temp_dir = tempfile.gettempdir()
+            temp_file = os.path.join(temp_dir, f"TTCookieRobot_Update_{self.version}{ext}")
+            
+            # Build request
+            headers = {"User-Agent": "TT-Cookie-Robot-Updater"}
+            request = Request(self.download_url, headers=headers)
+            
+            self.progress.emit(0, "Connecting...")
+            
+            # Download with progress
+            with urlopen(request, timeout=300) as response:
+                total_size = int(response.headers.get("Content-Length", 0))
+                downloaded = 0
+                chunk_size = 65536  # 64KB chunks
+                
+                with open(temp_file, "wb") as f:
+                    while True:
+                        if self._cancelled:
+                            self.progress.emit(0, "Cancelled")
+                            return
+                        
+                        chunk = response.read(chunk_size)
+                        if not chunk:
+                            break
+                        
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        
+                        if total_size > 0:
+                            percent = int(downloaded * 100 / total_size)
+                            size_mb = downloaded / (1024 * 1024)
+                            total_mb = total_size / (1024 * 1024)
+                            self.progress.emit(percent, f"Downloading: {size_mb:.1f}/{total_mb:.1f} MB")
+            
+            self.progress.emit(100, "Download complete")
+            self.finished_signal.emit(temp_file, self.version)
+            
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -104,6 +178,39 @@ class MainWindow(QMainWindow):
         self._save_timer.setSingleShot(True)
         self._save_timer.timeout.connect(self._do_save_config)
         self._save_pending = False
+        
+        # Check for updates on startup (after 3 seconds delay)
+        QTimer.singleShot(3000, self._check_updates_on_startup)
+    
+    def _check_updates_on_startup(self):
+        """Check for updates silently on startup."""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        try:
+            from core.updater import UpdateChecker
+            from version import VERSION
+            
+            checker = UpdateChecker()
+            result = checker.check_sync()
+            
+            if result.get("available"):
+                new_version = result["version"]
+                
+                reply = QMessageBox.question(
+                    self,
+                    tr("Update Available"),
+                    f"🎉 {tr('New version available')}: v{new_version}\n"
+                    f"{tr('Current version')}: v{VERSION}\n\n"
+                    f"{tr('Do you want to download and install the update?')}",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                
+                if reply == QMessageBox.Yes:
+                    self._start_download_update(result)
+        except Exception as e:
+            # Silent fail on startup
+            logging.debug(f"Update check failed: {e}")
         
     def init_ui(self):
         self.setWindowTitle("TT Cookie Robot")
@@ -3047,8 +3154,8 @@ class MainWindow(QMainWindow):
     
     def _check_for_updates(self):
         """Check for available updates from GitHub."""
-        from PyQt5.QtWidgets import QMessageBox, QProgressDialog
-        from core.updater import UpdateChecker, AutoUpdater
+        from PyQt5.QtWidgets import QMessageBox
+        from core.updater import UpdateChecker
         
         c = CATPPUCCIN
         
@@ -3085,7 +3192,7 @@ class MainWindow(QMainWindow):
                 )
                 
                 if reply == QMessageBox.Yes:
-                    self._download_update(result)
+                    self._start_download_update(result)
             else:
                 self.update_status_label.setText(f"✅ {tr('You have the latest version')}")
                 self.update_status_label.setStyleSheet(f"color: {c['green']};")
@@ -3097,10 +3204,10 @@ class MainWindow(QMainWindow):
             self.check_updates_btn.setEnabled(True)
             self.check_updates_btn.setText(tr("Check for updates"))
     
-    def _download_update(self, update_info: dict):
-        """Download and install update."""
+    def _start_download_update(self, update_info: dict):
+        """Start downloading update in background thread."""
         from PyQt5.QtWidgets import QProgressDialog, QMessageBox
-        from core.updater import AutoUpdater
+        from PyQt5.QtCore import QThread, pyqtSignal
         
         download_url = update_info.get("download_url")
         version = update_info.get("version", "?")
@@ -3114,52 +3221,89 @@ class MainWindow(QMainWindow):
             return
         
         # Create progress dialog
-        progress = QProgressDialog(
+        self._update_progress = QProgressDialog(
             tr("Downloading update..."),
             tr("Cancel"),
             0, 100,
             self
         )
-        progress.setWindowTitle(tr("Updating"))
-        progress.setAutoClose(False)
-        progress.setAutoReset(False)
-        progress.show()
+        self._update_progress.setWindowTitle(tr("Updating"))
+        self._update_progress.setAutoClose(False)
+        self._update_progress.setAutoReset(False)
+        self._update_progress.setMinimumDuration(0)
+        self._update_progress.setValue(0)
+        self._update_progress.show()
         
-        def log_callback(msg):
-            self.log(f"[Update] {msg}")
+        # Create and start download thread
+        self._download_thread = DownloadThread(download_url, version)
+        self._download_thread.progress.connect(self._on_download_progress)
+        self._download_thread.finished_signal.connect(self._on_download_finished)
+        self._download_thread.error.connect(self._on_download_error)
         
-        def progress_callback(percent, status):
-            progress.setValue(percent)
-            progress.setLabelText(status)
-            QApplication.processEvents()
-            
-            if progress.wasCanceled():
-                updater.cancel_download()
+        self._update_progress.canceled.connect(self._download_thread.cancel)
         
-        # Start download
-        updater = AutoUpdater(
-            log_callback=log_callback,
-            progress_callback=progress_callback
+        self._download_thread.start()
+    
+    def _on_download_progress(self, percent: int, status: str):
+        """Handle download progress update."""
+        if hasattr(self, '_update_progress') and self._update_progress:
+            self._update_progress.setValue(percent)
+            self._update_progress.setLabelText(status)
+    
+    def _on_download_finished(self, file_path: str, version: str):
+        """Handle download completion."""
+        from PyQt5.QtWidgets import QMessageBox
+        import subprocess
+        import sys
+        
+        if hasattr(self, '_update_progress') and self._update_progress:
+            self._update_progress.close()
+            self._update_progress = None
+        
+        self.log(f"[Update] Download complete: {file_path}")
+        
+        # Ask to install
+        reply = QMessageBox.question(
+            self,
+            tr("Download Complete"),
+            f"{tr('Update downloaded successfully')}.\n\n"
+            f"{tr('The application will close to install the update')}.\n"
+            f"{tr('Continue?')}",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
         )
         
-        # Run in thread but show progress
-        import threading
-        
-        def download_thread():
+        if reply == QMessageBox.Yes:
             try:
-                updater._download_thread(download_url, version)
+                if file_path.endswith(".exe"):
+                    # Run installer
+                    subprocess.Popen([file_path], shell=True)
+                elif file_path.endswith(".dmg"):
+                    subprocess.Popen(["open", file_path])
+                
+                # Close application
+                QApplication.quit()
             except Exception as e:
-                self.log(f"[Update] Error: {e}")
+                QMessageBox.warning(
+                    self,
+                    tr("Error"),
+                    f"{tr('Failed to start installer')}: {str(e)}\n\n"
+                    f"{tr('Please install manually from')}: {file_path}"
+                )
+    
+    def _on_download_error(self, error_msg: str):
+        """Handle download error."""
+        from PyQt5.QtWidgets import QMessageBox
         
-        thread = threading.Thread(target=download_thread, daemon=True)
-        thread.start()
+        if hasattr(self, '_update_progress') and self._update_progress:
+            self._update_progress.close()
+            self._update_progress = None
         
-        # Wait for completion with event loop
-        while thread.is_alive():
-            QApplication.processEvents()
-            thread.join(0.1)
-        
-        progress.close()
+        QMessageBox.critical(
+            self,
+            tr("Download Error"),
+            f"{tr('Failed to download update')}:\n{error_msg}"
+        )
     
     def _show_youtube_queries_editor(self):
         """Show dialog to edit YouTube search queries."""

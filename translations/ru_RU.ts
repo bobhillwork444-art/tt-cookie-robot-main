@@ -1153,6 +1153,38 @@
         <source>No download URL found for your platform</source>
         <translation>Не найдена ссылка для загрузки для вашей платформы</translation>
     </message>
+    <message>
+        <source>Download Complete</source>
+        <translation>Загрузка завершена</translation>
+    </message>
+    <message>
+        <source>Update downloaded successfully</source>
+        <translation>Обновление успешно загружено</translation>
+    </message>
+    <message>
+        <source>The application will close to install the update</source>
+        <translation>Приложение закроется для установки обновления</translation>
+    </message>
+    <message>
+        <source>Continue?</source>
+        <translation>Продолжить?</translation>
+    </message>
+    <message>
+        <source>Failed to start installer</source>
+        <translation>Не удалось запустить установщик</translation>
+    </message>
+    <message>
+        <source>Please install manually from</source>
+        <translation>Пожалуйста, установите вручную из</translation>
+    </message>
+    <message>
+        <source>Download Error</source>
+        <translation>Ошибка загрузки</translation>
+    </message>
+    <message>
+        <source>Failed to download update</source>
+        <translation>Не удалось загрузить обновление</translation>
+    </message>
     
     <!-- Dialog buttons -->
     <message>
