@@ -70,6 +70,7 @@ a = Analysis(
         'core.notifications',
         'core.google_auth',
         'core.scheduler',
+        'core.updater',
         # GUI modules
         'gui.main_window',
         'gui.styles',

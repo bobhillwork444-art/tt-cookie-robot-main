@@ -1096,6 +1096,64 @@
         <translation>Обновить информацию о профилях</translation>
     </message>
     
+    <!-- Updates -->
+    <message>
+        <source>Updates</source>
+        <translation>Обновления</translation>
+    </message>
+    <message>
+        <source>Current version:</source>
+        <translation>Текущая версия:</translation>
+    </message>
+    <message>
+        <source>Check for updates</source>
+        <translation>Проверить обновления</translation>
+    </message>
+    <message>
+        <source>Checking...</source>
+        <translation>Проверка...</translation>
+    </message>
+    <message>
+        <source>Connecting to GitHub...</source>
+        <translation>Подключение к GitHub...</translation>
+    </message>
+    <message>
+        <source>Update available</source>
+        <translation>Доступно обновление</translation>
+    </message>
+    <message>
+        <source>Update Available</source>
+        <translation>Доступно обновление</translation>
+    </message>
+    <message>
+        <source>New version available</source>
+        <translation>Доступна новая версия</translation>
+    </message>
+    <message>
+        <source>Current version</source>
+        <translation>Текущая версия</translation>
+    </message>
+    <message>
+        <source>Do you want to download and install the update?</source>
+        <translation>Хотите скачать и установить обновление?</translation>
+    </message>
+    <message>
+        <source>You have the latest version</source>
+        <translation>У вас установлена последняя версия</translation>
+    </message>
+    <message>
+        <source>Downloading update...</source>
+        <translation>Загрузка обновления...</translation>
+    </message>
+    <message>
+        <source>Updating</source>
+        <translation>Обновление</translation>
+    </message>
+    <message>
+        <source>No download URL found for your platform</source>
+        <translation>Не найдена ссылка для загрузки для вашей платформы</translation>
+    </message>
+    
     <!-- Dialog buttons -->
     <message>
         <source>Save</source>

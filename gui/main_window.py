@@ -2951,6 +2951,39 @@ class MainWindow(QMainWindow):
         yt_queries_btn.clicked.connect(self._show_youtube_queries_editor)
         form.addRow(yt_queries_btn)
         
+        # === UPDATES ===
+        updates_label = QLabel(tr("🔄 Updates"))
+        updates_label.setStyleSheet(f"font-weight: bold; font-size: 18px; color: {c['blue']}; padding-top: 12px;")
+        form.addRow(updates_label)
+        
+        # Current version display
+        from version import VERSION
+        version_label = QLabel(f"v{VERSION}")
+        version_label.setStyleSheet(f"font-weight: bold; color: {c['green']};")
+        form.addRow(tr("Current version:"), version_label)
+        
+        # Check for updates button
+        self.check_updates_btn = QPushButton(tr("Check for updates"))
+        self.check_updates_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {c['blue']};
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background: {c['sapphire']};
+            }}
+        """)
+        self.check_updates_btn.clicked.connect(self._check_for_updates)
+        form.addRow(self.check_updates_btn)
+        
+        # Update status label
+        self.update_status_label = QLabel("")
+        self.update_status_label.setStyleSheet(f"color: {c['subtext0']}; font-size: {FONT_SIZE_SMALL}px;")
+        form.addRow(self.update_status_label)
+        
         # Add scroll widget
         scroll.setWidget(scroll_widget)
         dialog_layout.addWidget(scroll, 1)
@@ -3011,6 +3044,122 @@ class MainWindow(QMainWindow):
     def _toggle_geo_percent(self, state):
         """Enable/disable geo percent spinner based on checkbox."""
         self.global_geo_percent.setEnabled(state == Qt.Checked)
+    
+    def _check_for_updates(self):
+        """Check for available updates from GitHub."""
+        from PyQt5.QtWidgets import QMessageBox, QProgressDialog
+        from core.updater import UpdateChecker, AutoUpdater
+        
+        c = CATPPUCCIN
+        
+        # Update button state
+        self.check_updates_btn.setEnabled(False)
+        self.check_updates_btn.setText(tr("Checking..."))
+        self.update_status_label.setText(tr("Connecting to GitHub..."))
+        QApplication.processEvents()
+        
+        try:
+            checker = UpdateChecker()
+            result = checker.check_sync()
+            
+            if result.get("error"):
+                self.update_status_label.setText(f"❌ {result['error']}")
+                self.update_status_label.setStyleSheet(f"color: {c['red']};")
+                
+            elif result.get("available"):
+                new_version = result["version"]
+                current = result.get("current_version", "?")
+                
+                self.update_status_label.setText(f"✅ {tr('Update available')}: v{new_version}")
+                self.update_status_label.setStyleSheet(f"color: {c['green']}; font-weight: bold;")
+                
+                # Ask user if they want to update
+                reply = QMessageBox.question(
+                    self,
+                    tr("Update Available"),
+                    f"{tr('New version available')}: v{new_version}\n"
+                    f"{tr('Current version')}: v{current}\n\n"
+                    f"{tr('Do you want to download and install the update?')}",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+                
+                if reply == QMessageBox.Yes:
+                    self._download_update(result)
+            else:
+                self.update_status_label.setText(f"✅ {tr('You have the latest version')}")
+                self.update_status_label.setStyleSheet(f"color: {c['green']};")
+                
+        except Exception as e:
+            self.update_status_label.setText(f"❌ {str(e)}")
+            self.update_status_label.setStyleSheet(f"color: {c['red']};")
+        finally:
+            self.check_updates_btn.setEnabled(True)
+            self.check_updates_btn.setText(tr("Check for updates"))
+    
+    def _download_update(self, update_info: dict):
+        """Download and install update."""
+        from PyQt5.QtWidgets import QProgressDialog, QMessageBox
+        from core.updater import AutoUpdater
+        
+        download_url = update_info.get("download_url")
+        version = update_info.get("version", "?")
+        
+        if not download_url:
+            QMessageBox.warning(
+                self,
+                tr("Error"),
+                tr("No download URL found for your platform")
+            )
+            return
+        
+        # Create progress dialog
+        progress = QProgressDialog(
+            tr("Downloading update..."),
+            tr("Cancel"),
+            0, 100,
+            self
+        )
+        progress.setWindowTitle(tr("Updating"))
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+        progress.show()
+        
+        def log_callback(msg):
+            self.log(f"[Update] {msg}")
+        
+        def progress_callback(percent, status):
+            progress.setValue(percent)
+            progress.setLabelText(status)
+            QApplication.processEvents()
+            
+            if progress.wasCanceled():
+                updater.cancel_download()
+        
+        # Start download
+        updater = AutoUpdater(
+            log_callback=log_callback,
+            progress_callback=progress_callback
+        )
+        
+        # Run in thread but show progress
+        import threading
+        
+        def download_thread():
+            try:
+                updater._download_thread(download_url, version)
+            except Exception as e:
+                self.log(f"[Update] Error: {e}")
+        
+        thread = threading.Thread(target=download_thread, daemon=True)
+        thread.start()
+        
+        # Wait for completion with event loop
+        while thread.is_alive():
+            QApplication.processEvents()
+            thread.join(0.1)
+        
+        progress.close()
     
     def _show_youtube_queries_editor(self):
         """Show dialog to edit YouTube search queries."""

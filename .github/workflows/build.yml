@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number (e.g., 2.0.0)'
-        required: false
+        description: 'Version number (e.g., 2.0.1)'
+        required: true
         default: '2.0.0'
 
 env:
@@ -21,6 +21,93 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Set version from input or tag
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+      
+      - name: Update version in code
+        shell: python
+        run: |
+          import re
+          from datetime import datetime
+          
+          version = "${{ steps.version.outputs.VERSION }}"
+          today = datetime.now().strftime("%Y-%m-%d")
+          
+          # Update version.py
+          with open("version.py", "w", encoding="utf-8") as f:
+              f.write(f'''"""
+          Version information for TT Cookie Robot.
+          This file is automatically updated by GitHub Actions during build.
+          """
+          
+          VERSION = "{version}"
+          BUILD_DATE = "{today}"
+          
+          def get_version() -> str:
+              """Return the current version string."""
+              return VERSION
+          
+          def get_version_tuple() -> tuple:
+              """Return version as tuple (major, minor, patch)."""
+              parts = VERSION.split(".")
+              return tuple(int(p) for p in parts[:3])
+          ''')
+          
+          # Update version_info.txt for Windows EXE metadata
+          parts = version.split(".")
+          while len(parts) < 4:
+              parts.append("0")
+          ver_tuple = ", ".join(parts[:4])
+          
+          content = f'''# UTF-8
+          VSVersionInfo(
+            ffi=FixedFileInfo(
+              filevers=({ver_tuple}),
+              prodvers=({ver_tuple}),
+              mask=0x3f,
+              flags=0x0,
+              OS=0x40004,
+              fileType=0x1,
+              subtype=0x0,
+              date=(0, 0)
+            ),
+            kids=[
+              StringFileInfo(
+                [
+                  StringTable(
+                    u'040904B0',
+                    [
+                      StringStruct(u'CompanyName', u'TT Cookie Robot'),
+                      StringStruct(u'FileDescription', u'TT Cookie Robot - Octo Browser Automation'),
+                      StringStruct(u'FileVersion', u'{version}'),
+                      StringStruct(u'InternalName', u'TTCookieRobot'),
+                      StringStruct(u'LegalCopyright', u'2024-2026'),
+                      StringStruct(u'OriginalFilename', u'TTCookieRobot.exe'),
+                      StringStruct(u'ProductName', u'TT Cookie Robot'),
+                      StringStruct(u'ProductVersion', u'{version}'),
+                    ]
+                  )
+                ]
+              ),
+              VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+            ]
+          )
+          '''
+          
+          with open("version_info.txt", "w", encoding="utf-8") as f:
+              f.write(content)
+          
+          print(f"Updated version to {version}")
       
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -42,7 +129,8 @@ jobs:
       
       - name: Create portable ZIP
         run: |
-          Compress-Archive -Path "dist\${{ env.APP_NAME }}\*" -DestinationPath "${{ env.APP_NAME }}_Windows_Portable.zip"
+          $version = "${{ steps.version.outputs.VERSION }}"
+          Compress-Archive -Path "dist\${{ env.APP_NAME }}\*" -DestinationPath "${{ env.APP_NAME }}_${version}_Windows_Portable.zip"
       
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -55,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Portable
-          path: ${{ env.APP_NAME }}_Windows_Portable.zip
+          path: ${{ env.APP_NAME }}_*_Windows_Portable.zip
       
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
@@ -76,6 +164,43 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Set version from input or tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+      
+      - name: Update version in code
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          TODAY=$(date +%Y-%m-%d)
+          
+          cat > version.py << EOF
+          """
+          Version information for TT Cookie Robot.
+          This file is automatically updated by GitHub Actions during build.
+          """
+          
+          VERSION = "$VERSION"
+          BUILD_DATE = "$TODAY"
+          
+          def get_version() -> str:
+              """Return the current version string."""
+              return VERSION
+          
+          def get_version_tuple() -> tuple:
+              """Return version as tuple (major, minor, patch)."""
+              parts = VERSION.split(".")
+              return tuple(int(p) for p in parts[:3])
+          EOF
+          
+          echo "Updated version.py to $VERSION"
       
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -116,6 +241,7 @@ jobs:
       
       - name: Create DMG
         run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
           create-dmg \
             --volname "TT Cookie Robot" \
             --window-pos 200 120 \
@@ -124,7 +250,7 @@ jobs:
             --icon "TT Cookie Robot.app" 150 185 \
             --hide-extension "TT Cookie Robot.app" \
             --app-drop-link 450 185 \
-            "${{ env.APP_NAME }}_macOS.dmg" \
+            "${{ env.APP_NAME }}_${VERSION}_macOS.dmg" \
             "dist/TT Cookie Robot.app" || true
       
       - name: Upload macOS DMG
@@ -143,16 +269,31 @@ jobs:
   create-release:
     needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     steps:
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
       
+      - name: List artifacts
+        run: find artifacts -type f
+      
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: Release ${{ steps.version.outputs.VERSION }}
           files: |
             artifacts/Windows-Portable/*.zip
             artifacts/Windows-Installer/*.exe
