@@ -145,6 +145,7 @@ class UpdateChecker:
     def _get_download_url(self, assets: list) -> Optional[str]:
         """
         Find appropriate download URL for current platform.
+        Prioritizes .exe over .zip for Windows, .dmg for macOS.
         
         Args:
             assets: List of release assets from GitHub API
@@ -154,30 +155,42 @@ class UpdateChecker:
         """
         system = platform.system().lower()
         
-        # Define patterns to match for each platform
         if system == "windows":
-            patterns = ["windows", "win", ".exe", ".zip"]
-            exclude = ["macos", "mac", "darwin", ".dmg"]
+            # Priority 1: Find .exe installer (preferred)
+            for asset in assets:
+                name = asset.get("name", "").lower()
+                if name.endswith(".exe"):
+                    # Exclude macOS files
+                    if "macos" not in name and "mac" not in name and "darwin" not in name:
+                        return asset.get("browser_download_url")
+            
+            # Priority 2: Find .zip portable (fallback)
+            for asset in assets:
+                name = asset.get("name", "").lower()
+                if name.endswith(".zip") and ("windows" in name or "win" in name):
+                    return asset.get("browser_download_url")
+                    
         elif system == "darwin":
-            patterns = ["macos", "mac", "darwin", ".dmg"]
-            exclude = ["windows", "win"]
+            # Priority 1: Find .dmg
+            for asset in assets:
+                name = asset.get("name", "").lower()
+                if name.endswith(".dmg"):
+                    return asset.get("browser_download_url")
+            
+            # Priority 2: Find .zip for macOS (fallback)
+            for asset in assets:
+                name = asset.get("name", "").lower()
+                if name.endswith(".zip") and ("macos" in name or "mac" in name or "darwin" in name):
+                    return asset.get("browser_download_url")
         else:
-            patterns = ["linux", ".tar.gz", ".AppImage"]
-            exclude = ["windows", "macos", "mac"]
+            # Linux
+            for asset in assets:
+                name = asset.get("name", "").lower()
+                if name.endswith(".AppImage") or name.endswith(".tar.gz"):
+                    if "windows" not in name and "macos" not in name:
+                        return asset.get("browser_download_url")
         
-        for asset in assets:
-            name = asset.get("name", "").lower()
-            url = asset.get("browser_download_url", "")
-            
-            # Skip excluded patterns
-            if any(ex in name for ex in exclude):
-                continue
-            
-            # Match desired patterns
-            if any(pat in name for pat in patterns):
-                return url
-        
-        # Fallback: return first asset if no match
+        # Final fallback: return first asset if no match
         if assets:
             return assets[0].get("browser_download_url")
         
